@@ -5,7 +5,7 @@ import {
   ChevronDown, Gauge, BarChart3, Clock, Users, Database,
   FolderOpen, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
   Plus, RefreshCw, Settings2, Check, X, Circle, UserPlus, ArrowRightLeft,
-  CalendarClock, Briefcase, DollarSign, ChevronLeft, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork
+  CalendarClock, Briefcase, DollarSign, ChevronLeft, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
@@ -1231,11 +1231,11 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                       {(officeHovered === loc.name || officeKebabOpen === loc.name) && (
-                        <HoverBtn
+                        <span
                           onClick={(e: any) => { e.stopPropagation(); setOfficeKebabOpen(officeKebabOpen === loc.name ? null : loc.name) }}
-                          style={{ ...s.iconBtn, width: 20, height: 20, color: t.mutedFg }}>
+                          style={{ ...s.iconBtn, width: 20, height: 20, color: t.mutedFg, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", borderRadius: 6 }}>
                           <MoreVertical size={13} strokeWidth={1}/>
-                        </HoverBtn>
+                        </span>
                       )}
                       <ChevronDown size={13} strokeWidth={1} color={t.sidebarFg} style={{ transform: loc.expanded ? "none" : "rotate(-180deg)", transition: "transform 0.2s" }}/>
                     </div>
@@ -1268,8 +1268,16 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
           </>
         )}
 
-        {/* Talent Graph — primary nav item */}
+        {/* Skills Graph — primary nav item */}
         <div style={{ marginTop: 24 }}>
+          <HoverBtn onClick={() => setActive("Skills graph", ["Skills graph"])}
+            style={{ ...navItemStyle(activeItem === "Skills graph"), justifyContent: showFullNav ? "flex-start" : "center" }}>
+            <Star size={16} strokeWidth={1}/>{showFullNav && "Skills graph"}
+          </HoverBtn>
+        </div>
+
+        {/* Talent Graph — primary nav item */}
+        <div style={{ marginTop: 4 }}>
           <HoverBtn onClick={() => setActive("Talent graph", ["Talent graph"])}
             style={{ ...navItemStyle(activeItem === "Talent graph"), justifyContent: showFullNav ? "flex-start" : "center" }}>
             <Share2 size={16} strokeWidth={1}/>{showFullNav && "Talent graph"}
@@ -4177,6 +4185,402 @@ function ProjectGraphView({ projects, roles, people, clientsFull }: any) {
   )
 }
 
+// ── Skills Graph ──
+const SKILLS_CATEGORIES = [
+  { name: "Design", color: "#6366f1", skills: ["Brand Identity","Typography","Visual Design","Figma","Illustration","Art Direction","Motion Design","UI Design","UX Design","Prototyping","Icon Design","Design Systems","Print Design","Packaging"] },
+  { name: "Engineering", color: "#10b981", skills: ["React","TypeScript","Next.js","Node.js","GraphQL","CSS/SCSS","Web Accessibility","Performance","APIs","Testing","DevOps","Mobile Dev","CMS Integration","Analytics Tracking"] },
+  { name: "Marketing", color: "#f59e0b", skills: ["Campaign Strategy","Paid Media","SEO","Email Marketing","Growth Hacking","CRM","Marketing Automation","Influencer Marketing","Affiliate Marketing","A/B Testing","Conversion Rate Optimisation","Retention Marketing","Product Marketing","Go-to-Market"] },
+  { name: "Strategy", color: "#ec4899", skills: ["Brand Strategy","Audience Research","Competitive Analysis","Positioning","Messaging","Market Entry","Innovation Strategy","Business Development","Partnerships","Pricing Strategy","Customer Insights","Journey Mapping","Scenario Planning","OKR Facilitation"] },
+  { name: "Content", color: "#14b8a6", skills: ["Copywriting","Content Strategy","Storytelling","Social Media","Video Scripting","Editing","Blog Writing","Brand Voice","Tone of Voice","PR & Comms","Thought Leadership","Community Management","Podcast Production","Newsletter"] },
+  { name: "Production", color: "#f97316", skills: ["Video Production","Photography","Sound Design","Post-Production","Studio Management","Retouching","CGI / 3D","AR / VR","Event Production","Print Production","Trafficking","Asset Management","Localisation","QA"] },
+  { name: "Analytics", color: "#8b5cf6", skills: ["Data Visualisation","Reporting","Google Analytics","Tableau","SQL","Python","Media Mix Modelling","Attribution","Dashboard Building","Research & Insights","Forecasting","Tag Management","Data Strategy","Experimentation"] },
+]
+
+// Map each role to a category and skills for the Skills Graph
+const ROLE_SKILLS_EXTENDED: Record<string, { category: string, skills: string[] }> = {
+  "Designer":             { category: "Design",       skills: ["Visual Design","Figma","Brand Identity","Typography","Design Systems"] },
+  "Senior Designer":      { category: "Design",       skills: ["Art Direction","Visual Design","Figma","Design Systems","Prototyping"] },
+  "Developer":            { category: "Engineering",  skills: ["React","TypeScript","Next.js","APIs","CSS/SCSS","Performance"] },
+  "Project Manager":      { category: "Strategy",     skills: ["Brand Strategy","OKR Facilitation","Positioning","Journey Mapping"] },
+  "Art Director":         { category: "Design",       skills: ["Art Direction","Motion Design","Illustration","Icon Design","Brand Identity"] },
+  "Copywriter":           { category: "Content",      skills: ["Copywriting","Brand Voice","Tone of Voice","Content Strategy","Blog Writing"] },
+  "Account Executive":    { category: "Strategy",     skills: ["Business Development","Partnerships","Customer Insights","Competitive Analysis"] },
+  "Creative Director":    { category: "Design",       skills: ["Art Direction","Brand Identity","Design Systems","UI Design","Prototyping"] },
+  "UX/UI Designer":       { category: "Design",       skills: ["UX Design","UI Design","Prototyping","Figma","Research & Insights"] },
+  "Motion Designer":      { category: "Production",   skills: ["Motion Design","Video Production","CGI / 3D","AR / VR","Sound Design"] },
+  "Brand Strategist":     { category: "Strategy",     skills: ["Brand Strategy","Positioning","Messaging","Audience Research","Competitive Analysis"] },
+  "Social Media Manager": { category: "Content",      skills: ["Social Media","Content Strategy","Community Management","Newsletter","Storytelling"] },
+}
+
+type SGNode = { id: string, type: "category" | "skill" | "person", label: string, sub: string, r: number, x: number, y: number, fx?: number | null, fy?: number | null }
+type SGLink = { source: string | SGNode, target: string | SGNode }
+
+function SkillsGraphView({ people: allPeople, roles }: any) {
+  const [view, setView] = useState<"categories" | "skills" | "people" | "person-skills">("categories")
+  const [selCat, setSelCat] = useState<string | null>(null)
+  const [selSkill, setSelSkill] = useState<string | null>(null)
+  const [selPerson, setSelPerson] = useState<any | null>(null)
+  const [hovered, setHovered] = useState<string | null>(null)
+  const [hoveredAt, setHoveredAt] = useState(0)
+  const [transitionStart, setTransitionStart] = useState(0)
+  const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
+  const people = selectedOffices.length === ALL_OFFICES.length ? allPeople : allPeople.filter((p: any) => selectedOffices.includes(p.office))
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dims, setDims] = useState({ w: 800, h: 600 })
+  const nodesRef = useRef<SGNode[]>([])
+  const linksRef = useRef<SGLink[]>([])
+  const simRef = useRef<any>(null)
+  const rafRef = useRef<number | null>(null)
+  const [tick, setTick] = useState(0)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([e]) => setDims({ w: e.contentRect.width, h: e.contentRect.height }))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  function getRoleData(person: any) {
+    const roleName = roles[person.roleId]?.name ?? ""
+    return ROLE_SKILLS_EXTENDED[roleName] ?? { category: "Strategy", skills: [] }
+  }
+
+  // Build nodes + links for current view
+  useEffect(() => {
+    const w = dims.w, h = dims.h
+    if (w < 10 || h < 10) return
+    simRef.current?.stop()
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+
+    let nodes: SGNode[] = []
+    let links: SGLink[] = []
+
+    if (view === "categories") {
+      const peopleCounts = SKILLS_CATEGORIES.map(cat => people.filter((p: any) => getRoleData(p).category === cat.name).length)
+      const maxPeople = Math.max(...peopleCounts, 1)
+      nodes = SKILLS_CATEGORIES.map((cat, i) => {
+        const angle = (i / SKILLS_CATEGORIES.length) * Math.PI * 2 - Math.PI / 2
+        const r0 = Math.min(w, h) * 0.06
+        const r = 24 + (peopleCounts[i] / maxPeople) * 32
+        return { id: cat.name, type: "category" as const, label: cat.name, sub: `${cat.skills.length} skills`, r, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0 }
+      })
+    } else if (view === "skills" && selCat) {
+      const catDef = SKILLS_CATEGORIES.find(c => c.name === selCat)!
+      const centerNode: SGNode = { id: selCat, type: "category", label: selCat, sub: "", r: 44, x: w/2, y: h/2 }
+      const skillNodes: SGNode[] = catDef.skills.map((skill, i) => {
+        const count = people.filter((p: any) => getRoleData(p).skills.includes(skill)).length
+        const angle = (i / catDef.skills.length) * Math.PI * 2
+        const r0 = Math.min(w, h) * 0.3
+        return { id: skill, type: "skill" as const, label: skill, sub: count > 0 ? `${count}` : "—", r: count > 0 ? 22 + count * 3 : 18, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0 }
+      })
+      nodes = [centerNode, ...skillNodes]
+      links = skillNodes.map(s => ({ source: selCat, target: s.id }))
+    } else if (view === "people" && selSkill) {
+      const matching = people.filter((p: any) => getRoleData(p).skills.includes(selSkill))
+      const centerNode: SGNode = { id: selSkill, type: "skill", label: selSkill, sub: `${matching.length} people`, r: 36, x: w/2, y: h/2 }
+      const personNodes: SGNode[] = matching.map((p: any, i: number) => {
+        const initials = p.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2)
+        const angle = (i / matching.length) * Math.PI * 2
+        const r0 = Math.min(w, h) * 0.28
+        return { id: p.name, type: "person" as const, label: initials, sub: roles[p.roleId]?.name ?? "", r: 22, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0 }
+      })
+      nodes = [centerNode, ...personNodes]
+      links = personNodes.map(n => ({ source: selSkill, target: n.id }))
+    } else if (view === "person-skills" && selPerson) {
+      const roleData = getRoleData(selPerson)
+      const initials = selPerson.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2)
+      const centerNode: SGNode = { id: selPerson.name, type: "person", label: initials, sub: roles[selPerson.roleId]?.name ?? "", r: 36, x: w/2, y: h/2 }
+      const skillNodes: SGNode[] = roleData.skills.map((skill: string, i: number) => {
+        const angle = (i / roleData.skills.length) * Math.PI * 2
+        const r0 = Math.min(w, h) * 0.28
+        return { id: `ps-${skill}`, type: "skill" as const, label: skill, sub: "", r: 20, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0 }
+      })
+      nodes = [centerNode, ...skillNodes]
+      links = skillNodes.map(s => ({ source: selPerson.name, target: s.id }))
+    }
+
+    nodesRef.current = nodes
+    linksRef.current = links
+    setTransitionStart(Date.now())
+
+    const isCategory = view === "categories"
+
+    // For non-category views, start nodes at centre so they burst outward
+    if (!isCategory) {
+      nodes.forEach(n => { n.x = w/2 + (Math.random()-0.5)*40; n.y = h/2 + (Math.random()-0.5)*40 })
+    }
+
+    const sim = forceSimulation<SGNode>(nodes)
+      .force("link", forceLink<SGNode, SGLink>(links).id((d: any) => d.id).distance((d: any) => {
+        const s = d.source as SGNode, tg = d.target as SGNode
+        return s.r + tg.r + (isCategory ? 4 : 28)
+      }).strength(isCategory ? 0.3 : 0.9))
+      .force("charge", forceManyBody().strength(isCategory ? -80 : -350))
+      .force("center", forceCenter(w/2, h/2).strength(isCategory ? 1.5 : 0.4))
+      .force("collide", forceCollide<SGNode>((d) => d.r + (isCategory ? 1 : 12)))
+
+    simRef.current = sim
+
+    // For category view: run warm-up ticks for a tight settled start, then float
+    if (isCategory) sim.stop().tick(500).alphaTarget(0.35).alphaDecay(0.0008).velocityDecay(0.3).restart()
+    // For drill-down views: burst from centre with high alpha, decay to gentle drift
+    else sim.alpha(1).alphaTarget(0.01).alphaDecay(0.018).restart()
+
+    function loop() {
+      setTick(k => k + 1)
+      rafRef.current = requestAnimationFrame(loop)
+    }
+    rafRef.current = requestAnimationFrame(loop)
+
+    return () => {
+      sim.stop()
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  }, [view, selCat, selSkill, selPerson?.name, dims.w, dims.h])
+
+  const nodes = nodesRef.current
+  const links = linksRef.current
+  const sidebarW = 260
+
+  function renderSidebar() {
+    if (view === "categories") {
+      const totalSkills = SKILLS_CATEGORIES.reduce((s, c) => s + c.skills.length, 0)
+      return (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>Overview</div>
+          {[["Categories", SKILLS_CATEGORIES.length], ["Total Skills", totalSkills], ["Total People", people.length]].map(([label, val]) => (
+            <div key={label as string} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{label}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{val}</span>
+            </div>
+          ))}
+          <div style={{ borderTop: `1px solid ${t.border}`, margin: "16px 0" }}/>
+          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>Headcount</div>
+          {SKILLS_CATEGORIES.map(cat => {
+            const count = people.filter((p: any) => getRoleData(p).category === cat.name).length
+            return (
+              <div key={cat.name} style={{ marginBottom: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                  <span style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{cat.name}</span>
+                  <span style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{count}</span>
+                </div>
+                <div style={{ height: 3, borderRadius: 2, background: t.border }}>
+                  <div style={{ height: 3, borderRadius: 2, background: t.fg, opacity: 0.5, width: `${Math.round((count / people.length) * 100)}%` }}/>
+                </div>
+              </div>
+            )
+          })}
+        </>
+      )
+    }
+    if (view === "skills" && selCat) {
+      const catDef = SKILLS_CATEGORIES.find(c => c.name === selCat)!
+      const skillCounts = catDef.skills.map(s => ({ name: s, count: people.filter((p: any) => getRoleData(p).skills.includes(s)).length })).sort((a,b) => b.count - a.count)
+      const maxCount = Math.max(...skillCounts.map(s => s.count), 1)
+      return (
+        <>
+          <div style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 4, fontFamily: "var(--font-sans), sans-serif" }}>{selCat}</div>
+          <div style={{ fontSize: 11, color: t.mutedFg, marginBottom: 16, fontFamily: "var(--font-sans), sans-serif" }}>{catDef.skills.length} skills — click a node</div>
+          {skillCounts.map(s => (
+            <div key={s.name} style={{ marginBottom: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                <span style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{s.name}</span>
+                <span style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{s.count}</span>
+              </div>
+              <div style={{ height: 3, borderRadius: 2, background: t.border }}>
+                <div style={{ height: 3, borderRadius: 2, background: t.fg, opacity: 0.5, width: s.count > 0 ? `${Math.round((s.count / maxCount) * 100)}%` : "0%" }}/>
+              </div>
+            </div>
+          ))}
+        </>
+      )
+    }
+    if (view === "people" && selSkill) {
+      const matching = people.filter((p: any) => getRoleData(p).skills.includes(selSkill))
+      return (
+        <>
+          <div style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 4, fontFamily: "var(--font-sans), sans-serif" }}>{selSkill}</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>{matching.length} People — click to see their skills</div>
+          {matching.map((p: any) => {
+            const initials = p.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2)
+            return (
+              <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: t.fgAlpha10, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{initials}</div>
+                <div>
+                  <div style={{ fontSize: 13, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{p.name}</div>
+                  <div style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{roles[p.roleId]?.name ?? ""}</div>
+                </div>
+              </div>
+            )
+          })}
+        </>
+      )
+    }
+    if (view === "person-skills" && selPerson) {
+      const roleData = getRoleData(selPerson)
+      const initials = selPerson.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2)
+      return (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${t.border}` }}>
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: t.fgAlpha10, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{initials}</div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{selPerson.name}</div>
+              <div style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{roles[selPerson.roleId]?.name ?? ""}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 10, fontFamily: "var(--font-sans), sans-serif" }}>{roleData.skills.length} Skills</div>
+          {roleData.skills.map((skill: string) => (
+            <div key={skill} style={{ fontSize: 12, color: t.fg, padding: "7px 0", borderBottom: `1px solid ${t.border}`, fontFamily: "var(--font-sans), sans-serif" }}>{skill}</div>
+          ))}
+        </>
+      )
+    }
+    return null
+  }
+
+  return (
+    <div style={{ display: "flex", flex: 1, height: "100%", overflow: "hidden", background: t.bg }}>
+      <div ref={containerRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+        {/* Toolbar */}
+        <div style={{ position: "absolute", top: 16, left: 16, zIndex: 10, display: "flex", alignItems: "center", gap: 8 }}>
+          {view !== "categories" && (
+            <button onClick={() => {
+              if (view === "person-skills") { setView("people"); setSelPerson(null) }
+              else if (view === "people") { setView("skills"); setSelSkill(null) }
+              else { setView("categories"); setSelCat(null) }
+            }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.card, color: t.fg, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-sans), sans-serif" }}>
+              <ChevronLeft size={14} strokeWidth={1.5}/>
+              {view === "person-skills" ? selSkill : view === "people" ? selCat : "All categories"}
+            </button>
+          )}
+          <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
+          <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>
+            {view === "categories" && "Click a category to explore skills"}
+            {view === "skills" && `${SKILLS_CATEGORIES.find(c=>c.name===selCat)?.skills.length} skills — click a node`}
+            {view === "people" && `${people.filter((p: any) => getRoleData(p).skills.includes(selSkill??"")).length} people with this skill`}
+            {view === "person-skills" && selPerson && `${getRoleData(selPerson).skills.length} skills`}
+          </span>
+        </div>
+
+        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <defs>
+            <style>{`
+              @keyframes sg-float-0 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(6px,-9px)} 66%{transform:translate(-5px,7px)} }
+              @keyframes sg-float-1 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(-8px,6px)} 66%{transform:translate(7px,-5px)} }
+              @keyframes sg-float-2 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(5px,8px)} 66%{transform:translate(-6px,-6px)} }
+              @keyframes sg-float-3 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(-7px,-5px)} 66%{transform:translate(8px,4px)} }
+              @keyframes sg-float-4 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(9px,4px)} 66%{transform:translate(-4px,-8px)} }
+              @keyframes sg-float-5 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(-6px,9px)} 66%{transform:translate(5px,-4px)} }
+              @keyframes sg-float-6 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(4px,-7px)} 66%{transform:translate(-9px,5px)} }
+            `}</style>
+            <filter id="sg-glow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect x={-9999} y={-9999} width={99999} height={99999} fill="transparent"/>
+
+          {/* Edges */}
+          {links.map((lk, i) => {
+            const s = lk.source as SGNode, tg = lk.target as SGNode
+            if (!s.x || !tg.x) return null
+            const isHov = hovered === tg.id || hovered === s.id
+            return (
+              <line key={i} x1={s.x} y1={s.y} x2={tg.x} y2={tg.y}
+                stroke={t.border} strokeWidth={isHov ? 1.5 : 0.8}
+                opacity={isHov ? 0.8 : 0.3}
+                style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}/>
+            )
+          })}
+
+          {/* Nodes */}
+          {nodes.map((n, ni) => {
+            const isHov = hovered === n.id
+            const isCenterNode = (view === "skills" && n.id === selCat) || (view === "people" && n.id === selSkill) || (view === "person-skills" && n.id === selPerson?.name)
+            const fillOpacity = isCenterNode ? 0.18 : isHov ? 0.14 : 0.06
+            const strokeOpacity = isCenterNode ? 1 : isHov ? 0.9 : 0.5
+            const cursor = n.type === "category" ? "pointer"
+              : n.type === "skill" && view !== "person-skills" && n.sub !== "—" ? "pointer"
+              : n.type === "person" && view === "people" ? "pointer"
+              : "default"
+            // Staggered fade-in on transition
+            const elapsed = (Date.now() - transitionStart) / 1000
+            const delay = isCenterNode ? 0 : ni * 0.04
+            const fadeIn = view === "categories" ? 1 : Math.min(1, Math.max(0, (elapsed - delay) / 0.3))
+
+            return (
+              <g key={n.id} transform={`translate(${n.x},${n.y})`}
+                style={{ cursor, opacity: fadeIn }}
+                onMouseEnter={() => { setHovered(n.id); setHoveredAt(Date.now()) }}
+                onMouseLeave={() => { setHovered(null) }}
+                onClick={() => {
+                  if (n.type === "category") { setSelCat(n.id); setView("skills") }
+                  else if (n.type === "skill" && view !== "person-skills" && n.sub !== "—") { setSelSkill(n.id); setView("people") }
+                  else if (n.type === "person" && view === "people") {
+                    const person = people.find((p: any) => p.name === n.id)
+                    if (person) { setSelPerson(person); setView("person-skills") }
+                  }
+                }}>
+              <g style={view === "categories" ? {
+                animation: `sg-float-${ni % 7} ${4.5 + ni * 0.7}s ease-in-out infinite`,
+                animationDelay: `${-ni * 0.9}s`,
+              } : {}}>
+                {isCenterNode && <circle cx={0} cy={0} r={n.r + 8} fill="none" stroke={t.fg} strokeWidth={0.5} opacity={0.2}/>}
+                <circle cx={0} cy={0} r={n.r}
+                  fill={t.fg} fillOpacity={fillOpacity}
+                  stroke={t.fg} strokeOpacity={strokeOpacity} strokeWidth={1}
+                  filter={isCenterNode || isHov ? "url(#sg-glow)" : undefined}
+                  style={{ transition: "fill-opacity 0.2s, stroke-opacity 0.2s" }}/>
+                {n.type === "person" ? (
+                  <text x={0} y={5} textAnchor="middle" fill={t.fg} fillOpacity={0.9} fontSize={11} fontWeight={600} fontFamily="var(--font-sans), sans-serif">{n.label}</text>
+                ) : (
+                  <>
+                    <text x={0} y={n.sub ? -4 : 5} textAnchor="middle" fill={t.fg} fillOpacity={isHov || isCenterNode ? 1 : 0.75} fontSize={n.r > 32 ? 13 : 11} fontWeight={600} fontFamily="var(--font-sans), sans-serif">{n.label}</text>
+                    {n.sub && <text x={0} y={12} textAnchor="middle" fill={t.fg} fillOpacity={0.4} fontSize={10} fontFamily="var(--font-sans), sans-serif">{n.sub}</text>}
+                  </>
+                )}
+              </g>
+              </g>
+            )
+          })}
+
+          {/* Hover skill previews — float in on category hover */}
+          {view === "categories" && hovered && (() => {
+            const hovNode = nodes.find(n => n.id === hovered)
+            const catDef = SKILLS_CATEGORIES.find(c => c.name === hovered)
+            if (!hovNode || !catDef) return null
+            const preview = catDef.skills.slice(0, 5)
+            const elapsed = (Date.now() - hoveredAt) / 1000
+            return preview.map((skill, i) => {
+              const angle = (i / preview.length) * Math.PI * 2 - Math.PI / 2
+              const dist = hovNode.r + 52 + i * 4
+              const tx = hovNode.x + Math.cos(angle) * dist
+              const ty = hovNode.y + Math.sin(angle) * dist
+              const delay = i * 0.06
+              const progress = Math.min(1, Math.max(0, (elapsed - delay) / 0.25))
+              const eased = 1 - Math.pow(1 - progress, 3)
+              const cx2 = hovNode.x + Math.cos(angle) * dist * eased
+              const cy2 = hovNode.y + Math.sin(angle) * dist * eased
+              return (
+                <g key={skill} opacity={eased} style={{ pointerEvents: "none" }}>
+                  <line x1={hovNode.x} y1={hovNode.y} x2={cx2} y2={cy2} stroke={t.fg} strokeWidth={0.5} opacity={0.2 * eased}/>
+                  <rect x={cx2 - 38} y={cy2 - 10} width={76} height={20} rx={10} fill={t.fg} fillOpacity={0.07} stroke={t.fg} strokeOpacity={0.25} strokeWidth={0.8}/>
+                  <text x={cx2} y={cy2 + 5} textAnchor="middle" fill={t.fg} fillOpacity={0.7 * eased} fontSize={10} fontFamily="var(--font-sans), sans-serif">{skill}</text>
+                </g>
+              )
+            })
+          })()}
+        </svg>
+      </div>
+
+      <div style={{ width: sidebarW, borderLeft: `1px solid ${t.border}`, padding: 16, overflowY: "auto", flexShrink: 0 }}>
+        {renderSidebar()}
+      </div>
+    </div>
+  )
+}
+
 function VersionsToggle({ version, onChange }: any) {
   const [open, setOpen] = useState(false)
   return (
@@ -4245,6 +4649,7 @@ export default function App() {
     if (activeItem === "Activity log") return <ActivityLog/>
     if (activeItem === "Talent graph") return <TalentGraphView people={people} roles={roles} departments={departments}/>
     if (activeItem === "Project graph") return <ProjectGraphView projects={projects} roles={roles} people={people} clientsFull={clientsFull}/>
+    if (activeItem === "Skills graph") return <SkillsGraphView people={people} roles={roles}/>
     if (activeItem === "Float Agent") return <FloatAgentView projects={projects} clientsFull={clientsFull} people={people} onSaveDashboard={cards => { setSavedDashboardCards(cards); setActiveItem("Saved Dashboard"); setBreadcrumb(["Float Agent", "Saved Dashboard"]) }}/>
     if (activeItem === "Saved Dashboard") return <SavedDashboardView cards={savedDashboardCards} projects={projects} clientsFull={clientsFull} people={people}/>
     if (activeItem === "Settings") return <SettingsPage key={settingsOfficeTarget ?? "__org__"} t={t} s={s} locations={LOCATIONS_INIT} officeTarget={settingsOfficeTarget} onBack={() => { setActiveItem("Dashboard"); setBreadcrumb(["Global", "Dashboard"]); setSettingsOfficeTarget(null) }}/>

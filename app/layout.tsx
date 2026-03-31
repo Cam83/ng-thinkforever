@@ -1,11 +1,13 @@
 import type { Metadata } from 'next'
-import { Inter, Lexend } from 'next/font/google'
+import { Inter, Lexend, Space_Grotesk, Plus_Jakarta_Sans } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import Script from 'next/script'
 import './globals.css'
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const lexend = Lexend({ subsets: ["latin"], variable: "--font-lexend" });
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk", weight: ["400"] });
+const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-plus-jakarta-sans", weight: ["400"] });
 
 export const metadata: Metadata = {
   title: 'Float',
@@ -43,7 +45,7 @@ export default function RootLayout({
           strategy="afterInteractive"
         />
       </head>
-      <body className={`${inter.variable} ${lexend.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${lexend.variable} ${spaceGrotesk.variable} ${plusJakarta.variable} font-sans antialiased`}>
         {children}
         <Analytics />
       </body>
