@@ -5,7 +5,7 @@ import {
   ChevronDown, Gauge, BarChart3, Clock, Users, Database,
   FolderOpen, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
   Plus, RefreshCw, Settings2, Check, X, Circle, UserPlus, ArrowRightLeft,
-  CalendarClock, Briefcase, DollarSign, ChevronLeft, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star
+  CalendarClock, Briefcase, DollarSign, ChevronLeft, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star, Search
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
@@ -4212,10 +4212,19 @@ const ROLE_SKILLS_EXTENDED: Record<string, { category: string, skills: string[] 
   "Social Media Manager": { category: "Content",      skills: ["Social Media","Content Strategy","Community Management","Newsletter","Storytelling"] },
 }
 
+const EXPERIENCE_INDUSTRIES = [
+  { name: "Automotive",      clients: ["Tesla", "Volvo", "Ford", "BMW", "Mercedes-Benz", "Audi"] },
+  { name: "Technology",      clients: ["Apple", "Google", "Microsoft", "Spotify", "Airbnb", "Salesforce"] },
+  { name: "Fashion",         clients: ["Nike", "Adidas", "Gucci", "Zara", "Levi's", "Burberry"] },
+  { name: "Food & Beverage", clients: ["Coca-Cola", "Heineken", "McDonald's", "Nespresso", "Red Bull", "Diageo"] },
+  { name: "Finance",         clients: ["Goldman Sachs", "Mastercard", "Revolut", "HSBC", "Barclays", "Amex"] },
+  { name: "Retail",          clients: ["Amazon", "IKEA", "Uniqlo", "Sephora", "eBay", "Zalando"] },
+]
+
 type SGNode = { id: string, type: "category" | "skill" | "person", label: string, sub: string, r: number, x: number, y: number, fx?: number | null, fy?: number | null }
 type SGLink = { source: string | SGNode, target: string | SGNode }
 
-function SkillsGraphView({ people: allPeople, roles }: any) {
+function SkillsGraphView({ people: allEmployees, contractors: allContractors, roles }: any) {
   const [view, setView] = useState<"categories" | "skills" | "people" | "person-skills">("categories")
   const [selCat, setSelCat] = useState<string | null>(null)
   const [selSkill, setSelSkill] = useState<string | null>(null)
@@ -4224,7 +4233,13 @@ function SkillsGraphView({ people: allPeople, roles }: any) {
   const [hoveredAt, setHoveredAt] = useState(0)
   const [transitionStart, setTransitionStart] = useState(0)
   const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
-  const people = selectedOffices.length === ALL_OFFICES.length ? allPeople : allPeople.filter((p: any) => selectedOffices.includes(p.office))
+  const [graphMode, setGraphMode] = useState("skills")
+  const [peopleFilter, setPeopleFilter] = useState("employees")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [profilePerson, setProfilePerson] = useState<any | null>(null)
+  const peopleType = graphMode // alias used throughout experience/skills branching
+  const rawPeople = peopleFilter === "contractors" ? (allContractors ?? []) : allEmployees
+  const people = selectedOffices.length === ALL_OFFICES.length ? rawPeople : rawPeople.filter((p: any) => selectedOffices.includes(p.office))
   const containerRef = useRef<HTMLDivElement>(null)
   const [dims, setDims] = useState({ w: 800, h: 600 })
   const nodesRef = useRef<SGNode[]>([])
@@ -4246,6 +4261,42 @@ function SkillsGraphView({ people: allPeople, roles }: any) {
     return ROLE_SKILLS_EXTENDED[roleName] ?? { category: "Strategy", skills: [] }
   }
 
+  function getPersonClients(person: any): string[] {
+    const allClients = EXPERIENCE_INDUSTRIES.flatMap(ind => ind.clients)
+    let seed = person.name.split("").reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0)
+    const count = 2 + (seed % 3)
+    const indices = new Set<number>()
+    while (indices.size < count) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff
+      indices.add(seed % allClients.length)
+    }
+    return Array.from(indices).map(i => allClients[i])
+  }
+
+  // Parse natural language search into matched skill/experience tokens
+  const searchTokens: { type: "skill" | "industry" | "client", name: string }[] = []
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase()
+    for (const cat of SKILLS_CATEGORIES) {
+      for (const skill of cat.skills) {
+        if (q.includes(skill.toLowerCase()) && !searchTokens.find(t => t.name === skill)) {
+          searchTokens.push({ type: "skill", name: skill })
+        }
+      }
+    }
+    for (const ind of EXPERIENCE_INDUSTRIES) {
+      if (q.includes(ind.name.toLowerCase()) && !searchTokens.find(t => t.name === ind.name)) {
+        searchTokens.push({ type: "industry", name: ind.name })
+      }
+      for (const client of ind.clients) {
+        if (q.includes(client.toLowerCase()) && !searchTokens.find(t => t.name === client)) {
+          searchTokens.push({ type: "client", name: client })
+        }
+      }
+    }
+  }
+  const isSearchMode = searchTokens.length > 0
+
   // Build nodes + links for current view
   useEffect(() => {
     const w = dims.w, h = dims.h
@@ -4256,7 +4307,82 @@ function SkillsGraphView({ people: allPeople, roles }: any) {
     let nodes: SGNode[] = []
     let links: SGLink[] = []
 
-    if (view === "categories") {
+    if (isSearchMode) {
+      // Token nodes — skills on one side, experience on the other
+      const skillToks = searchTokens.filter(t => t.type === "skill")
+      const expToks = searchTokens.filter(t => t.type !== "skill")
+      const tokenNodes: SGNode[] = searchTokens.map((tok, i) => {
+        const isSkill = tok.type === "skill"
+        const angle = isSkill
+          ? (-Math.PI / 2) + (skillToks.indexOf(tok) - (skillToks.length - 1) / 2) * 0.6
+          : (Math.PI / 2) + (expToks.indexOf(tok) - (expToks.length - 1) / 2) * 0.6
+        const r0 = Math.min(w, h) * 0.28
+        return { id: `tok-${tok.name}`, type: "skill" as const, label: tok.name, sub: tok.type === "skill" ? "skill" : "experience", r: 30, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0 }
+      })
+      // Match people who satisfy ALL tokens
+      const matchingPeople = people.filter((p: any) => {
+        const rd = getRoleData(p); const pc = getPersonClients(p)
+        return searchTokens.every(tok => {
+          if (tok.type === "skill") return rd.skills.includes(tok.name)
+          if (tok.type === "client") return pc.includes(tok.name)
+          const ind = EXPERIENCE_INDUSTRIES.find(i => i.name === tok.name)
+          return ind ? ind.clients.some((c: string) => pc.includes(c)) : false
+        })
+      })
+      const personNodes: SGNode[] = matchingPeople.map((p: any, i: number) => {
+        const initials = p.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2)
+        const angle = (i / Math.max(matchingPeople.length, 1)) * Math.PI * 2
+        return { id: p.name, type: "person" as const, label: initials, sub: roles[p.roleId]?.name ?? "", r: 22, x: w/2 + Math.cos(angle) * 80, y: h/2 + Math.sin(angle) * 80 }
+      })
+      nodes = [...tokenNodes, ...personNodes]
+      links = personNodes.flatMap(pn => {
+        const person = matchingPeople.find((p: any) => p.name === pn.id)
+        if (!person) return []
+        const rd = getRoleData(person); const pc = getPersonClients(person)
+        return searchTokens
+          .filter(tok => {
+            if (tok.type === "skill") return rd.skills.includes(tok.name)
+            if (tok.type === "client") return pc.includes(tok.name)
+            const ind = EXPERIENCE_INDUSTRIES.find(i => i.name === tok.name)
+            return ind ? ind.clients.some((c: string) => pc.includes(c)) : false
+          })
+          .map(tok => ({ source: `tok-${tok.name}`, target: pn.id }))
+      })
+    } else if (peopleType === "experience") {
+      // Experience mode: industries → clients → people
+      if (view === "categories") {
+        const counts = EXPERIENCE_INDUSTRIES.map(ind => people.filter((p: any) => getPersonClients(p).some((c: string) => ind.clients.includes(c))).length)
+        const maxCount = Math.max(...counts, 1)
+        nodes = EXPERIENCE_INDUSTRIES.map((ind, i) => {
+          const angle = (i / EXPERIENCE_INDUSTRIES.length) * Math.PI * 2 - Math.PI / 2
+          const r0 = Math.min(w, h) * 0.06
+          const r = 24 + (counts[i] / maxCount) * 32
+          return { id: ind.name, type: "category" as const, label: ind.name, sub: `${ind.clients.length} clients`, r, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0 }
+        })
+      } else if (view === "skills" && selCat) {
+        const indDef = EXPERIENCE_INDUSTRIES.find(i => i.name === selCat)!
+        const centerNode: SGNode = { id: selCat, type: "category", label: selCat, sub: "", r: 44, x: w/2, y: h/2 }
+        const clientNodes: SGNode[] = indDef.clients.map((client, i) => {
+          const count = people.filter((p: any) => getPersonClients(p).includes(client)).length
+          const angle = (i / indDef.clients.length) * Math.PI * 2
+          const r0 = Math.min(w, h) * 0.3
+          return { id: client, type: "skill" as const, label: client, sub: count > 0 ? `${count}` : "—", r: count > 0 ? 22 + count * 3 : 18, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0 }
+        })
+        nodes = [centerNode, ...clientNodes]
+        links = clientNodes.map(c => ({ source: selCat, target: c.id }))
+      } else if (view === "people" && selSkill) {
+        const matching = people.filter((p: any) => getPersonClients(p).includes(selSkill))
+        const centerNode: SGNode = { id: selSkill, type: "skill", label: selSkill, sub: `${matching.length} people`, r: 36, x: w/2, y: h/2 }
+        const personNodes: SGNode[] = matching.map((p: any, i: number) => {
+          const initials = p.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2)
+          const angle = (i / Math.max(matching.length, 1)) * Math.PI * 2
+          const r0 = Math.min(w, h) * 0.28
+          return { id: p.name, type: "person" as const, label: initials, sub: roles[p.roleId]?.name ?? "", r: 22, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0 }
+        })
+        nodes = [centerNode, ...personNodes]
+        links = personNodes.map(n => ({ source: selSkill, target: n.id }))
+      }
+    } else if (view === "categories") {
       const peopleCounts = SKILLS_CATEGORIES.map(cat => people.filter((p: any) => getRoleData(p).category === cat.name).length)
       const maxPeople = Math.max(...peopleCounts, 1)
       nodes = SKILLS_CATEGORIES.map((cat, i) => {
@@ -4337,13 +4463,130 @@ function SkillsGraphView({ people: allPeople, roles }: any) {
       sim.stop()
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [view, selCat, selSkill, selPerson?.name, dims.w, dims.h])
+  }, [view, selCat, selSkill, selPerson?.name, dims.w, dims.h, people.length, graphMode, peopleFilter, searchQuery])
 
   const nodes = nodesRef.current
   const links = linksRef.current
   const sidebarW = 260
 
+  function renderPersonRow(p: any) {
+    const initials = p.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2)
+    const isSelected = profilePerson?.name === p.name
+    return (
+      <div key={p.name} onClick={() => setProfilePerson(prev => prev?.name === p.name ? null : p)}
+        style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: "6px 8px", borderRadius: 6, cursor: "pointer", background: isSelected ? t.fgAlpha10 : "transparent", border: `1px solid ${isSelected ? t.border : "transparent"}`, transition: "background 0.15s" }}>
+        <div style={{ width: 28, height: 28, borderRadius: "50%", background: t.fgAlpha10, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{initials}</div>
+        <div>
+          <div style={{ fontSize: 13, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{p.name}</div>
+          <div style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{roles[p.roleId]?.name ?? ""}</div>
+        </div>
+      </div>
+    )
+  }
+
   function renderSidebar() {
+    if (isSearchMode) {
+      const skillToks = searchTokens.filter(t => t.type === "skill")
+      const expToks = searchTokens.filter(t => t.type !== "skill")
+      const matchingPeople = people.filter((p: any) => {
+        const rd = getRoleData(p); const pc = getPersonClients(p)
+        return searchTokens.every(tok => {
+          if (tok.type === "skill") return rd.skills.includes(tok.name)
+          if (tok.type === "client") return pc.includes(tok.name)
+          const ind = EXPERIENCE_INDUSTRIES.find(i => i.name === tok.name)
+          return ind ? ind.clients.some((c: string) => pc.includes(c)) : false
+        })
+      })
+      return (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 10, fontFamily: "var(--font-sans), sans-serif" }}>Search filters</div>
+          {skillToks.length > 0 && <>
+            <div style={{ fontSize: 10, color: t.mutedFg, marginBottom: 6, fontFamily: "var(--font-sans), sans-serif" }}>Skills</div>
+            <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4, marginBottom: 12 }}>
+              {skillToks.map(tok => <span key={tok.name} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 99, border: `1px solid ${t.border}`, color: t.fg, background: t.fgAlpha10, fontFamily: "var(--font-sans), sans-serif" }}>{tok.name}</span>)}
+            </div>
+          </>}
+          {expToks.length > 0 && <>
+            <div style={{ fontSize: 10, color: t.mutedFg, marginBottom: 6, fontFamily: "var(--font-sans), sans-serif" }}>Experience</div>
+            <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4, marginBottom: 12 }}>
+              {expToks.map(tok => <span key={tok.name} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 99, border: `1px solid ${t.border}`, color: t.fg, background: t.fgAlpha10, fontFamily: "var(--font-sans), sans-serif" }}>{tok.name}</span>)}
+            </div>
+          </>}
+          <div style={{ borderTop: `1px solid ${t.border}`, margin: "8px 0 12px" }}/>
+          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 10, fontFamily: "var(--font-sans), sans-serif" }}>{matchingPeople.length} {matchingPeople.length === 1 ? "person" : "people"}</div>
+          {matchingPeople.length === 0
+            ? <div style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>No matches — try broadening your search</div>
+            : matchingPeople.map((p: any) => renderPersonRow(p))
+          }
+        </>
+      )
+    }
+    if (peopleType === "experience") {
+      if (view === "categories") {
+        const totalClients = EXPERIENCE_INDUSTRIES.reduce((s, i) => s + i.clients.length, 0)
+        return (
+          <>
+            <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>Overview</div>
+            {[["Industries", EXPERIENCE_INDUSTRIES.length], ["Total Clients", totalClients], ["Total People", people.length]].map(([label, val]) => (
+              <div key={label as string} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{label}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{val}</span>
+              </div>
+            ))}
+            <div style={{ borderTop: `1px solid ${t.border}`, margin: "16px 0" }}/>
+            <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>By Industry</div>
+            {EXPERIENCE_INDUSTRIES.map(ind => {
+              const count = people.filter((p: any) => getPersonClients(p).some((c: string) => ind.clients.includes(c))).length
+              return (
+                <div key={ind.name} style={{ marginBottom: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                    <span style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{ind.name}</span>
+                    <span style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{count}</span>
+                  </div>
+                  <div style={{ height: 3, borderRadius: 2, background: t.border }}>
+                    <div style={{ height: 3, borderRadius: 2, background: t.fg, opacity: 0.5, width: people.length > 0 ? `${Math.round((count / people.length) * 100)}%` : "0%" }}/>
+                  </div>
+                </div>
+              )
+            })}
+          </>
+        )
+      }
+      if (view === "skills" && selCat) {
+        const indDef = EXPERIENCE_INDUSTRIES.find(i => i.name === selCat)!
+        const clientCounts = indDef.clients.map(c => ({ name: c, count: people.filter((p: any) => getPersonClients(p).includes(c)).length })).sort((a,b) => b.count - a.count)
+        const maxCount = Math.max(...clientCounts.map(c => c.count), 1)
+        return (
+          <>
+            <div style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 4, fontFamily: "var(--font-sans), sans-serif" }}>{selCat}</div>
+            <div style={{ fontSize: 11, color: t.mutedFg, marginBottom: 16, fontFamily: "var(--font-sans), sans-serif" }}>{indDef.clients.length} clients — click a node</div>
+            {clientCounts.map(c => (
+              <div key={c.name} style={{ marginBottom: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                  <span style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{c.name}</span>
+                  <span style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{c.count}</span>
+                </div>
+                <div style={{ height: 3, borderRadius: 2, background: t.border }}>
+                  <div style={{ height: 3, borderRadius: 2, background: t.fg, opacity: 0.5, width: c.count > 0 ? `${Math.round((c.count / maxCount) * 100)}%` : "0%" }}/>
+                </div>
+              </div>
+            ))}
+          </>
+        )
+      }
+      if (view === "people" && selSkill) {
+        const matching = people.filter((p: any) => getPersonClients(p).includes(selSkill))
+        return (
+          <>
+            <div style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 4, fontFamily: "var(--font-sans), sans-serif" }}>{selSkill}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>{matching.length} People</div>
+            {matching.map((p: any) => renderPersonRow(p))}
+          </>
+        )
+      }
+      return null
+    }
+
     if (view === "categories") {
       const totalSkills = SKILLS_CATEGORIES.reduce((s, c) => s + c.skills.length, 0)
       return (
@@ -4401,19 +4644,8 @@ function SkillsGraphView({ people: allPeople, roles }: any) {
       return (
         <>
           <div style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 4, fontFamily: "var(--font-sans), sans-serif" }}>{selSkill}</div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>{matching.length} People — click to see their skills</div>
-          {matching.map((p: any) => {
-            const initials = p.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2)
-            return (
-              <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: t.fgAlpha10, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{initials}</div>
-                <div>
-                  <div style={{ fontSize: 13, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{p.name}</div>
-                  <div style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{roles[p.roleId]?.name ?? ""}</div>
-                </div>
-              </div>
-            )
-          })}
+          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>{matching.length} People</div>
+          {matching.map((p: any) => renderPersonRow(p))}
         </>
       )
     }
@@ -4440,9 +4672,26 @@ function SkillsGraphView({ people: allPeople, roles }: any) {
   }
 
   return (
-    <div style={{ display: "flex", flex: 1, height: "100%", overflow: "hidden", background: t.bg }}>
+    <div style={{ display: "flex", flex: 1, flexDirection: "column", height: "100%", overflow: "hidden", background: t.bg }}>
+      <SectionHeader label="Skills graph"/>
+      <div style={{ display: "flex", alignItems: "center", padding: "0 24px 12px", gap: 4 }}>
+        <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
+        <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
+        {[["skills","Skills"],["experience","Experience"]].map(([v,l]) => (
+          <TabBtn key={v} active={graphMode === v} onClick={() => { setGraphMode(v); setView("categories"); setSelCat(null); setSelSkill(null); setSelPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+            <Circle size={10} strokeWidth={1} style={{ fill: graphMode === v ? t.fg : "none" }}/>{l}
+          </TabBtn>
+        ))}
+        <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
+        {[["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
+          <TabBtn key={v} active={peopleFilter === v} onClick={() => { setPeopleFilter(v) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+            <Circle size={10} strokeWidth={1} style={{ fill: peopleFilter === v ? t.fg : "none" }}/>{l}
+          </TabBtn>
+        ))}
+      </div>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
       <div ref={containerRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-        {/* Toolbar */}
+        {/* Drill-down back button + hint */}
         <div style={{ position: "absolute", top: 16, left: 16, zIndex: 10, display: "flex", alignItems: "center", gap: 8 }}>
           {view !== "categories" && (
             <button onClick={() => {
@@ -4451,14 +4700,15 @@ function SkillsGraphView({ people: allPeople, roles }: any) {
               else { setView("categories"); setSelCat(null) }
             }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.card, color: t.fg, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-sans), sans-serif" }}>
               <ChevronLeft size={14} strokeWidth={1.5}/>
-              {view === "person-skills" ? selSkill : view === "people" ? selCat : "All categories"}
+              {view === "person-skills" ? selSkill : view === "people" ? selCat : peopleType === "experience" ? "All industries" : "All categories"}
             </button>
           )}
-          <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
           <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>
-            {view === "categories" && "Click a category to explore skills"}
-            {view === "skills" && `${SKILLS_CATEGORIES.find(c=>c.name===selCat)?.skills.length} skills — click a node`}
-            {view === "people" && `${people.filter((p: any) => getRoleData(p).skills.includes(selSkill??"")).length} people with this skill`}
+            {view === "categories" && peopleType === "experience" && "Click an industry to explore clients"}
+            {view === "categories" && peopleType !== "experience" && "Click a category to explore skills"}
+            {view === "skills" && peopleType === "experience" && `${EXPERIENCE_INDUSTRIES.find(i=>i.name===selCat)?.clients.length} clients — click a node`}
+            {view === "skills" && peopleType !== "experience" && `${SKILLS_CATEGORIES.find(c=>c.name===selCat)?.skills.length} skills — click a node`}
+            {view === "people" && `${nodes.filter(n => n.type === "person").length} people`}
             {view === "person-skills" && selPerson && `${getRoleData(selPerson).skills.length} skills`}
           </span>
         </div>
@@ -4488,8 +4738,8 @@ function SkillsGraphView({ people: allPeople, roles }: any) {
             const isHov = hovered === tg.id || hovered === s.id
             return (
               <line key={i} x1={s.x} y1={s.y} x2={tg.x} y2={tg.y}
-                stroke={t.border} strokeWidth={isHov ? 1.5 : 0.8}
-                opacity={isHov ? 0.8 : 0.3}
+                stroke={t.fg} strokeWidth={isHov ? 2 : 1}
+                opacity={isHov ? 0.5 : 0.2}
                 style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}/>
             )
           })}
@@ -4497,12 +4747,13 @@ function SkillsGraphView({ people: allPeople, roles }: any) {
           {/* Nodes */}
           {nodes.map((n, ni) => {
             const isHov = hovered === n.id
-            const isCenterNode = (view === "skills" && n.id === selCat) || (view === "people" && n.id === selSkill) || (view === "person-skills" && n.id === selPerson?.name)
-            const fillOpacity = isCenterNode ? 0.18 : isHov ? 0.14 : 0.06
-            const strokeOpacity = isCenterNode ? 1 : isHov ? 0.9 : 0.5
+            const isCenterNode = (view === "skills" && n.id === selCat) || (view === "people" && n.id === selSkill)
+            const isProfileSelected = n.type === "person" && profilePerson?.name === n.id
+            const fillOpacity = isCenterNode ? 0.18 : isProfileSelected ? 0.22 : isHov ? 0.14 : 0.06
+            const strokeOpacity = isCenterNode ? 1 : isProfileSelected ? 1 : isHov ? 0.9 : 0.5
             const cursor = n.type === "category" ? "pointer"
-              : n.type === "skill" && view !== "person-skills" && n.sub !== "—" ? "pointer"
-              : n.type === "person" && view === "people" ? "pointer"
+              : n.type === "skill" && n.sub !== "—" ? "pointer"
+              : n.type === "person" ? "pointer"
               : "default"
             // Staggered fade-in on transition
             const elapsed = (Date.now() - transitionStart) / 1000
@@ -4516,10 +4767,11 @@ function SkillsGraphView({ people: allPeople, roles }: any) {
                 onMouseLeave={() => { setHovered(null) }}
                 onClick={() => {
                   if (n.type === "category") { setSelCat(n.id); setView("skills") }
-                  else if (n.type === "skill" && view !== "person-skills" && n.sub !== "—") { setSelSkill(n.id); setView("people") }
-                  else if (n.type === "person" && view === "people") {
-                    const person = people.find((p: any) => p.name === n.id)
-                    if (person) { setSelPerson(person); setView("person-skills") }
+                  else if (n.type === "skill" && n.sub !== "—") { setSelSkill(n.id); setView("people") }
+                  else if (n.type === "person") {
+                    const allPool = [...allEmployees, ...(allContractors ?? [])]
+                    const person = allPool.find((p: any) => p.name === n.id)
+                    setProfilePerson(prev => prev?.name === n.id ? null : (person ?? null))
                   }
                 }}>
               <g style={view === "categories" ? {
@@ -4572,10 +4824,76 @@ function SkillsGraphView({ people: allPeople, roles }: any) {
             })
           })()}
         </svg>
+
+        {/* Search bar */}
+        <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 10, display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, boxShadow: `0 4px 24px rgba(0,0,0,0.18)`, minWidth: 320, maxWidth: 560 }}>
+          <Search size={14} strokeWidth={1.5} style={{ color: t.mutedFg, flexShrink: 0 }}/>
+          {searchTokens.map(tok => (
+            <span key={tok.name} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, padding: "2px 8px", borderRadius: 99, border: `1px solid ${t.border}`, background: t.fgAlpha10, color: t.fg, whiteSpace: "nowrap" as const, fontFamily: "var(--font-sans), sans-serif" }}>
+              {tok.name}
+              <span onClick={() => setSearchQuery(searchQuery.replace(new RegExp(tok.name, "gi"), "").trim())} style={{ cursor: "pointer", opacity: 0.5, marginLeft: 2, lineHeight: 1 }}>×</span>
+            </span>
+          ))}
+          <input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search skills + experience… e.g. Figma and Fashion"
+            style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 13, color: t.fg, fontFamily: "var(--font-sans), sans-serif", minWidth: 160 }}
+          />
+          {searchQuery && <span onClick={() => setSearchQuery("")} style={{ cursor: "pointer", color: t.mutedFg, fontSize: 16, lineHeight: 1, flexShrink: 0 }}>×</span>}
+        </div>
       </div>
 
       <div style={{ width: sidebarW, borderLeft: `1px solid ${t.border}`, padding: 16, overflowY: "auto", flexShrink: 0 }}>
         {renderSidebar()}
+      </div>
+
+      {/* Person profile panel */}
+      <div style={{ width: profilePerson ? 280 : 0, overflow: "hidden", borderLeft: profilePerson ? `1px solid ${t.border}` : "none", flexShrink: 0, transition: "width 0.22s ease", background: t.bg }}>
+        {profilePerson && (() => {
+          const rd = getRoleData(profilePerson)
+          const clients = getPersonClients(profilePerson)
+          const initials = profilePerson.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2)
+          const clientsByIndustry = EXPERIENCE_INDUSTRIES.map(ind => ({
+            industry: ind.name,
+            clients: ind.clients.filter((c: string) => clients.includes(c))
+          })).filter(g => g.clients.length > 0)
+          return (
+            <div style={{ width: 280, padding: 16, overflowY: "auto" as const, height: "100%" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: t.fgAlpha10, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{initials}</div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{profilePerson.name}</div>
+                    <div style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{roles[profilePerson.roleId]?.name ?? ""}</div>
+                    {profilePerson.office && <div style={{ fontSize: 11, color: t.mutedFg, marginTop: 2, fontFamily: "var(--font-sans), sans-serif" }}>{profilePerson.office}</div>}
+                  </div>
+                </div>
+                <button onClick={() => setProfilePerson(null)} style={{ background: "none", border: "none", cursor: "pointer", color: t.mutedFg, padding: 2, lineHeight: 1, fontSize: 16 }}>×</button>
+              </div>
+
+              <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 8, fontFamily: "var(--font-sans), sans-serif" }}>Skills</div>
+              <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4, marginBottom: 20 }}>
+                {rd.skills.map((skill: string) => (
+                  <span key={skill} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 99, border: `1px solid ${t.border}`, color: t.fg, background: t.fgAlpha10, fontFamily: "var(--font-sans), sans-serif" }}>{skill}</span>
+                ))}
+              </div>
+
+              <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 8, fontFamily: "var(--font-sans), sans-serif" }}>Experience</div>
+              {clientsByIndustry.map(g => (
+                <div key={g.industry} style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, color: t.mutedFg, marginBottom: 5, fontFamily: "var(--font-sans), sans-serif" }}>{g.industry}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4 }}>
+                    {g.clients.map((c: string) => (
+                      <span key={c} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 99, border: `1px solid ${t.border}`, color: t.fg, background: t.fgAlpha10, fontFamily: "var(--font-sans), sans-serif" }}>{c}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        })()}
+      </div>
       </div>
     </div>
   )
