@@ -5,7 +5,7 @@ import {
   ChevronDown, Gauge, BarChart3, Clock, Users, Database,
   FolderOpen, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
   Plus, RefreshCw, Settings2, Check, X, Circle, UserPlus, ArrowRightLeft,
-  CalendarClock, Briefcase, DollarSign, ChevronLeft, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star, Search
+  CalendarClock, Briefcase, DollarSign, ChevronLeft, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star, Search, MapPin
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
@@ -90,6 +90,10 @@ const floatDarkTheme = {
 let t = blackTheme
 
 const getStyles = (theme: any) => ({
+  /** Small section / panel labels — title case in content, never forced uppercase */
+  caseTitle: { fontSize: 11, fontWeight: 600, color: theme.mutedFg, letterSpacing: "0.08em", fontFamily: "var(--font-sans), sans-serif" },
+  caseTitleCompact: { fontSize: 11, fontWeight: 600, color: theme.mutedFg, letterSpacing: "0.05em", fontFamily: "var(--font-sans), sans-serif" },
+  caseTitleXs: { fontSize: 10, fontWeight: 600, color: theme.mutedFg, letterSpacing: "0.5px" },
   sidebar: { width: 260, borderTop: "none", borderBottom: "none", borderLeft: "none", borderRight: `1px solid ${theme.sidebarBorder}`, background: theme.sidebar, display: "flex", flexDirection: "column" as const, height: "100vh", flexShrink: 0 },
   main: { flex: 1, display: "flex", flexDirection: "column" as const, background: theme.bg, overflow: "hidden", minWidth: 0 },
   iconBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", color: theme.secondaryFg, cursor: "pointer" },
@@ -346,17 +350,17 @@ function OfficeIcon() {
 
 // ── Data ──
 const INITIAL_ROLES = [
-  { name: "Designer", costRate: 120, activePeople: 3, unassigned: 1 },
-  { name: "Senior Designer", costRate: 160, activePeople: 5, unassigned: 0 },
-  { name: "Developer", costRate: 140, activePeople: 8, unassigned: 2 },
-  { name: "Project Manager", costRate: 130, activePeople: 4, unassigned: 0 },
-  { name: "Art Director", costRate: 155, activePeople: 3, unassigned: 1 },
-  { name: "Copywriter", costRate: 110, activePeople: 4, unassigned: 0 },
-  { name: "Account Executive", costRate: 125, activePeople: 6, unassigned: 1 },
-  { name: "Creative Director", costRate: 180, activePeople: 2, unassigned: 0 },
-  { name: "UX/UI Designer", costRate: 135, activePeople: 5, unassigned: 2 },
+  { name: "Designer", costRate: 120, activePeople: 3, unassigned: 1, departmentId: 0 },
+  { name: "Senior Designer", costRate: 160, activePeople: 5, unassigned: 0, departmentId: 0 },
+  { name: "Developer", costRate: 140, activePeople: 8, unassigned: 2, departmentId: 1 },
+  { name: "Project Manager", costRate: 130, activePeople: 4, unassigned: 0, departmentId: 2 },
+  { name: "Art Director", costRate: 155, activePeople: 3, unassigned: 1, departmentId: 0 },
+  { name: "Copywriter", costRate: 110, activePeople: 4, unassigned: 0, departmentId: 3 },
+  { name: "Account Executive", costRate: 125, activePeople: 6, unassigned: 1, departmentId: 3 },
+  { name: "Creative Director", costRate: 180, activePeople: 2, unassigned: 0, departmentId: 0 },
+  { name: "UX/UI Designer", costRate: 135, activePeople: 5, unassigned: 2, departmentId: 0 },
   { name: "Motion Designer", costRate: 145, activePeople: 2, unassigned: 0 },
-  { name: "Brand Strategist", costRate: 150, activePeople: 3, unassigned: 1 },
+  { name: "Brand Strategist", costRate: 150, activePeople: 3, unassigned: 1, departmentId: 3 },
   { name: "Social Media Manager", costRate: 105, activePeople: 4, unassigned: 0 },
 ]
 const INITIAL_DEPARTMENTS = [{ name: "Design" }, { name: "Engineering" }, { name: "Operations" }, { name: "Marketing" }]
@@ -668,7 +672,8 @@ const officeItemsMyTime = [
   { name: "Log team", icon: <LogTeamIcon/> },
 ]
 const dataHubItems = [
-  { name: "People", icon: <Users size={16} strokeWidth={1}/> },
+  { name: "Org design", icon: <OfficeIcon/> },
+  { name: "Users", icon: <Users size={16} strokeWidth={1}/> },
   { name: "Roles", icon: <ChefHat size={16} strokeWidth={1}/> },
   { name: "Projects", icon: <FolderOpen size={16} strokeWidth={1}/> },
   { name: "Clients", icon: <Building2 size={16} strokeWidth={1}/> },
@@ -1302,7 +1307,7 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "6px 8px", borderRadius: 6, border: "none", background: "transparent", cursor: "pointer" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ color: t.secondaryFg }}><Database size={16} strokeWidth={1}/></span>
-                <span style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>The Grid</span>
+                <span style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>Data centre</span>
               </div>
               <ChevronDown size={13} strokeWidth={1} color={t.sidebarFg} style={{ transform: dataHubExp ? "none" : "rotate(-180deg)", transition: "transform 0.2s" }}/>
             </HoverBtn>
@@ -1332,7 +1337,7 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
           <Collapsible expanded={showFullNav && dataHubExp}>
             <div style={{ marginLeft: 18, marginTop: 8, borderLeft: `1px solid rgba(168,168,168,0.25)` }}>
               {dataHubItems.filter(item => visibleDataHubItems.has(item.name)).map(item => (
-                <HoverBtn key={item.name} onClick={() => setActive(item.name, ["The Grid", item.name])}
+                <HoverBtn key={item.name} onClick={() => setActive(item.name, ["Data centre", item.name])}
                   style={{ ...navItemStyle(activeItem === item.name), paddingTop: 6, paddingBottom: 6, paddingRight: 8, paddingLeft: 16 }}>
                   <span style={{ display: "flex", width: 16, flexShrink: 0, justifyContent: "center" }}>{item.icon}</span>{item.name}
                 </HoverBtn>
@@ -1396,6 +1401,30 @@ function RoleSelector({ roleId, roles, onChange }: any) {
         {roles.map((r: any, i: any) => (
           <button key={i} onClick={(e: any) => { e.stopPropagation(); onChange(i); setOpen(false) }} style={s.dropdownItem(i === roleId)}>
             {r.name} {i === roleId && <Check size={11} strokeWidth={1}/>}
+          </button>
+        ))}
+      </div>
+    </DropdownWrapper>
+  )
+}
+
+const ACCESS_LEVELS = ["Member", "Admin", "Resource Manager", "Project Manager"]
+
+function AccessSelector({ value, onChange }: any) {
+  const [open, setOpen] = useState(false)
+  const trig = { display: "inline-flex" as const, alignItems: "center" as const, gap: 4, padding: "2px 8px 2px 8px", borderRadius: 4, background: "transparent", border: "none", color: t.fg, fontSize: 13, cursor: "pointer" }
+  const current = value || "Member"
+  return (
+    <DropdownWrapper open={open} setOpen={setOpen}
+      trigger={
+        <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }} style={trig}>
+          {current}<ChevronDown size={11} strokeWidth={1} color={t.mutedFg}/>
+        </HoverBtn>
+      }>
+      <div style={{ ...s.dropdown, width: 180 }}>
+        {ACCESS_LEVELS.map((level: string) => (
+          <button key={level} onClick={(e: any) => { e.stopPropagation(); onChange(level); setOpen(false) }} style={s.dropdownItem(level === current)}>
+            {level} {level === current && <Check size={11} strokeWidth={1}/>}
           </button>
         ))}
       </div>
@@ -1562,7 +1591,7 @@ function GroupSelector({ groupIds, groups, mode, onChange }: any) {
 }
 
 // ── Pages ──
-function RolesAndRates({ roles, onRolesChange, people, onNavigateToPeopleByRole }: any) {
+function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateToPeopleByRole }: any) {
   const [tab, setTab] = useState("active")
   const [selectedIdx, setSelectedIdx] = useState<number|null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -1572,6 +1601,32 @@ function RolesAndRates({ roles, onRolesChange, people, onNavigateToPeopleByRole 
   const display = tab === "archived" ? [] : roles
   const rolesColumns = useMemo(() => [
     { accessorKey: "name", header: "Role", size: 280, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><InlineEdit value={row.original.name} onChange={(v: any) => onRolesChange(roles.map((r: any) => r === row.original ? {...r, name: v} : r))} style={{ background: "transparent" }}/></span> },
+    { accessorKey: "departmentId", header: "Department", size: 168, cell: ({ row }: any) => {
+      const [open, setOpen] = useState(false)
+      const deptId = row.original.departmentId ?? null
+      const deptName = deptId !== null ? departments[deptId]?.name : null
+      return (
+        <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}>
+          <DropdownWrapper open={open} setOpen={setOpen}
+            trigger={
+              <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 4, background: "transparent", border: "none", color: deptName ? t.fg : t.mutedFg, fontSize: 13, cursor: "pointer" }}>
+                {deptName ?? "No department"}<ChevronDown size={11} strokeWidth={1} color={t.mutedFg}/>
+              </HoverBtn>
+            }>
+            <div style={{ ...s.dropdown, width: 200 }}>
+              <button onClick={(e: any) => { e.stopPropagation(); onRolesChange(roles.map((r: any) => r === row.original ? {...r, departmentId: null} : r)); setOpen(false) }} style={s.dropdownItem(deptId === null)}>
+                No department {deptId === null && <Check size={11} strokeWidth={1}/>}
+              </button>
+              {(departments ?? []).map((d: any, i: number) => (
+                <button key={i} onClick={(e: any) => { e.stopPropagation(); onRolesChange(roles.map((r: any) => r === row.original ? {...r, departmentId: i} : r)); setOpen(false) }} style={s.dropdownItem(i === deptId)}>
+                  {d.name} {i === deptId && <Check size={11} strokeWidth={1}/>}
+                </button>
+              ))}
+            </div>
+          </DropdownWrapper>
+        </span>
+      )
+    }},
     { accessorKey: "costRate", header: "Cost rate", size: 140, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><InlineEditRate value={row.original.costRate} onChange={(v: any) => onRolesChange(roles.map((r: any) => r === row.original ? {...r, costRate: v} : r))}/></span> },
     { accessorKey: "activePeople", header: "Active people", size: 140, cell: ({ row }: any) => {
       const count = filteredPeople.filter((p: any) => p.roleId === roles.indexOf(row.original)).length
@@ -1618,164 +1673,94 @@ function RolesAndRates({ roles, onRolesChange, people, onNavigateToPeopleByRole 
   )
 }
 
-function People({ roles, departments, onDepartmentsChange, people, onPeopleChange, contractors, onContractorsChange, deptPeopleCounts, filteredBusinessUnit, onFilterClear, filteredRole, onRoleFilterClear }: any) {
+function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups, people, onPeopleChange, contractors, onContractorsChange, deptPeopleCounts, filteredBusinessUnit, onFilterClear, filteredRole, onRoleFilterClear, filteredOffice, onOfficeFilterClear, initialView, onInitialViewConsumed }: any) {
   const [tab, setTab] = useState("active")
   const [view, setView] = useState("employees")
   const [selectedPerson, setSelectedPerson] = useState<number|null>(null)
   const [selectedDept, setSelectedDept] = useState<number|null>(null)
   const [selectedDeliveryTeam, setSelectedDeliveryTeam] = useState<number|null>(null)
   const [selectedGroup, setSelectedGroup] = useState<number|null>(null)
-  const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
-  const [showModal, setShowModal] = useState(false)
-  const [deliveryTeams, setDeliveryTeams] = useState(INITIAL_DELIVERY_TEAMS)
-  const [groups, setGroups] = useState(INITIAL_GROUPS)
-  const [deliveryTeamMode, setDeliveryTeamMode] = useState<"single"|"multiple">("single")
-  const [groupMode, setGroupMode] = useState<"single"|"multiple">("single")
-  const [teamSettingsOpen, setTeamSettingsOpen] = useState(false)
-  const [groupSettingsOpen, setGroupSettingsOpen] = useState(false)
-  const [filteredDepartment, setFilteredDepartment] = useState<string|null>(null)
-  const [filteredDeliveryTeam, setFilteredDeliveryTeam] = useState<string|null>(null)
-  const [filteredGroup, setFilteredGroup] = useState<string|null>(null)
+  const [selectedOffices, setSelectedOffices] = useState(() => filteredOffice ? [filteredOffice] : [...ALL_OFFICES])
 
-  const isGroupView = view === "departments" || view === "delivery-teams" || view === "groups"
-  const current = view === "employees" ? people : view === "contractors" ? contractors : people
+  useEffect(() => {
+    if (filteredOffice) setSelectedOffices([filteredOffice])
+    else setSelectedOffices([...ALL_OFFICES])
+  }, [filteredOffice])
+
+  useEffect(() => {
+    if (initialView) { setView(initialView); onInitialViewConsumed?.() }
+  }, [initialView])
+  const [showModal, setShowModal] = useState(false)
+  const [deliveryTeamMode] = useState<"single"|"multiple">("single")
+  const [groupMode] = useState<"single"|"multiple">("single")
+
+  const current = view === "employees" ? people : view === "contractors" ? contractors : view === "all" ? [...people, ...contractors] : people
   const setCurrent = view === "employees" ? onPeopleChange : view === "contractors" ? onContractorsChange : onPeopleChange
   const isAll = selectedOffices.length === ALL_OFFICES.length
   const filtered = isAll ? current : current.filter((p: any) => selectedOffices.includes(p.office))
   const roleFiltered = filteredRole ? filtered.filter((p: any) => roles[p.roleId]?.name === filteredRole) : filtered
-  const deptFiltered = filteredDepartment ? roleFiltered.filter((p: any) => departments[p.departmentId]?.name === filteredDepartment) : roleFiltered
-  const teamFiltered = filteredDeliveryTeam ? deptFiltered.filter((p: any) => (p.deliveryTeamIds || []).some((id: number) => deliveryTeams[id]?.name === filteredDeliveryTeam)) : deptFiltered
-  const groupFiltered = filteredGroup ? teamFiltered.filter((p: any) => (p.groupIds || []).some((id: number) => groups[id]?.name === filteredGroup)) : teamFiltered
-  const display = tab === "archived" ? [] : groupFiltered
+  const display = tab === "archived" ? [] : roleFiltered
 
   function handleAdd(person: any) {
     if (view === "employees") onPeopleChange([...people, person])
     else if (view === "contractors") onContractorsChange([...contractors, person])
-    else if (view === "delivery-teams") setDeliveryTeams((prev: any) => [...prev, person])
-    else if (view === "groups") setGroups((prev: any) => [...prev, person])
-    else onDepartmentsChange([...departments, person])
   }
-
-  const allPeople = [...people, ...contractors]
-  const deliveryTeamCounts = deliveryTeams.map((_: any, i: number) => allPeople.filter((p: any) => (p.deliveryTeamIds || []).includes(i)).length)
-  const groupCounts = groups.map((_: any, i: number) => allPeople.filter((p: any) => (p.groupIds || []).includes(i)).length)
 
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden", background: t.bg }}>
-      {showModal && !isGroupView && <AddPersonModal roles={roles} departments={departments} onAdd={handleAdd} onClose={() => setShowModal(false)} type={view === "contractors" ? "contractor" : "employee"}/>}
-      {showModal && isGroupView && <AddDepartmentModal onAdd={handleAdd} onClose={() => setShowModal(false)}/>}
-      {teamSettingsOpen && <TeamSettingsModal type="delivery-teams" mode={deliveryTeamMode} onSave={(m: any) => setDeliveryTeamMode(m)} onClose={() => setTeamSettingsOpen(false)}/>}
-      {groupSettingsOpen && <TeamSettingsModal type="groups" mode={groupMode} onSave={(m: any) => setGroupMode(m)} onClose={() => setGroupSettingsOpen(false)}/>}
+      {showModal && <AddPersonModal roles={roles} departments={departments} onAdd={handleAdd} onClose={() => setShowModal(false)} type={view === "contractors" ? "contractor" : "employee"}/>}
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
         <SectionHeader
-          count={view === "departments" ? departments.length : view === "delivery-teams" ? deliveryTeams.length : view === "groups" ? groups.length : groupFiltered.length}
-          label={view === "departments" ? "Departments" : view === "delivery-teams" ? "Delivery teams" : view === "groups" ? "Groups" : view === "employees" ? "Employees" : "Contractors"}
-          filterField={filteredRole ? "Role" : filteredDepartment ? "Department" : filteredDeliveryTeam ? "Delivery team" : filteredGroup ? "Group" : undefined}
-          filterValue={filteredRole ?? filteredDepartment ?? filteredDeliveryTeam ?? filteredGroup}
-          onClearFilter={filteredRole ? onRoleFilterClear : filteredDepartment ? () => setFilteredDepartment(null) : filteredDeliveryTeam ? () => setFilteredDeliveryTeam(null) : filteredGroup ? () => setFilteredGroup(null) : undefined}
+          count={display.length}
+          label={view === "employees" ? "Employees" : view === "contractors" ? "Contractors" : "Users"}
+          filterField={filteredRole ? "Role" : undefined}
+          filterValue={filteredRole ?? undefined}
+          onClearFilter={filteredRole ? onRoleFilterClear : undefined}
           onAdd={() => setShowModal(true)}/>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
+            <OfficeFilter selected={selectedOffices} onChange={(val: any) => { setSelectedOffices(val); if (onOfficeFilterClear) onOfficeFilterClear() }}/>
+            {filteredOffice && (
+              <HoverBtn onClick={onOfficeFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "4px 8px", fontSize: 12 }}>
+                ✕ {filteredOffice}
+              </HoverBtn>
+            )}
             {filteredBusinessUnit && (
               <HoverBtn onClick={onFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "4px 8px", fontSize: 12 }}>
                 ✕ {filteredBusinessUnit}
               </HoverBtn>
             )}
             <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
-            {[["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
+            {[["all","All"],["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
               <TabBtn key={v} active={view === v} onClick={() => { setView(v); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={1} style={{ fill: view === v ? t.fg : "none" }}/>{l}
               </TabBtn>
             ))}
-            <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
-            <TabBtn active={view === "departments"} onClick={() => { setView("departments"); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
-              <Circle size={10} strokeWidth={1} style={{ fill: view === "departments" ? t.fg : "none" }}/>Departments
-            </TabBtn>
-            <TabBtn active={view === "delivery-teams"} onClick={() => { setView("delivery-teams"); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
-              <Circle size={10} strokeWidth={1} style={{ fill: view === "delivery-teams" ? t.fg : "none" }}/>Delivery teams
-            </TabBtn>
-            <TabBtn active={view === "groups"} onClick={() => { setView("groups"); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
-              <Circle size={10} strokeWidth={1} style={{ fill: view === "groups" ? t.fg : "none" }}/>Groups
-            </TabBtn>
           </div>
           <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
 
-        {!isGroupView ? (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-              <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
-              <Tabs active={tab} onChange={setTab} tabs={[{ label: `${filtered.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
-            </div>
-            <DataTable
-              columns={[
-                { accessorKey: "name", header: "Name", size: 280, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><InlineEdit value={row.original.name} onChange={(v: any) => setCurrent(current.map((x: any) => x === row.original ? {...x, name: v} : x))} style={{ background: "transparent" }}/></span> },
-                { accessorKey: "roleId", header: "Role", size: 168, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><RoleSelector roleId={row.original.roleId} roles={roles} onChange={(v: any) => setCurrent(current.map((x: any) => x === row.original ? {...x, roleId: v} : x))}/></span> },
-                { accessorKey: "departmentId", header: "Department", size: 168, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><DeptSelector departmentId={row.original.departmentId} departments={departments} onChange={(v: any) => setCurrent(current.map((x: any) => x === row.original ? {...x, departmentId: v} : x))}/></span> },
-                { accessorKey: "deliveryTeamIds", header: "Delivery team", size: 160, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><DeliveryTeamSelector teamIds={row.original.deliveryTeamIds || []} teams={deliveryTeams} mode={deliveryTeamMode} onChange={(v: any) => setCurrent(current.map((x: any) => x === row.original ? {...x, deliveryTeamIds: v} : x))}/></span> },
-                { accessorKey: "groupIds", header: "Group", size: 160, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><GroupSelector groupIds={row.original.groupIds || []} groups={groups} mode={groupMode} onChange={(v: any) => setCurrent(current.map((x: any) => x === row.original ? {...x, groupIds: v} : x))}/></span> },
-                { accessorKey: "office", header: "Office", size: 140, cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.office}</span> },
-              ]}
-              data={display}
-              onRowClick={(_: any, idx: number) => setSelectedPerson(idx)}
-              isRowSelected={(_: any, idx: number) => idx === selectedPerson}
-              emptyNode={tab === "archived" && <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}><p style={{ fontSize: 13, color: t.mutedFg }}>No archived people</p></div>}
-            />
-          </>
-        ) : view === "departments" ? (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-              <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
-              <Tabs active="active" onChange={() => {}} tabs={[{ label: `${departments.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
-            </div>
-            <DataTable
-              columns={[
-                { accessorKey: "name", header: "Name", size: 360, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><InlineEdit value={row.original.name} onChange={(v: any) => onDepartmentsChange(departments.map((x: any) => x === row.original ? {...x, name: v} : x))} style={{ background: "transparent" }}/></span> },
-                { id: "activePeople", header: "Active people", size: 200, enableResizing: false, accessorFn: (row: any) => deptPeopleCounts[departments.indexOf(row)] ?? 0, cell: ({ row }: any) => { const count = deptPeopleCounts[departments.indexOf(row.original)] ?? 0; return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count} onClick={() => { setFilteredDepartment(row.original.name); setView("employees") }}/></span> : <span style={{ fontSize: 13, color: t.mutedFg }}>—</span> } },
-              ]}
-              data={departments}
-              onRowClick={(_: any, idx: number) => setSelectedDept(idx)}
-              isRowSelected={(_: any, idx: number) => idx === selectedDept}
-            />
-          </>
-        ) : view === "delivery-teams" ? (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-              <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
-              <Tabs active="active" onChange={() => {}} tabs={[{ label: `${deliveryTeams.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
-              <HoverBtn onClick={() => setTeamSettingsOpen(true)} style={{ ...s.iconBtn, width: 24, height: 24 }}><MoreVertical size={14} strokeWidth={1}/></HoverBtn>
-            </div>
-            <DataTable
-              columns={[
-                { accessorKey: "name", header: "Name", size: 360, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><InlineEdit value={row.original.name} onChange={(v: any) => setDeliveryTeams(deliveryTeams.map((x: any) => x === row.original ? {...x, name: v} : x))} style={{ background: "transparent" }}/></span> },
-                { id: "members", header: "Members", size: 200, enableResizing: false, accessorFn: (_: any, i: number) => deliveryTeamCounts[i] ?? 0, cell: ({ row }: any) => { const count = deliveryTeamCounts[deliveryTeams.indexOf(row.original)] ?? 0; return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count} onClick={() => { setFilteredDeliveryTeam(row.original.name); setView("employees") }}/></span> : <span style={{ fontSize: 13, color: t.mutedFg }}>—</span> } },
-              ]}
-              data={deliveryTeams}
-              onRowClick={(_: any, idx: number) => setSelectedDeliveryTeam(idx)}
-              isRowSelected={(_: any, idx: number) => idx === selectedDeliveryTeam}
-            />
-          </>
-        ) : (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-              <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
-              <Tabs active="active" onChange={() => {}} tabs={[{ label: `${groups.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
-              <HoverBtn onClick={() => setGroupSettingsOpen(true)} style={{ ...s.iconBtn, width: 24, height: 24 }}><MoreVertical size={14} strokeWidth={1}/></HoverBtn>
-            </div>
-            <DataTable
-              columns={[
-                { accessorKey: "name", header: "Name", size: 360, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><InlineEdit value={row.original.name} onChange={(v: any) => setGroups(groups.map((x: any) => x === row.original ? {...x, name: v} : x))} style={{ background: "transparent" }}/></span> },
-                { id: "members", header: "Members", size: 200, enableResizing: false, accessorFn: (_: any, i: number) => groupCounts[i] ?? 0, cell: ({ row }: any) => { const count = groupCounts[groups.indexOf(row.original)] ?? 0; return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count} onClick={() => { setFilteredGroup(row.original.name); setView("employees") }}/></span> : <span style={{ fontSize: 13, color: t.mutedFg }}>—</span> } },
-              ]}
-              data={groups}
-              onRowClick={(_: any, idx: number) => setSelectedGroup(idx)}
-              isRowSelected={(_: any, idx: number) => idx === selectedGroup}
-            />
-          </>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
+          <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
+          <Tabs active={tab} onChange={setTab} tabs={[{ label: `${filtered.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+        </div>
+        <DataTable
+          columns={[
+            { accessorKey: "name", header: "Name", size: 280, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><InlineEdit value={row.original.name} onChange={(v: any) => setCurrent(current.map((x: any) => x === row.original ? {...x, name: v} : x))} style={{ background: "transparent" }}/></span> },
+            { accessorKey: "roleId", header: "Role", size: 168, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><RoleSelector roleId={row.original.roleId} roles={roles} onChange={(v: any) => setCurrent(current.map((x: any) => x === row.original ? {...x, roleId: v} : x))}/></span> },
+            { accessorKey: "access", header: "Access", size: 168, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><AccessSelector value={row.original.access} onChange={(v: any) => setCurrent(current.map((x: any) => x === row.original ? {...x, access: v} : x))}/></span> },
+            { accessorKey: "departmentId", header: "Department", size: 168, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><DeptSelector departmentId={row.original.departmentId} departments={departments} onChange={(v: any) => setCurrent(current.map((x: any) => x === row.original ? {...x, departmentId: v} : x))}/></span> },
+            { accessorKey: "deliveryTeamIds", header: "Delivery team", size: 160, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><DeliveryTeamSelector teamIds={row.original.deliveryTeamIds || []} teams={deliveryTeams} mode={deliveryTeamMode} onChange={(v: any) => setCurrent(current.map((x: any) => x === row.original ? {...x, deliveryTeamIds: v} : x))}/></span> },
+            { accessorKey: "groupIds", header: "Group", size: 160, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><GroupSelector groupIds={row.original.groupIds || []} groups={groups} mode={groupMode} onChange={(v: any) => setCurrent(current.map((x: any) => x === row.original ? {...x, groupIds: v} : x))}/></span> },
+            { accessorKey: "office", header: "Office", size: 140, cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.office}</span> },
+          ]}
+          data={display}
+          onRowClick={(_: any, idx: number) => setSelectedPerson(idx)}
+          isRowSelected={(_: any, idx: number) => idx === selectedPerson}
+          emptyNode={tab === "archived" && <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}><p style={{ fontSize: 13, color: t.mutedFg }}>No archived people</p></div>}
+        />
       </div>
-      {(view === "employees" || view === "contractors") && selectedPerson !== null && current[selectedPerson] && (
+      {selectedPerson !== null && current[selectedPerson] && (
         <Sheet title={current[selectedPerson].name} subtitle={`${roles[current[selectedPerson].roleId]?.name} · ${current[selectedPerson].office}`} onClose={() => setSelectedPerson(null)}>
           <DetailGrid items={[
             { label: "Department", value: departments[current[selectedPerson].departmentId]?.name },
@@ -1785,21 +1770,6 @@ function People({ roles, departments, onDepartmentsChange, people, onPeopleChang
           ]}/>
           <h3 style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 12 }}>Activity log</h3>
           <ActivityTimeline entries={(PERSON_ACTIVITY as any)[current[selectedPerson].name] || []}/>
-        </Sheet>
-      )}
-      {view === "departments" && selectedDept !== null && departments[selectedDept] && (
-        <Sheet title={departments[selectedDept].name} subtitle={`${deptPeopleCounts[selectedDept] ?? 0} active people`} onClose={() => setSelectedDept(null)}>
-          <DetailGrid items={[{ label: "Active people", value: deptPeopleCounts[selectedDept] ?? 0 }, { label: "Status", value: "Active" }]}/>
-        </Sheet>
-      )}
-      {view === "delivery-teams" && selectedDeliveryTeam !== null && deliveryTeams[selectedDeliveryTeam] && (
-        <Sheet title={deliveryTeams[selectedDeliveryTeam].name} subtitle={`${deliveryTeamCounts[selectedDeliveryTeam] ?? 0} members`} onClose={() => setSelectedDeliveryTeam(null)}>
-          <DetailGrid items={[{ label: "Members", value: deliveryTeamCounts[selectedDeliveryTeam] ?? 0 }, { label: "Status", value: "Active" }]}/>
-        </Sheet>
-      )}
-      {view === "groups" && selectedGroup !== null && groups[selectedGroup] && (
-        <Sheet title={groups[selectedGroup].name} subtitle={`${groupCounts[selectedGroup] ?? 0} members`} onClose={() => setSelectedGroup(null)}>
-          <DetailGrid items={[{ label: "Members", value: groupCounts[selectedGroup] ?? 0 }, { label: "Status", value: "Active" }]}/>
         </Sheet>
       )}
     </div>
@@ -3171,7 +3141,7 @@ function ProjectDetailCard({ project, clientName, people, config }: { project: a
       </div>
 
       <div style={{ padding: "12px 20px 4px" }}>
-        <p style={{ fontSize: 10, fontWeight: 600, color: t.mutedFg, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Concerns</p>
+        <p style={{ ...s.caseTitleXs, margin: "0 0 8px" }}>Concerns</p>
       </div>
       {concerns.map((c, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 20px", borderTop: `1px solid ${t.border}` }}>
@@ -3831,7 +3801,7 @@ function TalentGraphView({ people, roles, departments }: any) {
               </div>
               {([["Skills", selPerson.skills], ["Clients", selPerson.clients], ["Categories", selPerson.categories], ["Worked With", selPerson.workedWith]] as [string, string[]][]).map(([label, items]) => (
                 <div key={label} style={{ marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, textTransform: "uppercase" as const, letterSpacing: "0.05em", marginBottom: 5, fontFamily: "var(--font-sans), sans-serif" }}>{label}</div>
+                  <div style={{ ...s.caseTitleCompact, marginBottom: 5 }}>{label}</div>
                   <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4 }}>{items.map((item: string) => <GTag key={item} label={item} />)}</div>
                 </div>
               ))}
@@ -4171,7 +4141,7 @@ function ProjectGraphView({ projects, roles, people, clientsFull }: any) {
               ))}
               {selProject.roles.length > 0 && (
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, textTransform: "uppercase" as const, letterSpacing: "0.05em", marginBottom: 6, fontFamily: "var(--font-sans), sans-serif" }}>Roles</div>
+                  <div style={{ ...s.caseTitleCompact, marginBottom: 6 }}>Roles</div>
                   <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4 }}>{selProject.roles.map((r: string) => <PTag key={r} label={r} />)}</div>
                 </div>
               )}
@@ -4499,7 +4469,7 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
       })
       return (
         <>
-          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 10, fontFamily: "var(--font-sans), sans-serif" }}>Search filters</div>
+          <div style={{ ...s.caseTitle, marginBottom: 10 }}>Search filters</div>
           {skillToks.length > 0 && <>
             <div style={{ fontSize: 10, color: t.mutedFg, marginBottom: 6, fontFamily: "var(--font-sans), sans-serif" }}>Skills</div>
             <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4, marginBottom: 12 }}>
@@ -4513,7 +4483,7 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
             </div>
           </>}
           <div style={{ borderTop: `1px solid ${t.border}`, margin: "8px 0 12px" }}/>
-          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 10, fontFamily: "var(--font-sans), sans-serif" }}>{matchingPeople.length} {matchingPeople.length === 1 ? "person" : "people"}</div>
+          <div style={{ ...s.caseTitle, marginBottom: 10 }}>{matchingPeople.length} {matchingPeople.length === 1 ? "person" : "people"}</div>
           {matchingPeople.length === 0
             ? <div style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>No matches — try broadening your search</div>
             : matchingPeople.map((p: any) => renderPersonRow(p))
@@ -4526,7 +4496,7 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
         const totalClients = EXPERIENCE_INDUSTRIES.reduce((s, i) => s + i.clients.length, 0)
         return (
           <>
-            <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>Overview</div>
+            <div style={{ ...s.caseTitle, marginBottom: 12 }}>Overview</div>
             {[["Industries", EXPERIENCE_INDUSTRIES.length], ["Total Clients", totalClients], ["Total People", people.length]].map(([label, val]) => (
               <div key={label as string} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{label}</span>
@@ -4534,7 +4504,7 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
               </div>
             ))}
             <div style={{ borderTop: `1px solid ${t.border}`, margin: "16px 0" }}/>
-            <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>By Industry</div>
+            <div style={{ ...s.caseTitle, marginBottom: 12 }}>By Industry</div>
             {EXPERIENCE_INDUSTRIES.map(ind => {
               const count = people.filter((p: any) => getPersonClients(p).some((c: string) => ind.clients.includes(c))).length
               return (
@@ -4579,7 +4549,7 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
         return (
           <>
             <div style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 4, fontFamily: "var(--font-sans), sans-serif" }}>{selSkill}</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>{matching.length} People</div>
+            <div style={{ ...s.caseTitle, marginBottom: 12 }}>{matching.length} People</div>
             {matching.map((p: any) => renderPersonRow(p))}
           </>
         )
@@ -4591,7 +4561,7 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
       const totalSkills = SKILLS_CATEGORIES.reduce((s, c) => s + c.skills.length, 0)
       return (
         <>
-          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>Overview</div>
+          <div style={{ ...s.caseTitle, marginBottom: 12 }}>Overview</div>
           {[["Categories", SKILLS_CATEGORIES.length], ["Total Skills", totalSkills], ["Total People", people.length]].map(([label, val]) => (
             <div key={label as string} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{label}</span>
@@ -4599,7 +4569,7 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
             </div>
           ))}
           <div style={{ borderTop: `1px solid ${t.border}`, margin: "16px 0" }}/>
-          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>Headcount</div>
+          <div style={{ ...s.caseTitle, marginBottom: 12 }}>Headcount</div>
           {SKILLS_CATEGORIES.map(cat => {
             const count = people.filter((p: any) => getRoleData(p).category === cat.name).length
             return (
@@ -4644,7 +4614,7 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
       return (
         <>
           <div style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 4, fontFamily: "var(--font-sans), sans-serif" }}>{selSkill}</div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 12, fontFamily: "var(--font-sans), sans-serif" }}>{matching.length} People</div>
+          <div style={{ ...s.caseTitle, marginBottom: 12 }}>{matching.length} People</div>
           {matching.map((p: any) => renderPersonRow(p))}
         </>
       )
@@ -4661,7 +4631,7 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
               <div style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{roles[selPerson.roleId]?.name ?? ""}</div>
             </div>
           </div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 10, fontFamily: "var(--font-sans), sans-serif" }}>{roleData.skills.length} Skills</div>
+          <div style={{ ...s.caseTitle, marginBottom: 10 }}>{roleData.skills.length} Skills</div>
           {roleData.skills.map((skill: string) => (
             <div key={skill} style={{ fontSize: 12, color: t.fg, padding: "7px 0", borderBottom: `1px solid ${t.border}`, fontFamily: "var(--font-sans), sans-serif" }}>{skill}</div>
           ))}
@@ -4872,14 +4842,14 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
                 <button onClick={() => setProfilePerson(null)} style={{ background: "none", border: "none", cursor: "pointer", color: t.mutedFg, padding: 2, lineHeight: 1, fontSize: 16 }}>×</button>
               </div>
 
-              <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 8, fontFamily: "var(--font-sans), sans-serif" }}>Skills</div>
+              <div style={{ ...s.caseTitle, marginBottom: 8 }}>Skills</div>
               <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4, marginBottom: 20 }}>
                 {rd.skills.map((skill: string) => (
                   <span key={skill} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 99, border: `1px solid ${t.border}`, color: t.fg, background: t.fgAlpha10, fontFamily: "var(--font-sans), sans-serif" }}>{skill}</span>
                 ))}
               </div>
 
-              <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 8, fontFamily: "var(--font-sans), sans-serif" }}>Experience</div>
+              <div style={{ ...s.caseTitle, marginBottom: 8 }}>Experience</div>
               {clientsByIndustry.map(g => (
                 <div key={g.industry} style={{ marginBottom: 12 }}>
                   <div style={{ fontSize: 11, color: t.mutedFg, marginBottom: 5, fontFamily: "var(--font-sans), sans-serif" }}>{g.industry}</div>
@@ -4895,6 +4865,169 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
         })()}
       </div>
       </div>
+    </div>
+  )
+}
+
+function OrgStructurePage({ people, contractors, departments, onDepartmentsChange, deliveryTeams, onDeliveryTeamsChange, groups, onGroupsChange, roles, deptPeopleCounts, onNavigateToPeople }: any) {
+  const [tab, setTab] = useState("offices")
+  const [selectedIdx, setSelectedIdx] = useState<number|null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [deliveryTeamMode, setDeliveryTeamMode] = useState<"single"|"multiple">("single")
+  const [groupMode, setGroupMode] = useState<"single"|"multiple">("single")
+  const [teamSettingsOpen, setTeamSettingsOpen] = useState(false)
+  const [groupSettingsOpen, setGroupSettingsOpen] = useState(false)
+  const offices = ALL_OFFICES.filter(o => o !== "Global")
+
+  const officeEmployeeCount = (o: string) => people.filter((p: any) => p.office === o).length
+  const officeContractorCount = (o: string) => (contractors ?? []).filter((p: any) => p.office === o).length
+  const officePeopleCount = (o: string) => officeEmployeeCount(o) + officeContractorCount(o)
+  const officeDeptCount = (o: string) => departments.filter((_: any, i: number) => people.some((p: any) => p.office === o && p.departmentId === i)).length
+  const officeGroupCount = (o: string) => groups.filter((_: any, i: number) => people.some((p: any) => p.office === o && (p.groupIds || []).includes(i))).length
+  const allPeople = [...people, ...(contractors ?? [])]
+  const deliveryTeamCounts = deliveryTeams.map((_: any, i: number) => allPeople.filter((p: any) => (p.deliveryTeamIds || []).includes(i)).length)
+  const groupCounts = groups.map((_: any, i: number) => allPeople.filter((p: any) => (p.groupIds || []).includes(i)).length)
+
+  const selectedOffice = tab === "offices" && selectedIdx !== null ? offices[selectedIdx] : null
+  const selectedDept = tab === "departments" && selectedIdx !== null ? departments[selectedIdx] : null
+  const selectedTeam = tab === "delivery-teams" && selectedIdx !== null ? deliveryTeams[selectedIdx] : null
+  const selectedGroup = tab === "groups" && selectedIdx !== null ? groups[selectedIdx] : null
+
+  const tabLabel = tab === "offices" ? "Offices" : tab === "departments" ? "Departments" : tab === "delivery-teams" ? "Delivery teams" : "Groups"
+  const tabCount = tab === "offices" ? offices.length : tab === "departments" ? departments.length : tab === "delivery-teams" ? deliveryTeams.length : groups.length
+
+  return (
+    <div style={{ display: "flex", flex: 1, overflow: "hidden", background: t.bg }}>
+      {showModal && <AddDepartmentModal onAdd={(item: any) => {
+        if (tab === "departments") onDepartmentsChange([...departments, item])
+        else if (tab === "delivery-teams") onDeliveryTeamsChange([...deliveryTeams, item])
+        else if (tab === "groups") onGroupsChange([...groups, item])
+        setShowModal(false)
+      }} onClose={() => setShowModal(false)}/>}
+      {teamSettingsOpen && <TeamSettingsModal type="delivery-teams" mode={deliveryTeamMode} onSave={(m: any) => setDeliveryTeamMode(m)} onClose={() => setTeamSettingsOpen(false)}/>}
+      {groupSettingsOpen && <TeamSettingsModal type="groups" mode={groupMode} onSave={(m: any) => setGroupMode(m)} onClose={() => setGroupSettingsOpen(false)}/>}
+      <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
+        <SectionHeader count={tabCount} label={tabLabel} onAdd={tab !== "offices" ? () => setShowModal(true) : undefined}/>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {[["offices","Offices"],["departments","Departments"],["groups","Groups"],["delivery-teams","Delivery teams"]].map(([v,l]) => (
+              <TabBtn key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+                <Circle size={10} strokeWidth={1} style={{ fill: tab === v ? t.fg : "none" }}/>{l}
+              </TabBtn>
+            ))}
+            {(tab === "delivery-teams") && <HoverBtn onClick={() => setTeamSettingsOpen(true)} style={{ ...s.iconBtn, width: 24, height: 24 }}><MoreVertical size={14} strokeWidth={1}/></HoverBtn>}
+            {(tab === "groups") && <HoverBtn onClick={() => setGroupSettingsOpen(true)} style={{ ...s.iconBtn, width: 24, height: 24 }}><MoreVertical size={14} strokeWidth={1}/></HoverBtn>}
+          </div>
+          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
+        </div>
+
+        {tab === "offices" && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
+              <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
+              <Tabs active="active" onChange={() => {}} tabs={[{ label: `${offices.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+            </div>
+            <DataTable
+              columns={[
+                { accessorKey: "name", header: "Office", size: 240, cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original}</span> },
+                { id: "people", header: "People", size: 120, accessorFn: (row: any) => officePeopleCount(row), cell: ({ row }: any) => { const count = officePeopleCount(row.original); return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count} onClick={() => onNavigateToPeople(row.original)}/></span> : <span style={{ fontSize: 13, color: t.mutedFg }}>—</span> } },
+                { id: "departments", header: "Departments", size: 140, accessorFn: (row: any) => officeDeptCount(row), cell: ({ row }: any) => { const count = officeDeptCount(row.original); return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count} onClick={() => { setTab("departments"); setSelectedIdx(null) }}/></span> : <span style={{ fontSize: 13, color: t.mutedFg }}>—</span> } },
+                { id: "groups", header: "Groups", size: 120, enableResizing: false, accessorFn: (row: any) => officeGroupCount(row), cell: ({ row }: any) => { const count = officeGroupCount(row.original); return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count} onClick={() => { setTab("groups"); setSelectedIdx(null) }}/></span> : <span style={{ fontSize: 13, color: t.mutedFg }}>—</span> } },
+              ]}
+              data={offices}
+              onRowClick={(_: any, idx: number) => setSelectedIdx(idx === selectedIdx ? null : idx)}
+              isRowSelected={(_: any, idx: number) => idx === selectedIdx}
+            />
+          </>
+        )}
+        {tab === "departments" && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
+              <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
+              <Tabs active="active" onChange={() => {}} tabs={[{ label: `${departments.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+            </div>
+            <DataTable
+              columns={[
+                { accessorKey: "name", header: "Name", size: 360, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><InlineEdit value={row.original.name} onChange={(v: any) => onDepartmentsChange(departments.map((x: any) => x === row.original ? {...x, name: v} : x))} style={{ background: "transparent" }}/></span> },
+                { id: "activePeople", header: "Active people", size: 200, enableResizing: false, accessorFn: (row: any) => deptPeopleCounts[departments.indexOf(row)] ?? 0, cell: ({ row }: any) => { const count = deptPeopleCounts[departments.indexOf(row.original)] ?? 0; return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count}/></span> : <span style={{ fontSize: 13, color: t.mutedFg }}>—</span> } },
+              ]}
+              data={departments}
+              onRowClick={(_: any, idx: number) => setSelectedIdx(idx === selectedIdx ? null : idx)}
+              isRowSelected={(_: any, idx: number) => idx === selectedIdx}
+            />
+          </>
+        )}
+        {tab === "delivery-teams" && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
+              <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
+              <Tabs active="active" onChange={() => {}} tabs={[{ label: `${deliveryTeams.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+            </div>
+            <DataTable
+              columns={[
+                { accessorKey: "name", header: "Name", size: 360, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><InlineEdit value={row.original.name} onChange={(v: any) => onDeliveryTeamsChange(deliveryTeams.map((x: any) => x === row.original ? {...x, name: v} : x))} style={{ background: "transparent" }}/></span> },
+                { id: "members", header: "Members", size: 200, enableResizing: false, accessorFn: (_: any, i: number) => deliveryTeamCounts[i] ?? 0, cell: ({ row }: any) => { const count = deliveryTeamCounts[deliveryTeams.indexOf(row.original)] ?? 0; return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count}/></span> : <span style={{ fontSize: 13, color: t.mutedFg }}>—</span> } },
+              ]}
+              data={deliveryTeams}
+              onRowClick={(_: any, idx: number) => setSelectedIdx(idx === selectedIdx ? null : idx)}
+              isRowSelected={(_: any, idx: number) => idx === selectedIdx}
+            />
+          </>
+        )}
+        {tab === "groups" && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
+              <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
+              <Tabs active="active" onChange={() => {}} tabs={[{ label: `${groups.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+            </div>
+            <DataTable
+              columns={[
+                { accessorKey: "name", header: "Name", size: 360, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><InlineEdit value={row.original.name} onChange={(v: any) => onGroupsChange(groups.map((x: any) => x === row.original ? {...x, name: v} : x))} style={{ background: "transparent" }}/></span> },
+                { id: "members", header: "Members", size: 200, enableResizing: false, accessorFn: (_: any, i: number) => groupCounts[i] ?? 0, cell: ({ row }: any) => { const count = groupCounts[groups.indexOf(row.original)] ?? 0; return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count}/></span> : <span style={{ fontSize: 13, color: t.mutedFg }}>—</span> } },
+              ]}
+              data={groups}
+              onRowClick={(_: any, idx: number) => setSelectedIdx(idx === selectedIdx ? null : idx)}
+              isRowSelected={(_: any, idx: number) => idx === selectedIdx}
+            />
+          </>
+        )}
+      </div>
+
+      {selectedOffice && (
+        <Sheet title={selectedOffice} subtitle={`${officePeopleCount(selectedOffice)} people`} onClose={() => setSelectedIdx(null)}>
+          <DetailGrid items={[
+            { label: "Employees", value: officeEmployeeCount(selectedOffice) },
+            { label: "Contractors", value: officeContractorCount(selectedOffice) },
+            { label: "Departments", value: officeDeptCount(selectedOffice) },
+            { label: "Groups", value: officeGroupCount(selectedOffice) },
+          ]}/>
+          <div style={{ fontSize: 11, fontWeight: 500, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 10 }}>Access</div>
+          <div style={{ fontSize: 12, color: t.mutedFg, marginBottom: 10 }}>View and request resources:</div>
+          <ul style={{ margin: "0 0 14px", paddingLeft: 18 }}>
+            <li style={{ fontSize: 12, color: t.fg, marginBottom: 4 }}><strong>Resource planners</strong> in <strong>Sydney</strong> and <strong>New York</strong></li>
+            <li style={{ fontSize: 12, color: t.fg }}><strong>Jean-Pierre</strong> in <strong>Paris</strong></li>
+          </ul>
+          <div style={{ fontSize: 12, color: t.mutedFg, marginBottom: 10 }}>Edit and schedule:</div>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            <li style={{ fontSize: 12, color: t.fg }}><strong>Admins</strong></li>
+          </ul>
+        </Sheet>
+      )}
+      {selectedDept && (
+        <Sheet title={selectedDept.name} subtitle={`${deptPeopleCounts[selectedIdx!] ?? 0} active people`} onClose={() => setSelectedIdx(null)}>
+          <DetailGrid items={[{ label: "Active people", value: deptPeopleCounts[selectedIdx!] ?? 0 }, { label: "Status", value: "Active" }]}/>
+        </Sheet>
+      )}
+      {selectedTeam && (
+        <Sheet title={selectedTeam.name} subtitle={`${deliveryTeamCounts[selectedIdx!] ?? 0} members`} onClose={() => setSelectedIdx(null)}>
+          <DetailGrid items={[{ label: "Members", value: deliveryTeamCounts[selectedIdx!] ?? 0 }, { label: "Status", value: "Active" }]}/>
+        </Sheet>
+      )}
+      {selectedGroup && (
+        <Sheet title={selectedGroup.name} subtitle={`${groupCounts[selectedIdx!] ?? 0} members`} onClose={() => setSelectedIdx(null)}>
+          <DetailGrid items={[{ label: "Members", value: groupCounts[selectedIdx!] ?? 0 }, { label: "Status", value: "Active" }]}/>
+        </Sheet>
+      )}
     </div>
   )
 }
@@ -4925,9 +5058,11 @@ function VersionsToggle({ version, onChange }: any) {
 export default function App() {
   const [version, setVersion] = useState("multi")
   const [activeItem, setActiveItem] = useState("People")
-  const [breadcrumb, setBreadcrumb] = useState(["The Grid", "People"])
+  const [breadcrumb, setBreadcrumb] = useState(["Data centre", "People"])
   const [roles, setRoles] = useState(INITIAL_ROLES)
   const [departments, setDepartments] = useState(INITIAL_DEPARTMENTS)
+  const [deliveryTeams, setDeliveryTeams] = useState(INITIAL_DELIVERY_TEAMS)
+  const [groups, setGroups] = useState(INITIAL_GROUPS)
   const [people, setPeople] = useState(INITIAL_PEOPLE)
   const [contractors, setContractors] = useState(INITIAL_CONTRACTORS)
   const [projects, setProjects] = useState(() => [...INITIAL_PROJECTS, ...getBusinessUnitProjects()])
@@ -4945,6 +5080,8 @@ export default function App() {
   const [filteredBusinessUnit, setFilteredBusinessUnit] = useState(null)
   const [filteredBusinessUnitForPeople, setFilteredBusinessUnitForPeople] = useState(null)
   const [filteredRoleForPeople, setFilteredRoleForPeople] = useState<string|null>(null)
+  const [filteredOfficeForPeople, setFilteredOfficeForPeople] = useState<string|null>(null)
+  const [initialPeopleView, setInitialPeopleView] = useState<string|null>(null)
   const [settingsOfficeTarget, setSettingsOfficeTarget] = useState<string | null>(null)
   const [savedDashboardCards, setSavedDashboardCards] = useState<string[]>([])
   const [showFloatAgent, setShowFloatAgent] = useState(false)
@@ -4957,12 +5094,13 @@ export default function App() {
   s = getStyles(t)
 
   function renderMain() {
-    if (activeItem === "Roles") return <RolesAndRates roles={roles} onRolesChange={setRoles} people={people} onNavigateToPeopleByRole={(role: string) => { setFilteredRoleForPeople(role); setFilteredBusinessUnitForPeople(null); setActiveItem("People"); setBreadcrumb(["People"]) }}/>
-    if (activeItem === "People") return <People roles={roles} departments={departments} onDepartmentsChange={setDepartments} people={people} onPeopleChange={setPeople} contractors={contractors} onContractorsChange={setContractors} deptPeopleCounts={deptPeopleCounts} filteredBusinessUnit={filteredBusinessUnitForPeople} onFilterClear={() => setFilteredBusinessUnitForPeople(null)} filteredRole={filteredRoleForPeople} onRoleFilterClear={() => setFilteredRoleForPeople(null)}/>
+    if (activeItem === "Org design") return <OrgStructurePage people={people} contractors={contractors} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} onDeliveryTeamsChange={setDeliveryTeams} groups={groups} onGroupsChange={setGroups} roles={roles} deptPeopleCounts={deptPeopleCounts} onNavigateToPeople={(o: string) => { setFilteredOfficeForPeople(o); setInitialPeopleView(null); setActiveItem("People"); setBreadcrumb(["Data centre", "People"]) }}/>
+    if (activeItem === "Roles") return <RolesAndRates roles={roles} onRolesChange={setRoles} people={people} departments={departments} onNavigateToPeopleByRole={(role: string) => { setFilteredRoleForPeople(role); setFilteredBusinessUnitForPeople(null); setActiveItem("People"); setBreadcrumb(["People"]) }}/>
+    if (activeItem === "People" || activeItem === "Users") return <People roles={roles} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} groups={groups} people={people} onPeopleChange={setPeople} contractors={contractors} onContractorsChange={setContractors} deptPeopleCounts={deptPeopleCounts} filteredBusinessUnit={filteredBusinessUnitForPeople} onFilterClear={() => setFilteredBusinessUnitForPeople(null)} filteredRole={filteredRoleForPeople} onRoleFilterClear={() => setFilteredRoleForPeople(null)} filteredOffice={filteredOfficeForPeople} onOfficeFilterClear={() => setFilteredOfficeForPeople(null)} initialView={initialPeopleView} onInitialViewConsumed={() => setInitialPeopleView(null)}/>
     if (activeItem === "Project tracker") return <ProjectTracker projects={projects} onProjectsChange={setProjects} people={people} clients={clients}/>
     if (activeItem === "Projects") return <ProjectsDataHub visibleItems={visibleDataHubItems} projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull} filteredBusinessUnit={filteredBusinessUnit} onFilterClear={() => setFilteredBusinessUnit(null)} filteredClient={projectsClientFilter} onClientFilterClear={() => setProjectsClientFilter(null)} filteredRateCard={projectsRateCardFilter} onRateCardFilterClear={() => setProjectsRateCardFilter(null)}/>
     if (activeItem === "Clients") return <Clients roles={roles} people={people} clients={clientsFull} onClientsChange={setClientsFull} projects={projects} onNavigateToRateCards={(name: string) => { setRateCardFilter(name); setActiveItem("Rate cards") }} filterClients={clientsFilter} onClearClientsFilter={() => setClientsFilter(null)} onNavigateToProjects={(name: string) => { setProjectsClientFilter(name); setActiveItem("Projects") }}/>
-    if (activeItem === "Rate cards") return <RateCards roles={roles} clients={clientsFull} onClientsChange={setClientsFull} filterClient={rateCardFilter} onClearFilter={() => setRateCardFilter(null)} onNavigateToClients={(names: string[]) => { setClientsFilter(names); setActiveItem("Clients") }} projects={projects} onNavigateToProjects={(clientName: string, rateCardName: string) => { setProjectsClientFilter(null); setProjectsRateCardFilter({ clientName, rateCardName }); setActiveItem("Projects"); setBreadcrumb(["The Grid", "Projects"]) }}/>
+    if (activeItem === "Rate cards") return <RateCards roles={roles} clients={clientsFull} onClientsChange={setClientsFull} filterClient={rateCardFilter} onClearFilter={() => setRateCardFilter(null)} onNavigateToClients={(names: string[]) => { setClientsFilter(names); setActiveItem("Clients") }} projects={projects} onNavigateToProjects={(clientName: string, rateCardName: string) => { setProjectsClientFilter(null); setProjectsRateCardFilter({ clientName, rateCardName }); setActiveItem("Projects"); setBreadcrumb(["Data centre", "Projects"]) }}/>
     if (activeItem === "Brands") return <BusinessUnits roles={roles} onProjectsClick={(unitName: any) => { setFilteredBusinessUnit(unitName); setActiveItem("Projects"); }} onEmployeesClick={(unitName: any) => { setFilteredBusinessUnitForPeople(unitName); setActiveItem("People"); }}/>
     if (activeItem === "Activity log") return <ActivityLog/>
     if (activeItem === "Talent graph") return <TalentGraphView people={people} roles={roles} departments={departments}/>
