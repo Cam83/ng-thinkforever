@@ -673,7 +673,7 @@ const officeItemsMyTime = [
 ]
 const dataHubItems = [
   { name: "Org design", icon: <OfficeIcon/> },
-  { name: "Users", icon: <Users size={16} strokeWidth={1}/> },
+  { name: "People", icon: <Users size={16} strokeWidth={1}/> },
   { name: "Roles", icon: <ChefHat size={16} strokeWidth={1}/> },
   { name: "Projects", icon: <FolderOpen size={16} strokeWidth={1}/> },
   { name: "Clients", icon: <Building2 size={16} strokeWidth={1}/> },
@@ -1712,7 +1712,7 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
         <SectionHeader
           count={display.length}
-          label={view === "employees" ? "Employees" : view === "contractors" ? "Contractors" : "Users"}
+          label={view === "employees" ? "Employees" : view === "contractors" ? "Contractors" : "People"}
           filterField={filteredRole ? "Role" : undefined}
           filterValue={filteredRole ?? undefined}
           onClearFilter={filteredRole ? onRoleFilterClear : undefined}
@@ -4877,6 +4877,14 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
   const [groupMode, setGroupMode] = useState<"single"|"multiple">("single")
   const [teamSettingsOpen, setTeamSettingsOpen] = useState(false)
   const [groupSettingsOpen, setGroupSettingsOpen] = useState(false)
+  const [customGroupTypes, setCustomGroupTypes] = useState<{ id: string; name: string; items: any[] }[]>([])
+  const [showNewGroupTypeModal, setShowNewGroupTypeModal] = useState(false)
+  const [newGroupTypeName, setNewGroupTypeName] = useState("")
+  const [tagsSubTab, setTagsSubTab] = useState<"people"|"project">("people")
+  const [tagGroups, setTagGroups] = useState([
+    { id: "languages", name: "Languages", color: "#D97706", tags: [{ name: "english", count: 4 }, { name: "spanish", count: 16 }, { name: "japanese", count: 8 }] },
+    { id: "location", name: "Location", color: "#7C3AED", tags: [{ name: "montreal", count: 4 }, { name: "tokyo", count: 6 }, { name: "wellington", count: 6 }, { name: "london", count: 5 }, { name: "madrid", count: 5 }, { name: "new york", count: 14 }, { name: "mexico city", count: 3 }, { name: "auckland", count: 2 }] },
+  ])
   const offices = ALL_OFFICES.filter(o => o !== "Global")
 
   const officeEmployeeCount = (o: string) => people.filter((p: any) => p.office === o).length
@@ -4892,31 +4900,83 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
   const selectedDept = tab === "departments" && selectedIdx !== null ? departments[selectedIdx] : null
   const selectedTeam = tab === "delivery-teams" && selectedIdx !== null ? deliveryTeams[selectedIdx] : null
   const selectedGroup = tab === "groups" && selectedIdx !== null ? groups[selectedIdx] : null
+  const activeCustomType = customGroupTypes.find(cg => cg.id === tab) ?? null
+  const selectedCustomItem = activeCustomType && selectedIdx !== null ? activeCustomType.items[selectedIdx] : null
 
-  const tabLabel = tab === "offices" ? "Offices" : tab === "departments" ? "Departments" : tab === "delivery-teams" ? "Delivery teams" : "Groups"
-  const tabCount = tab === "offices" ? offices.length : tab === "departments" ? departments.length : tab === "delivery-teams" ? deliveryTeams.length : groups.length
+  const tabLabel = tab === "offices" ? "Offices" : tab === "departments" ? "Departments" : tab === "delivery-teams" ? "Delivery teams" : tab === "groups" ? "Groups" : (activeCustomType?.name ?? "")
+  const tabCount = tab === "offices" ? offices.length : tab === "departments" ? departments.length : tab === "delivery-teams" ? deliveryTeams.length : tab === "groups" ? groups.length : (activeCustomType?.items.length ?? 0)
 
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden", background: t.bg }}>
+      {showNewGroupTypeModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: 24, width: 340 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: t.fg, marginBottom: 16 }}>Create group type</h3>
+            <input
+              autoFocus
+              value={newGroupTypeName}
+              onChange={e => setNewGroupTypeName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && newGroupTypeName.trim()) {
+                  const id = `custom-${Date.now()}`
+                  setCustomGroupTypes(prev => [...prev, { id, name: newGroupTypeName.trim(), items: [] }])
+                  setTab(id)
+                  setSelectedIdx(null)
+                  setNewGroupTypeName("")
+                  setShowNewGroupTypeModal(false)
+                }
+                if (e.key === "Escape") { setNewGroupTypeName(""); setShowNewGroupTypeModal(false) }
+              }}
+              placeholder="e.g. Practice areas"
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.fg, fontSize: 13, outline: "none", boxSizing: "border-box" as const, marginBottom: 16 }}
+            />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <HoverBtn onClick={() => { setNewGroupTypeName(""); setShowNewGroupTypeModal(false) }} style={{ ...s.outlineBtn }}>Cancel</HoverBtn>
+              <HoverBtn onClick={() => {
+                if (!newGroupTypeName.trim()) return
+                const id = `custom-${Date.now()}`
+                setCustomGroupTypes(prev => [...prev, { id, name: newGroupTypeName.trim(), items: [] }])
+                setTab(id)
+                setSelectedIdx(null)
+                setNewGroupTypeName("")
+                setShowNewGroupTypeModal(false)
+              }} style={{ ...s.outlineBtn, background: t.accent, color: t.fg, border: "none" }}>Create</HoverBtn>
+            </div>
+          </div>
+        </div>
+      )}
       {showModal && <AddDepartmentModal onAdd={(item: any) => {
         if (tab === "departments") onDepartmentsChange([...departments, item])
         else if (tab === "delivery-teams") onDeliveryTeamsChange([...deliveryTeams, item])
         else if (tab === "groups") onGroupsChange([...groups, item])
+        else if (activeCustomType) setCustomGroupTypes(prev => prev.map(cg => cg.id === tab ? { ...cg, items: [...cg.items, item] } : cg))
         setShowModal(false)
       }} onClose={() => setShowModal(false)}/>}
       {teamSettingsOpen && <TeamSettingsModal type="delivery-teams" mode={deliveryTeamMode} onSave={(m: any) => setDeliveryTeamMode(m)} onClose={() => setTeamSettingsOpen(false)}/>}
       {groupSettingsOpen && <TeamSettingsModal type="groups" mode={groupMode} onSave={(m: any) => setGroupMode(m)} onClose={() => setGroupSettingsOpen(false)}/>}
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
-        <SectionHeader count={tabCount} label={tabLabel} onAdd={tab !== "offices" ? () => setShowModal(true) : undefined}/>
+        <SectionHeader count={tabCount} label={tabLabel} onAdd={(tab !== "offices") ? () => setShowModal(true) : undefined}/>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {[["offices","Offices"],["departments","Departments"],["groups","Groups"],["delivery-teams","Delivery teams"]].map(([v,l]) => (
+            {[["offices","Offices"],["departments","Departments"],["tags","Tags"]].map(([v,l]) => (
+              <TabBtn key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+                <Circle size={10} strokeWidth={1} style={{ fill: tab === v ? t.fg : "none" }}/>{l}
+              </TabBtn>
+            ))}
+            <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 6px" }}/>
+            {[["groups","Groups"],["delivery-teams","Delivery teams"]].map(([v,l]) => (
               <TabBtn key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={1} style={{ fill: tab === v ? t.fg : "none" }}/>{l}
               </TabBtn>
             ))}
             {(tab === "delivery-teams") && <HoverBtn onClick={() => setTeamSettingsOpen(true)} style={{ ...s.iconBtn, width: 24, height: 24 }}><MoreVertical size={14} strokeWidth={1}/></HoverBtn>}
             {(tab === "groups") && <HoverBtn onClick={() => setGroupSettingsOpen(true)} style={{ ...s.iconBtn, width: 24, height: 24 }}><MoreVertical size={14} strokeWidth={1}/></HoverBtn>}
+            {customGroupTypes.map(cg => (
+              <TabBtn key={cg.id} active={tab === cg.id} onClick={() => { setTab(cg.id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+                <Circle size={10} strokeWidth={1} style={{ fill: tab === cg.id ? t.fg : "none" }}/>{cg.name}
+              </TabBtn>
+            ))}
+            <HoverBtn onClick={() => setShowNewGroupTypeModal(true)} style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
           </div>
           <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
@@ -4924,7 +4984,6 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
         {tab === "offices" && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-              <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
               <Tabs active="active" onChange={() => {}} tabs={[{ label: `${offices.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
             </div>
             <DataTable
@@ -4938,12 +4997,12 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
               onRowClick={(_: any, idx: number) => setSelectedIdx(idx === selectedIdx ? null : idx)}
               isRowSelected={(_: any, idx: number) => idx === selectedIdx}
             />
+
           </>
         )}
         {tab === "departments" && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-              <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
               <Tabs active="active" onChange={() => {}} tabs={[{ label: `${departments.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
             </div>
             <DataTable
@@ -4957,10 +5016,39 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
             />
           </>
         )}
+        {tab === "tags" && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
+              <Tabs active={tagsSubTab} onChange={(v: any) => setTagsSubTab(v)} tabs={[{ label: `${tagGroups.reduce((a,g)=>a+g.tags.length,0)} People tags`, value: "people" }, { label: "6 Project tags", value: "project" }]}/>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px 24px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {tagGroups.map(group => (
+                  <div key={group.id} style={{ background: t.muted, borderRadius: 8, padding: "14px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div style={{ width: 12, height: 12, borderRadius: "50%", background: group.color, flexShrink: 0 }}/>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: t.fg }}>{group.name}</span>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                      {group.tags.map(tag => (
+                        <div key={tag.name} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: group.color + "33", border: `1px solid ${group.color}44`, borderRadius: 4, padding: "2px 4px 2px 6px", fontSize: 11, fontWeight: 500, color: group.color }}>
+                          <span>{tag.name} ({tag.count})</span>
+                          <button onClick={() => setTagGroups(prev => prev.map(g => g.id === group.id ? { ...g, tags: g.tags.filter(tg => tg.name !== tag.name) } : g))} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: group.color, display: "flex", alignItems: "center", lineHeight: 1, fontSize: 13, opacity: 0.7 }}>×</button>
+                        </div>
+                      ))}
+                      <button style={{ display: "flex", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", color: t.mutedFg, fontSize: 11, fontWeight: 500, padding: "2px 4px" }}>
+                        <Plus size={11} strokeWidth={1.5}/> add tag
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
         {tab === "delivery-teams" && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-              <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
               <Tabs active="active" onChange={() => {}} tabs={[{ label: `${deliveryTeams.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
             </div>
             <DataTable
@@ -4977,7 +5065,6 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
         {tab === "groups" && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-              <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
               <Tabs active="active" onChange={() => {}} tabs={[{ label: `${groups.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
             </div>
             <DataTable
@@ -4986,6 +5073,22 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
                 { id: "members", header: "Members", size: 200, enableResizing: false, accessorFn: (_: any, i: number) => groupCounts[i] ?? 0, cell: ({ row }: any) => { const count = groupCounts[groups.indexOf(row.original)] ?? 0; return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count}/></span> : <span style={{ fontSize: 13, color: t.mutedFg }}>—</span> } },
               ]}
               data={groups}
+              onRowClick={(_: any, idx: number) => setSelectedIdx(idx === selectedIdx ? null : idx)}
+              isRowSelected={(_: any, idx: number) => idx === selectedIdx}
+            />
+          </>
+        )}
+        {activeCustomType && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
+              <Tabs active="active" onChange={() => {}} tabs={[{ label: `${activeCustomType.items.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+            </div>
+            <DataTable
+              columns={[
+                { accessorKey: "name", header: "Name", size: 360, cell: ({ row }: any) => <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}><InlineEdit value={row.original.name} onChange={(v: any) => setCustomGroupTypes(prev => prev.map(cg => cg.id === tab ? { ...cg, items: cg.items.map((x: any) => x === row.original ? {...x, name: v} : x) } : cg))} style={{ background: "transparent" }}/></span> },
+                { id: "members", header: "Members", size: 200, enableResizing: false, cell: () => <span style={{ fontSize: 13, color: t.mutedFg }}>—</span> },
+              ]}
+              data={activeCustomType.items}
               onRowClick={(_: any, idx: number) => setSelectedIdx(idx === selectedIdx ? null : idx)}
               isRowSelected={(_: any, idx: number) => idx === selectedIdx}
             />
@@ -5026,6 +5129,11 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
       {selectedGroup && (
         <Sheet title={selectedGroup.name} subtitle={`${groupCounts[selectedIdx!] ?? 0} members`} onClose={() => setSelectedIdx(null)}>
           <DetailGrid items={[{ label: "Members", value: groupCounts[selectedIdx!] ?? 0 }, { label: "Status", value: "Active" }]}/>
+        </Sheet>
+      )}
+      {selectedCustomItem && (
+        <Sheet title={selectedCustomItem.name} subtitle={activeCustomType?.name} onClose={() => setSelectedIdx(null)}>
+          <DetailGrid items={[{ label: "Members", value: 0 }, { label: "Status", value: "Active" }]}/>
         </Sheet>
       )}
     </div>
@@ -5096,7 +5204,7 @@ export default function App() {
   function renderMain() {
     if (activeItem === "Org design") return <OrgStructurePage people={people} contractors={contractors} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} onDeliveryTeamsChange={setDeliveryTeams} groups={groups} onGroupsChange={setGroups} roles={roles} deptPeopleCounts={deptPeopleCounts} onNavigateToPeople={(o: string) => { setFilteredOfficeForPeople(o); setInitialPeopleView(null); setActiveItem("People"); setBreadcrumb(["Data centre", "People"]) }}/>
     if (activeItem === "Roles") return <RolesAndRates roles={roles} onRolesChange={setRoles} people={people} departments={departments} onNavigateToPeopleByRole={(role: string) => { setFilteredRoleForPeople(role); setFilteredBusinessUnitForPeople(null); setActiveItem("People"); setBreadcrumb(["People"]) }}/>
-    if (activeItem === "People" || activeItem === "Users") return <People roles={roles} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} groups={groups} people={people} onPeopleChange={setPeople} contractors={contractors} onContractorsChange={setContractors} deptPeopleCounts={deptPeopleCounts} filteredBusinessUnit={filteredBusinessUnitForPeople} onFilterClear={() => setFilteredBusinessUnitForPeople(null)} filteredRole={filteredRoleForPeople} onRoleFilterClear={() => setFilteredRoleForPeople(null)} filteredOffice={filteredOfficeForPeople} onOfficeFilterClear={() => setFilteredOfficeForPeople(null)} initialView={initialPeopleView} onInitialViewConsumed={() => setInitialPeopleView(null)}/>
+    if (activeItem === "People") return <People roles={roles} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} groups={groups} people={people} onPeopleChange={setPeople} contractors={contractors} onContractorsChange={setContractors} deptPeopleCounts={deptPeopleCounts} filteredBusinessUnit={filteredBusinessUnitForPeople} onFilterClear={() => setFilteredBusinessUnitForPeople(null)} filteredRole={filteredRoleForPeople} onRoleFilterClear={() => setFilteredRoleForPeople(null)} filteredOffice={filteredOfficeForPeople} onOfficeFilterClear={() => setFilteredOfficeForPeople(null)} initialView={initialPeopleView} onInitialViewConsumed={() => setInitialPeopleView(null)}/>
     if (activeItem === "Project tracker") return <ProjectTracker projects={projects} onProjectsChange={setProjects} people={people} clients={clients}/>
     if (activeItem === "Projects") return <ProjectsDataHub visibleItems={visibleDataHubItems} projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull} filteredBusinessUnit={filteredBusinessUnit} onFilterClear={() => setFilteredBusinessUnit(null)} filteredClient={projectsClientFilter} onClientFilterClear={() => setProjectsClientFilter(null)} filteredRateCard={projectsRateCardFilter} onRateCardFilterClear={() => setProjectsRateCardFilter(null)}/>
     if (activeItem === "Clients") return <Clients roles={roles} people={people} clients={clientsFull} onClientsChange={setClientsFull} projects={projects} onNavigateToRateCards={(name: string) => { setRateCardFilter(name); setActiveItem("Rate cards") }} filterClients={clientsFilter} onClearClientsFilter={() => setClientsFilter(null)} onNavigateToProjects={(name: string) => { setProjectsClientFilter(name); setActiveItem("Projects") }}/>

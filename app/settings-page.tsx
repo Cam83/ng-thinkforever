@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { ChevronLeft, ChevronDown, Circle } from "lucide-react"
+import { ChevronLeft, ChevronDown, Circle, Plus } from "lucide-react"
 import { HoverBtn as CamHoverBtn } from "@cam-ui/components"
 
 function Collapsible({ expanded, children }: any) {
@@ -26,7 +26,7 @@ function Collapsible({ expanded, children }: any) {
 }
 
 export function SettingsPage({ t, s, locations, officeTarget, onBack }: any) {
-  const officeSubItems = ["Policies", "Work schedule", "Currencies", "Time tracking", "Time off"]
+  const officeSubItems = ["Policies", "Access", "Work schedule", "Currencies", "Time tracking", "Time off"]
   const orgItems = ["Plans & billing", "General", "Notifications", "Integrations", "Security", "Access rights", "The Grid", "Time off", "Statuses"]
   const offices = locations.filter((l: any) => l.name !== "Global")
 
@@ -120,6 +120,10 @@ export function SettingsPage({ t, s, locations, officeTarget, onBack }: any) {
                 </div>
               )
             })}
+            <Btn style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "6px 8px", marginTop: 8, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", color: t.mutedFg }}>
+              <Plus size={13} strokeWidth={1.5}/>
+              <span style={{ fontSize: 13 }}>Add new office</span>
+            </Btn>
           </div>
         </div>
       </div>

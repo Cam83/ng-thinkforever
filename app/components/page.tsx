@@ -73,7 +73,7 @@ function RoleSelectorDemo() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-10">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">{title}</h2>
+      <h2 className="text-xs font-semibold tracking-[0.08em] text-muted-foreground mb-4">{title}</h2>
       <div className="flex flex-wrap items-start gap-3">{children}</div>
     </div>
   )
