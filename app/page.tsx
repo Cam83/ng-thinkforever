@@ -5,7 +5,7 @@ import {
   ChevronDown, Gauge, BarChart3, Clock, Users, Database,
   FolderOpen, Building, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
   Plus, RefreshCw, Settings2, Check, X, Circle, UserPlus, ArrowRightLeft,
-  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star, Search, MapPin
+  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
@@ -156,9 +156,21 @@ function DataTableRow({ selected, onClick, template, children }: any) {
 function DataTable({ columns, data, onRowClick, isRowSelected, paddingX = 24, emptyNode }: any) {
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
   const [resizeHovCol, setResizeHovCol] = useState<number | null>(null)
+  const [colOrder, setColOrder] = useState<string[]>(() =>
+    columns.map((c: any) => c.id ?? c.accessorKey)
+  )
+  const dragColId = useRef<string | null>(null)
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null)
+  // Sort columns by drag order before passing to TanStack Table — avoids controlled-state conflicts with resize
+  const orderedCols = useMemo(() => {
+    if (!colOrder.length) return columns
+    return colOrder
+      .map((id: string) => columns.find((c: any) => (c.id ?? c.accessorKey) === id))
+      .filter(Boolean)
+  }, [columns, colOrder])
   const table = useReactTable({
     data,
-    columns,
+    columns: orderedCols,
     getCoreRowModel: getCoreRowModel(),
     columnResizeMode: "onChange" as any,
     defaultColumn: { minSize: 60 },
@@ -182,6 +194,21 @@ function DataTable({ columns, data, onRowClick, isRowSelected, paddingX = 24, em
     for (let i = 0; i <= colIdx; i++) x += hg.headers[i].getSize()
     return x
   }
+  function handleColDrop(targetColId: string) {
+    const from = dragColId.current
+    if (!from || from === targetColId) return
+    setColOrder(prev => {
+      const order = [...prev]
+      const fromIdx = order.indexOf(from)
+      const toIdx = order.indexOf(targetColId)
+      if (fromIdx === -1 || toIdx === -1) return prev
+      order.splice(fromIdx, 1)
+      order.splice(toIdx, 0, from)
+      return order
+    })
+    dragColId.current = null
+    setDragOverColId(null)
+  }
   return (
     <div style={{ flex: 1, overflow: "auto", padding: `0 ${paddingX}px` }}>
       <div style={{ position: "relative", minWidth: "max-content" }}>
@@ -190,8 +217,26 @@ function DataTable({ columns, data, onRowClick, isRowSelected, paddingX = 24, em
             <RowCheckbox checked={allSelected} indeterminate={someSelected} onClick={toggleAll} />
           </div>
           {hg?.headers.map((header: any, i: number) => (
-            <div key={header.id} style={{ position: "relative", fontSize: 12, fontWeight: 500, color: t.mutedFg, display: "flex", alignItems: "center", paddingLeft: i === 0 ? 16 : 8 }}>
-              {flexRender(header.column.columnDef.header, header.getContext())}
+            <div
+              key={header.id}
+              onDragOver={(e) => { e.preventDefault(); setDragOverColId(header.column.id) }}
+              onDragLeave={() => setDragOverColId(null)}
+              onDrop={(e) => { e.preventDefault(); handleColDrop(header.column.id) }}
+              onDragEnd={() => { dragColId.current = null; setDragOverColId(null) }}
+              style={{
+                position: "relative",
+                zIndex: (hg.headers.length - i) + 1,
+                fontSize: 12, fontWeight: 500, color: t.mutedFg,
+                display: "flex", alignItems: "center",
+                paddingLeft: i === 0 ? 16 : 8,
+                background: dragOverColId === header.column.id ? t.fgAlpha06 : "transparent",
+              }}>
+              <span
+                draggable
+                onDragStart={(e) => { dragColId.current = header.column.id; e.dataTransfer.effectAllowed = "move" }}
+                style={{ display: "flex", alignItems: "center", cursor: "grab", userSelect: "none" as const }}>
+                {flexRender(header.column.columnDef.header, header.getContext())}
+              </span>
               {header.column.getCanResize() && <ColResizeHandle header={header} colIdx={i} onHoverChange={setResizeHovCol} isHovered={activeResizeCol === i}/>}
             </div>
           ))}
@@ -688,7 +733,7 @@ const dataHubItems = [
   { name: "Activity log", icon: <Clock size={16} strokeWidth={1}/> },
 ]
 const LOCATIONS_INIT = [
-  { name: "Global", icon: <OfficeIcon/>, expanded: false, items: globalSidebarItems },
+  { name: "Global", icon: <Globe size={16} strokeWidth={1}/>, expanded: false, items: globalSidebarItems },
   { name: "Beaverton HQ", icon: <OfficeIcon/>, expanded: false, items: officeItems },
   { name: "Hilversum", icon: <OfficeIcon/>, expanded: false, items: officeItems },
   { name: "Shanghai", icon: <OfficeIcon/>, expanded: false, items: officeItems },
