@@ -5,7 +5,7 @@ import {
   ChevronDown, Gauge, BarChart3, Clock, Users, Database,
   FolderOpen, Building, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
   Plus, RefreshCw, Settings2, Check, X, Circle, UserPlus, ArrowRightLeft,
-  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe
+  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe, Eye, EyeOff, Columns
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
@@ -153,21 +153,24 @@ function DataTableRow({ selected, onClick, template, children }: any) {
   )
 }
 
-function DataTable({ columns, data, onRowClick, isRowSelected, paddingX = 24, emptyNode }: any) {
+function DataTable({ columns, data, onRowClick, isRowSelected, onSelectionChange, hiddenCols, paddingX = 24, emptyNode }: any) {
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+  const onSelectionChangeRef = useRef(onSelectionChange)
+  useLayoutEffect(() => { onSelectionChangeRef.current = onSelectionChange })
+  useEffect(() => { onSelectionChangeRef.current?.([...selectedRows]) }, [selectedRows])
   const [resizeHovCol, setResizeHovCol] = useState<number | null>(null)
   const [colOrder, setColOrder] = useState<string[]>(() =>
     columns.map((c: any) => c.id ?? c.accessorKey)
   )
   const dragColId = useRef<string | null>(null)
   const [dragOverColId, setDragOverColId] = useState<string | null>(null)
-  // Sort columns by drag order before passing to TanStack Table — avoids controlled-state conflicts with resize
-  const orderedCols = useMemo(() => {
-    if (!colOrder.length) return columns
-    return colOrder
+  // Pre-sort columns by drag order before passing to TanStack Table — avoids controlled-state conflicts with resize
+  const orderedCols = useMemo(() =>
+    colOrder
       .map((id: string) => columns.find((c: any) => (c.id ?? c.accessorKey) === id))
       .filter(Boolean)
-  }, [columns, colOrder])
+      .filter((c: any) => !hiddenCols?.has(c.id ?? c.accessorKey))
+  , [columns, colOrder, hiddenCols])
   const table = useReactTable({
     data,
     columns: orderedCols,
@@ -219,7 +222,9 @@ function DataTable({ columns, data, onRowClick, isRowSelected, paddingX = 24, em
           {hg?.headers.map((header: any, i: number) => (
             <div
               key={header.id}
-              onDragOver={(e) => { e.preventDefault(); setDragOverColId(header.column.id) }}
+              draggable
+              onDragStart={(e) => { dragColId.current = header.column.id; e.dataTransfer.effectAllowed = "move" }}
+              onDragOver={(e) => { e.preventDefault(); if (dragOverColId !== header.column.id) setDragOverColId(header.column.id) }}
               onDragLeave={() => setDragOverColId(null)}
               onDrop={(e) => { e.preventDefault(); handleColDrop(header.column.id) }}
               onDragEnd={() => { dragColId.current = null; setDragOverColId(null) }}
@@ -230,13 +235,9 @@ function DataTable({ columns, data, onRowClick, isRowSelected, paddingX = 24, em
                 display: "flex", alignItems: "center",
                 paddingLeft: i === 0 ? 16 : 8,
                 background: dragOverColId === header.column.id ? t.fgAlpha06 : "transparent",
+                cursor: "grab", userSelect: "none" as const,
               }}>
-              <span
-                draggable
-                onDragStart={(e) => { dragColId.current = header.column.id; e.dataTransfer.effectAllowed = "move" }}
-                style={{ display: "flex", alignItems: "center", cursor: "grab", userSelect: "none" as const }}>
-                {flexRender(header.column.columnDef.header, header.getContext())}
-              </span>
+              {flexRender(header.column.columnDef.header, header.getContext())}
               {header.column.getCanResize() && <ColResizeHandle header={header} colIdx={i} onHoverChange={setResizeHovCol} isHovered={activeResizeCol === i}/>}
             </div>
           ))}
@@ -297,6 +298,58 @@ function DropdownWrapper({ trigger, children, open, setOpen }: any) {
         ref: dropRef,
         style: { ...(children as any).props.style, position: "fixed", top: pos.top, bottom: "auto", left: pos.left, right: "auto", marginTop: 0, marginBottom: 0, transform: (pos as any).transform }
       })}
+    </div>
+  )
+}
+
+function ColVisibilityBtn({ columns, hiddenCols, onToggle }: any) {
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const dropRef = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<any>(null)
+  useLayoutEffect(() => {
+    if (!open || !wrapRef.current) { setPos(null); return }
+    const r = wrapRef.current.getBoundingClientRect()
+    setPos({ top: r.bottom + 4, right: window.innerWidth - r.right })
+  }, [open])
+  useEffect(() => {
+    if (!open) return
+    function h(e: any) {
+      if (wrapRef.current?.contains(e.target)) return
+      if (dropRef.current?.contains(e.target)) return
+      setOpen(false)
+    }
+    document.addEventListener("mousedown", h)
+    return () => document.removeEventListener("mousedown", h)
+  }, [open])
+  const cols = columns.map((c: any) => ({ id: c.id ?? c.accessorKey, label: typeof c.header === "string" ? c.header : (c.id ?? c.accessorKey) }))
+  const anyHidden = cols.some((c: any) => hiddenCols.has(c.id))
+  return (
+    <div ref={wrapRef}>
+      <HoverBtn onClick={() => setOpen(o => !o)} style={{ ...s.iconBtn, width: 28, height: 28, color: open ? t.fg : t.secondaryFg }}>
+        <Settings2 size={13} strokeWidth={1}/>
+      </HoverBtn>
+      {open && pos && (
+        <div ref={dropRef} style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: 9999, background: t.popover, border: `1px solid ${t.border}`, borderRadius: 8, padding: 4, boxShadow: `0 4px 16px ${t.shadowDark}`, width: 220 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px 4px" }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg }}>Columns</span>
+            {anyHidden && (
+              <button onClick={() => cols.filter((c: any) => hiddenCols.has(c.id)).forEach((c: any) => onToggle(c.id))} style={{ fontSize: 11, color: t.secondaryFg, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Show all</button>
+            )}
+          </div>
+          <div style={{ maxHeight: 300, overflowY: "auto" }}>
+            {cols.map((col: any) => {
+              const hidden = hiddenCols.has(col.id)
+              return (
+                <button key={col.id} onClick={() => onToggle(col.id)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "6px 8px", borderRadius: 5, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                  <span style={{ fontSize: 13, color: hidden ? t.mutedFg : t.fg }}>{col.label}</span>
+                  {hidden ? <EyeOff size={13} strokeWidth={1} color={t.mutedFg}/> : <Eye size={13} strokeWidth={1} color={t.secondaryFg}/>}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -686,6 +739,7 @@ function getBusinessUnitProjects() {
           clientId: Math.floor(Math.random() * CLIENTS_FULL.length),
           stage: stageMap[proj.status] || "planning",
           margin: Math.floor(Math.random() * 15) + 20,
+          revenueRecognisedPct: Math.floor(Math.random() * 15) + 20,
           budget: proj.budget,
           startDate: "2026-01-15",
           endDate: "2026-12-31",
@@ -694,6 +748,7 @@ function getBusinessUnitProjects() {
           unit: unit.name,
           health: ["on-track","at-risk","off-track"][Math.floor(Math.random() * 3)],
           projectComplete: [0,10,20,30,40,50,60,70,80,90,100][Math.floor(Math.random() * 11)],
+          planAccuracy: [0,10,20,30,40,50,60,70,80,90,100][Math.floor(Math.random() * 11)],
           scheduledBillable: (Math.floor(Math.random() * 31) + 50) * 1000,
           hoursScheduled,
           totalHoursAtCompletion,
@@ -790,7 +845,7 @@ function Tabs({ tabs, active, onChange }: any) {
   )
 }
 
-function SectionHeader({ count, label, onAdd, filterField, filterValue, onClearFilter }: any) {
+function SectionHeader({ count, label, onAdd, filterField, filterValue, onClearFilter, actions }: any) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 16px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -805,7 +860,10 @@ function SectionHeader({ count, label, onAdd, filterField, filterValue, onClearF
           : <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={1}/>Filter</HoverBtn>
         }
       </div>
-      <button onClick={onAdd} style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}><Plus size={16} strokeWidth={1}/></button>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        {actions}
+        <button onClick={onAdd} style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}><Plus size={16} strokeWidth={1}/></button>
+      </div>
     </div>
   )
 }
@@ -1647,6 +1705,8 @@ function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateTo
   const [selectedIdx, setSelectedIdx] = useState<number|null>(null)
   const [showModal, setShowModal] = useState(false)
   const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const isAll = selectedOffices.length === ALL_OFFICES.length
   const filteredPeople = isAll ? (people ?? []) : (people ?? []).filter((p: any) => selectedOffices.includes(p.office))
   const display = tab === "archived" ? [] : roles
@@ -1691,18 +1751,19 @@ function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateTo
     <div style={{ display: "flex", flex: 1, overflow: "hidden", background: t.bg }}>
       {showModal && <AddRoleModal onAdd={(r: any) => onRolesChange([...roles, r])} onClose={() => setShowModal(false)}/>}
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
-        <SectionHeader count={roles.length} label="Roles" onAdd={() => setShowModal(true)}/>
+        <SectionHeader count={roles.length} label="Roles" onAdd={() => setShowModal(true)}
+          actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
           <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-          <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
           <Tabs active={tab} onChange={setTab} tabs={[{ label: `${roles.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+          <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={rolesColumns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
         </div>
         <DataTable
           columns={rolesColumns}
           data={display}
+          hiddenCols={hiddenCols}
           onRowClick={(_: any, idx: number) => setSelectedIdx(idx)}
           isRowSelected={(_: any, idx: number) => idx === selectedIdx}
           emptyNode={tab === "archived" && <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}><p style={{ fontSize: 13, color: t.mutedFg }}>No archived roles</p></div>}
@@ -1744,6 +1805,8 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
   const [showModal, setShowModal] = useState(false)
   const [deliveryTeamMode] = useState<"single"|"multiple">("single")
   const [groupMode] = useState<"single"|"multiple">("single")
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
 
   const current = view === "employees" ? people : view === "contractors" ? contractors : view === "all" ? [...people, ...contractors] : people
   const setCurrent = view === "employees" ? onPeopleChange : view === "contractors" ? onContractorsChange : onPeopleChange
@@ -1767,7 +1830,8 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
           filterField={filteredRole ? "Role" : undefined}
           filterValue={filteredRole ?? undefined}
           onClearFilter={filteredRole ? onRoleFilterClear : undefined}
-          onAdd={() => setShowModal(true)}/>
+          onAdd={() => setShowModal(true)}
+          actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <OfficeFilter selected={selectedOffices} onChange={(val: any) => { setSelectedOffices(val); if (onOfficeFilterClear) onOfficeFilterClear() }}/>
@@ -1788,12 +1852,15 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
               </TabBtn>
             ))}
           </div>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-          <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
           <Tabs active={tab} onChange={setTab} tabs={[{ label: `${filtered.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+          <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
+            { accessorKey: "name", header: "Name" }, { accessorKey: "roleId", header: "Role" }, { accessorKey: "access", header: "Access" },
+            { accessorKey: "departmentId", header: "Department" }, { accessorKey: "deliveryTeamIds", header: "Delivery team" },
+            { accessorKey: "groupIds", header: "Group" }, { accessorKey: "office", header: "Office" },
+          ]} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
         </div>
         <DataTable
           columns={[
@@ -1806,6 +1873,7 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
             { accessorKey: "office", header: "Office", size: 140, cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.office}</span> },
           ]}
           data={display}
+          hiddenCols={hiddenCols}
           onRowClick={(_: any, idx: number) => setSelectedPerson(idx)}
           isRowSelected={(_: any, idx: number) => idx === selectedPerson}
           emptyNode={tab === "archived" && <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}><p style={{ fontSize: 13, color: t.mutedFg }}>No archived people</p></div>}
@@ -1934,6 +2002,9 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
   const [notesIdx, setNotesIdx] = useState<number|null>(null)
   const [monthOffset, setMonthOffset] = useState(0)
   const [tableView, setTableView] = useState("all")
+  const [selectedProjectIndices, setSelectedProjectIndices] = useState<number[]>([])
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const currentUser = people[1]?.name || "Amy Santiago"
 
   const monthRange = useMemo(() => {
@@ -1990,6 +2061,12 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
         const val = Math.round((pct / 100) * (row.original.budget ?? 0))
         return <span style={{ fontSize: 13, color: t.fg }}>{pct}% <span style={{ color: t.mutedFg }}>/</span> {val.toLocaleString()}</span>
       }},
+    { accessorKey: "revenueRecognisedPct", header: "Revenue recognised", size: 200,
+      cell: ({ row }: any) => {
+        const pct = row.original.revenueRecognisedPct
+        const val = Math.round((pct / 100) * (row.original.scheduledBillable ?? 0))
+        return <span style={{ fontSize: 13, color: t.fg }}>{pct}% <span style={{ color: t.mutedFg }}>/</span> ${val.toLocaleString()}</span>
+      }},
     { id: "planAccuracy", header: "Plan accuracy", size: 130, accessorFn: () => "",
       cell: ({ row }: any) => (
         <span onClick={e => e.stopPropagation()}>
@@ -2012,43 +2089,101 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
       )},
   ], [projects, onProjectsChange, clients, people])
 
+  const recStats = useMemo(() => {
+    const src = selectedProjectIndices.length > 0
+      ? selectedProjectIndices.map((i: number) => projects[i]).filter(Boolean)
+      : projects
+    const totalScheduledBillable = src.reduce((acc: number, p: any) => acc + (p.scheduledBillable ?? 0), 0)
+    const totalHoursScheduled = src.reduce((acc: number, p: any) => acc + (p.hoursScheduled ?? 0), 0)
+    const totalMarginVal = src.reduce((acc: number, p: any) => acc + Math.round(((p.margin ?? 0) / 100) * (p.budget ?? 0)), 0)
+    const avgMargin = src.length ? Math.round(src.reduce((acc: number, p: any) => acc + (p.margin ?? 0), 0) / src.length) : 0
+    const totalRevenueRecognised = src.reduce((acc: number, p: any) => acc + Math.round(((p.revenueRecognisedPct ?? 0) / 100) * (p.scheduledBillable ?? 0)), 0)
+    const pctRecognised = totalScheduledBillable ? Math.round((totalRevenueRecognised / totalScheduledBillable) * 100) : 0
+    return { totalScheduledBillable, totalHoursScheduled, totalMarginVal, avgMargin, totalRevenueRecognised, pctRecognised, count: src.length }
+  }, [projects, selectedProjectIndices])
+
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
     <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden", background: t.bg }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "20px 24px 16px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 4 }}>
-            <h1 style={{ fontSize: 18, fontWeight: 600, color: t.fg }}>{projects.length} Projects</h1>
-            <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={1}/>Filter</HoverBtn>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ display: "flex", alignItems: "center", border: `1px solid ${t.border}`, borderRadius: 7, overflow: "hidden" }}>
-              <HoverBtn onClick={() => setMonthOffset(o => o - 1)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 24, borderRadius: 0, border: "none", background: "transparent", color: t.secondaryFg, cursor: "pointer", borderRight: `1px solid ${t.border}` }}>
-                <ChevronLeft size={12} strokeWidth={1.5}/>
-              </HoverBtn>
-              <HoverBtn onClick={() => setMonthOffset(o => o + 1)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 24, borderRadius: 0, border: "none", background: "transparent", color: t.secondaryFg, cursor: "pointer" }}>
-                <ChevronRight size={12} strokeWidth={1.5}/>
-              </HoverBtn>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 7, border: `1px solid ${t.border}`, cursor: "pointer" }}>
-              <span style={{ fontSize: 12, color: t.mutedFg }}>This month</span>
-              <span style={{ fontSize: 12, color: t.fg, fontWeight: 500 }}>{monthRange.start} – {monthRange.end}</span>
-              <ChevronDown size={11} strokeWidth={1.5} color={t.mutedFg}/>
-            </div>
-            <div style={{ width: 1, height: 16, background: t.fgAlpha20 }}/>
-            {[["all","All"],["recognised","Revenue recognition"]].map(([v,l]) => (
-              <TabBtn key={v} active={tableView === v} onClick={() => setTableView(v)} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
-                <Circle size={10} strokeWidth={1} style={{ fill: tableView === v ? t.fg : "none" }}/>{l}
-              </TabBtn>
-            ))}
-          </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 600, color: t.fg }}>{projects.length} Projects</h1>
+          <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={1}/>Filter</HoverBtn>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-          <button onClick={() => setShowModal(true)} style={s.primaryBtn}><Plus size={16} strokeWidth={1}/></button>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
+          <button onClick={() => setShowModal(true)} style={s.primaryBtn}><Plus size={16} strokeWidth={1}/></button>
         </div>
       </div>
-      <DataTable columns={columns} data={projects} onRowClick={(_p: any, i: number) => setNotesIdx(i)}/>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 24px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", border: `1px solid ${t.border}`, borderRadius: 7, overflow: "hidden" }}>
+          <HoverBtn onClick={() => setMonthOffset(o => o - 1)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 24, borderRadius: 0, border: "none", background: "transparent", color: t.secondaryFg, cursor: "pointer", borderRight: `1px solid ${t.border}` }}>
+            <ChevronLeft size={12} strokeWidth={1.5}/>
+          </HoverBtn>
+          <HoverBtn onClick={() => setMonthOffset(o => o + 1)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 24, borderRadius: 0, border: "none", background: "transparent", color: t.secondaryFg, cursor: "pointer" }}>
+            <ChevronRight size={12} strokeWidth={1.5}/>
+          </HoverBtn>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 7, border: `1px solid ${t.border}`, cursor: "pointer" }}>
+          <span style={{ fontSize: 12, color: t.mutedFg }}>This month</span>
+          <span style={{ fontSize: 12, color: t.fg, fontWeight: 500 }}>{monthRange.start} – {monthRange.end}</span>
+          <ChevronDown size={11} strokeWidth={1.5} color={t.mutedFg}/>
+        </div>
+        <div style={{ width: 1, height: 16, background: t.fgAlpha20 }}/>
+        {[["all","All"],["recognised","Revenue recognition"]].map(([v,l]) => (
+          <TabBtn key={v} active={tableView === v} onClick={() => setTableView(v)} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+            <Circle size={10} strokeWidth={1} style={{ fill: tableView === v ? t.fg : "none" }}/>{l}
+          </TabBtn>
+        ))}
+        <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={tableView === "recognised" ? columns.filter((c: any) => ["name","clientId","health","projectComplete","planAccuracy","budget","margin","revenueRecognisedPct","scheduledBillable","hoursScheduled","totalHoursAtCompletion"].includes(c.id ?? c.accessorKey)) : columns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
+      </div>
+      {tableView === "recognised" && (
+        <div style={{ display: "flex", gap: 12, padding: "4px 24px 16px" }}>
+          {[
+            {
+              label: "Revenue recognised",
+              value: `$${recStats.totalRevenueRecognised.toLocaleString()}`,
+              badge: `${recStats.pctRecognised}%`,
+              desc: `of $${recStats.totalScheduledBillable.toLocaleString()} scheduled billable`,
+            },
+            {
+              label: "Scheduled billable",
+              value: `$${recStats.totalScheduledBillable.toLocaleString()}`,
+              badge: `${recStats.count} project${recStats.count !== 1 ? "s" : ""}`,
+              desc: selectedProjectIndices.length > 0 ? `${selectedProjectIndices.length} of ${projects.length} selected` : "Total billable across all projects",
+            },
+            {
+              label: "Hours scheduled",
+              value: `${recStats.totalHoursScheduled.toLocaleString()}h`,
+              badge: recStats.count ? `avg ${Math.round(recStats.totalHoursScheduled / recStats.count)}h` : "—",
+              desc: selectedProjectIndices.length > 0 ? `${selectedProjectIndices.length} of ${projects.length} selected` : "Total hours across all projects",
+            },
+            {
+              label: "Margin",
+              value: `${recStats.avgMargin}%`,
+              badge: `$${recStats.totalMarginVal.toLocaleString()}`,
+              desc: selectedProjectIndices.length > 0 ? `${selectedProjectIndices.length} of ${projects.length} selected` : "Avg margin · total margin value",
+            },
+          ].map((card, i) => (
+            <div key={i} style={{ flex: 1, padding: "16px 20px", borderRadius: 10, border: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", gap: 6 }}>
+              <p style={{ fontSize: 11, color: t.mutedFg, fontWeight: 500 }}>{card.label}</p>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <span style={{ fontSize: 20, fontWeight: 500, color: t.fg, letterSpacing: "-0.5px", lineHeight: 1 }}>{card.value}</span>
+                <span style={{ fontSize: 12, color: t.secondaryFg }}>{card.badge}</span>
+              </div>
+              <p style={{ fontSize: 11, color: t.mutedFg }}>{card.desc}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      <DataTable
+        columns={tableView === "recognised"
+          ? columns.filter((c: any) => ["name","clientId","health","projectComplete","planAccuracy","budget","margin","revenueRecognisedPct","scheduledBillable","hoursScheduled","totalHoursAtCompletion"].includes(c.id ?? c.accessorKey))
+          : columns}
+        data={projects}
+        hiddenCols={hiddenCols}
+        onSelectionChange={setSelectedProjectIndices}
+        onRowClick={(_p: any, i: number) => setNotesIdx(i)}/>
       {showModal && <AddProjectModal people={people} clients={clients} onAdd={(p: any) => onProjectsChange([...projects, p])} onClose={() => setShowModal(false)}/>}
     </div>
     {notesIdx !== null && projects[notesIdx] && (
@@ -2072,6 +2207,8 @@ function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, cli
   const [selectedIdx, setSelectedIdx] = useState<number|null>(null)
   const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
   const [filteredOwner, setFilteredOwner] = useState<string|null>(null)
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const isAll = selectedOffices.length === ALL_OFFICES.length
   let filtered = isAll ? projects : projects.filter((p: any) => selectedOffices.includes(p.office))
   if (filteredBusinessUnit) filtered = filtered.filter((p: any) => p.unit === filteredBusinessUnit)
@@ -2108,7 +2245,8 @@ function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, cli
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden", background: t.bg }}>
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
-        <SectionHeader count={filtered.length} label="Projects" onAdd={() => {}} filterField={filteredOwner ? "Owner" : filteredRateCard ? "Rate card" : filteredClient ? "Client" : undefined} filterValue={filteredOwner ?? (filteredRateCard?.rateCardName) ?? filteredClient} onClearFilter={filteredOwner ? () => setFilteredOwner(null) : filteredRateCard ? onRateCardFilterClear : onClientFilterClear}/>
+        <SectionHeader count={filtered.length} label="Projects" onAdd={() => {}} filterField={filteredOwner ? "Owner" : filteredRateCard ? "Rate card" : filteredClient ? "Client" : undefined} filterValue={filteredOwner ?? (filteredRateCard?.rateCardName) ?? filteredClient} onClearFilter={filteredOwner ? () => setFilteredOwner(null) : filteredRateCard ? onRateCardFilterClear : onClientFilterClear}
+          actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
@@ -2118,15 +2256,15 @@ function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, cli
               </HoverBtn>
             )}
           </div>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-          <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
           <Tabs active={tab} onChange={setTab} tabs={[{ label: `${filtered.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+          <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={projColumns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
         </div>
         <DataTable
           columns={projColumns}
           data={display}
+          hiddenCols={hiddenCols}
           onRowClick={(_: any, idx: number) => setSelectedIdx(idx)}
           isRowSelected={(_: any, idx: number) => idx === selectedIdx}
           emptyNode={tab === "archived" && <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}><p style={{ fontSize: 13, color: t.mutedFg }}>No archived projects</p></div>}
@@ -2201,7 +2339,12 @@ function ProjectCompleteDropdown({ value, onChange }: any) {
 
 function PlanAccuracyDropdown({ value, onChange }: any) {
   const [open, setOpen] = useState(false)
+  const [inputVal, setInputVal] = useState("")
   const display = value == null ? "—" : `${value}%`
+  function commitInput() {
+    const n = parseInt(inputVal, 10)
+    if (!isNaN(n)) { onChange(Math.min(100, Math.max(0, n))); setOpen(false); setInputVal("") }
+  }
   return (
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
@@ -2211,13 +2354,26 @@ function PlanAccuracyDropdown({ value, onChange }: any) {
           <ChevronDown size={10} strokeWidth={1}/>
         </HoverBtn>
       }>
-      <div style={{ ...s.dropdown, width:100 }}>
-        {PLAN_ACCURACY_OPTIONS.map(v => (
-          <button key={v} onClick={(e: any) => { e.stopPropagation(); onChange(v); setOpen(false) }} style={s.dropdownItem(v === value)}>
-            <span style={{ flex:1 }}>{v}%</span>
-            {v === value && <Check size={11} strokeWidth={1}/>}
-          </button>
-        ))}
+      <div style={{ ...s.dropdown, width:120 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:4, padding:"4px 8px 6px", borderBottom:`1px solid ${t.border}` }}>
+          <input
+            type="number" min={0} max={100} placeholder="0–100"
+            value={inputVal}
+            onChange={e => setInputVal(e.target.value)}
+            onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") commitInput() }}
+            onClick={e => e.stopPropagation()}
+            style={{ width:"100%", fontSize:12, background:t.muted, border:`1px solid ${t.border}`, borderRadius:4, padding:"3px 6px", color:t.fg, outline:"none", fontFamily:"inherit" }}
+          />
+          <button onClick={(e) => { e.stopPropagation(); commitInput() }} style={{ fontSize:11, background:t.fgAlpha10, border:"none", borderRadius:4, padding:"3px 6px", color:t.fg, cursor:"pointer", whiteSpace:"nowrap" }}>Set</button>
+        </div>
+        <div style={{ maxHeight:180, overflowY:"auto" }}>
+          {PLAN_ACCURACY_OPTIONS.map(v => (
+            <button key={v} onClick={(e: any) => { e.stopPropagation(); onChange(v); setOpen(false) }} style={s.dropdownItem(v === value)}>
+              <span style={{ flex:1 }}>{v}%</span>
+              {v === value && <Check size={11} strokeWidth={1}/>}
+            </button>
+          ))}
+        </div>
       </div>
     </DropdownWrapper>
   )
@@ -2462,6 +2618,8 @@ function Clients({ roles, people, clients, onClientsChange, projects, onNavigate
   const setClients = onClientsChange
   const [tab, setTab] = useState("active")
   const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const isAll = selectedOffices.length === ALL_OFFICES.length
   const officeFiltered = isAll ? clients : clients.filter((c: any) => selectedOffices.includes(c.office))
   const displayClients = filterClients ? officeFiltered.filter((c: any) => filterClients.includes(c.name)) : officeFiltered
@@ -2469,14 +2627,17 @@ function Clients({ roles, people, clients, onClientsChange, projects, onNavigate
   return (
     <div style={{ display:"flex", flex:1, overflow:"hidden", background:t.bg }}>
       <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden" }}>
-        <SectionHeader count={displayClients.length} label="Clients" onAdd={() => {}} filterField={filterClients ? "Client" : undefined} filterValue={filterClients} onClearFilter={onClearClientsFilter}/>
+        <SectionHeader count={displayClients.length} label="Clients" onAdd={() => {}} filterField={filterClients ? "Client" : undefined} filterValue={filterClients} onClearFilter={onClearClientsFilter}
+          actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 12px" }}>
           <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
-          <HoverBtn style={{ ...s.iconBtn, width:24, height:24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
           <Tabs active={tab} onChange={setTab} tabs={[{label:`${clients.length} Active`,value:"active"},{label:"0 Archived",value:"archived"},{label:"All",value:"all"}]}/>
+          <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
+            {accessorKey:"name",header:"Client"},{id:"contact",header:"Client contact"},{id:"owner",header:"Client owner"},
+            {id:"crm",header:"CRM"},{id:"rateCards",header:"Rate cards"},{id:"projects",header:"Projects"},
+          ]} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
         </div>
         <DataTable
           columns={[
@@ -2512,6 +2673,7 @@ function Clients({ roles, people, clients, onClientsChange, projects, onNavigate
             { id: "projects", header: "Projects", size: 100, enableResizing: false, cell: ({ row }: any) => { const idx = clients.indexOf(row.original); const count = (projects||[]).filter((p: any) => p.clientId === idx).length; return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count} onClick={() => onNavigateToProjects(row.original.name)}/></span> : <span style={{ color:t.mutedFg }}>—</span> } },
           ]}
           data={tab==="archived"?[]:displayClients}
+          hiddenCols={hiddenCols}
         />
       </div>
     </div>
@@ -2524,6 +2686,8 @@ function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilte
   const [selectedClient, setSelectedClient] = useState<number|null>(null)
   const [selectedRC, setSelectedRC] = useState<number|null>(null)
   const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   function updateClient(idx: any, updated: any) { onClientsChange((prev: any) => prev.map((c: any,i: any) => i===idx ? updated : c)) }
   const client = selectedClient !== null ? clients[selectedClient] : null
   const isAll = selectedOffices.length === ALL_OFFICES.length
@@ -2533,14 +2697,16 @@ function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilte
   return (
     <div style={{ display:"flex", flex:1, overflow:"hidden", background:t.bg }}>
       <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden" }}>
-        <SectionHeader count={displayClients.length} label="Rate cards" onAdd={() => {}} filterField={filterClient ? "Client" : undefined} filterValue={filterClient} onClearFilter={onClearFilter}/>
+        <SectionHeader count={displayClients.length} label="Rate cards" onAdd={() => {}} filterField={filterClient ? "Client" : undefined} filterValue={filterClient} onClearFilter={onClearFilter}
+          actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 12px" }}>
           <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
-          <HoverBtn style={{ ...s.iconBtn, width:24, height:24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
           <Tabs active={tab} onChange={setTab} tabs={[{label:`${displayClients.length} Active`,value:"active"},{label:"0 Archived",value:"archived"},{label:"All",value:"all"}]}/>
+          <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
+            {accessorKey:"rateCardName",header:"Rate card"},{id:"client",header:"Clients"},{id:"projects",header:"Projects"},
+          ]} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
         </div>
         <DataTable
           columns={[
@@ -2549,6 +2715,7 @@ function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilte
             { id: "projects", header: "Projects", size: 120, enableResizing: false, cell: ({ row }: any) => { const count = (projects||[]).filter((p: any) => clients[p.clientId]?.name === row.original.name).length; return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count} onClick={() => onNavigateToProjects?.(row.original.name, row.original.rateCardName || row.original.name)}/></span> : <span style={{ color:t.mutedFg }}>—</span> } },
           ]}
           data={tab==="archived"?[]:displayClients}
+          hiddenCols={hiddenCols}
           onRowClick={(_: any, idx: number) => { setSelectedClient(idx); setSelectedRC(0) }}
           isRowSelected={(_: any, idx: number) => idx === selectedClient}
         />
@@ -2564,6 +2731,8 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
   const [tab, setTab] = useState("active")
   const [units, setUnits] = useState(BUSINESS_UNITS_FULL)
   const [selectedUnit, setSelectedUnit] = useState<number|null>(null)
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const [viewTab, setViewTab] = useState("departments")
   const [selectedDept, setSelectedDept] = useState<number|null>(null)
   function updateUnit(idx: any, updated: any) { setUnits((prev: any) => prev.map((u: any,i: any) => i===idx ? updated : u)) }
@@ -2574,14 +2743,17 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
       <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden" }}>
         {unit === null ? (
           <>
-            <SectionHeader count={units.length} label="Brands" onAdd={() => {}}/>
+            <SectionHeader count={units.length} label="Brands" onAdd={() => {}}
+              actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 12px" }}>
               <HoverBtn style={s.pillBtn(false)}><Circle size={10} strokeWidth={1}/>All regions<ChevronDown size={11} strokeWidth={1}/></HoverBtn>
-              <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
-              <HoverBtn style={{ ...s.iconBtn, width:24, height:24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
               <Tabs active={tab} onChange={setTab} tabs={[{label:`${units.length} Active`,value:"active"},{label:"0 Archived",value:"archived"},{label:"All",value:"all"}]}/>
+              <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
+                {accessorKey:"name",header:"Business Unit"},{id:"employees",header:"Employees"},
+                {id:"projects",header:"Projects"},{id:"departments",header:"Departments"},
+              ]} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
             </div>
             <DataTable
               columns={[
@@ -2591,6 +2763,7 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
                 { id: "departments", header: "Departments", size: 130, enableResizing: false, accessorFn: (row: any) => row.departments?.length ?? 0, cell: ({ row }: any) => <span style={{ display:"flex", alignItems:"center", fontSize:13, color:t.fg }}>{row.original.departments?.length ?? 0}</span> },
               ]}
               data={tab==="archived"?[]:units}
+              hiddenCols={hiddenCols}
               onRowClick={(_: any, idx: number) => { setSelectedUnit(idx); setViewTab("departments"); setSelectedDept(null) }}
             />
           </>
@@ -5069,8 +5242,8 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
       {teamSettingsOpen && <TeamSettingsModal type="delivery-teams" mode={deliveryTeamMode} onSave={(m: any) => setDeliveryTeamMode(m)} onClose={() => setTeamSettingsOpen(false)}/>}
       {groupSettingsOpen && <TeamSettingsModal type="groups" mode={groupMode} onSave={(m: any) => setGroupMode(m)} onClose={() => setGroupSettingsOpen(false)}/>}
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
-        <SectionHeader count={tabCount} label={tabLabel} onAdd={(tab !== "offices") ? () => setShowModal(true) : undefined}/>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
+        <SectionHeader count={tabCount} label={tabLabel} onAdd={(tab !== "offices") ? () => setShowModal(true) : undefined} actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
+        <div style={{ display: "flex", alignItems: "center", padding: "0 24px 12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {[["offices","Offices"],["departments","Departments"],["tags","Tags"]].map(([v,l]) => (
               <TabBtn key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
@@ -5089,7 +5262,6 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
               </TabBtn>
             ))}
           </div>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
 
         {tab === "offices" && (
@@ -5330,8 +5502,8 @@ function VersionsToggle({ version, onChange }: any) {
 
 export default function App() {
   const [version, setVersion] = useState("multi")
-  const [activeItem, setActiveItem] = useState("People")
-  const [breadcrumb, setBreadcrumb] = useState(["Data centre", "People"])
+  const [activeItem, setActiveItem] = useState("Project tracker")
+  const [breadcrumb, setBreadcrumb] = useState(["Global", "Project tracker"])
   const [roles, setRoles] = useState(INITIAL_ROLES)
   const [departments, setDepartments] = useState(INITIAL_DEPARTMENTS)
   const [deliveryTeams, setDeliveryTeams] = useState(INITIAL_DELIVERY_TEAMS)
