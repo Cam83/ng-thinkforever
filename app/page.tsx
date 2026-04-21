@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useRef, useEffect, useLayoutEffect, useMemo, cloneElement } from "react"
+import { createPortal } from "react-dom"
 import {
   ChevronDown, Gauge, BarChart3, Clock, Users, Database,
   FolderOpen, Building, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
   Plus, RefreshCw, Settings2, Check, X, Circle, UserPlus, ArrowRightLeft,
-  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe, Eye, EyeOff, Columns
+  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe, Eye, EyeOff, Columns, Activity
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
@@ -28,6 +29,10 @@ const getGlobalStyles = (theme: any) => `
   @keyframes notifSlideIn {
     from { opacity: 0; transform: translateX(-10px); }
     to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes colDivider {
+    0%, 100% { border-left-color: ${theme.borderAlpha25}; }
+    50%       { border-left-color: ${theme.fgAlpha20}; }
   }
 `
 
@@ -219,7 +224,9 @@ function DataTable({ columns, data, onRowClick, isRowSelected, onSelectionChange
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
             <RowCheckbox checked={allSelected} indeterminate={someSelected} onClick={toggleAll} />
           </div>
-          {hg?.headers.map((header: any, i: number) => (
+          {hg?.headers.map((header: any, i: number) => {
+            const divL = header.column.columnDef.meta?.dividerLeft
+            return (
             <div
               key={header.id}
               draggable
@@ -233,14 +240,16 @@ function DataTable({ columns, data, onRowClick, isRowSelected, onSelectionChange
                 zIndex: (hg.headers.length - i) + 1,
                 fontSize: 12, fontWeight: 500, color: t.mutedFg,
                 display: "flex", alignItems: "center",
-                paddingLeft: i === 0 ? 16 : 8,
+                paddingLeft: divL ? 14 : (i === 0 ? 16 : 8),
                 background: dragOverColId === header.column.id ? t.fgAlpha06 : "transparent",
                 cursor: "grab", userSelect: "none" as const,
+                ...(divL ? { borderLeft: `1px solid ${t.borderAlpha25}`, animation: "colDivider 4s ease-in-out infinite" } : {}),
               }}>
               {flexRender(header.column.columnDef.header, header.getContext())}
               {header.column.getCanResize() && <ColResizeHandle header={header} colIdx={i} onHoverChange={setResizeHovCol} isHovered={activeResizeCol === i}/>}
             </div>
-          ))}
+          )})}
+
         </div>
         {rows.map((row: any, idx: number) => (
           <DataTableRow
@@ -251,11 +260,14 @@ function DataTable({ columns, data, onRowClick, isRowSelected, onSelectionChange
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
               <RowCheckbox checked={selectedRows.has(idx)} onClick={() => toggleRow(idx)} />
             </div>
-            {row.getVisibleCells().map((cell: any, i: number) => (
-              <div key={cell.id} style={{ display: "flex", alignItems: "center", padding: "10px 0", paddingLeft: i === 0 ? 16 : 8, overflow: "hidden", fontSize: 13 }}>
+            {row.getVisibleCells().map((cell: any, i: number) => {
+              const divL = cell.column.columnDef.meta?.dividerLeft
+              return (
+              <div key={cell.id} style={{ display: "flex", alignItems: "center", padding: "10px 0", paddingLeft: divL ? 14 : (i === 0 ? 16 : 8), overflow: "hidden", fontSize: 13, ...(divL ? { borderLeft: `1px solid ${t.borderAlpha25}`, animation: "colDivider 4s ease-in-out infinite" } : {}) }}>
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
               </div>
-            ))}
+            )})}
+
           </DataTableRow>
         ))}
         {emptyNode && rows.length === 0 && emptyNode}
@@ -550,7 +562,32 @@ const INITIAL_PROJECTS: any[] = []
 
 const INITIAL_CLIENTS_DATA = [{ name: "Agency rack rate" }, { name: "Reebok" }, { name: "Adidas" }]
 const ALL_OFFICES = ["Global", "Beaverton HQ", "Hilversum", "Shanghai", "New York", "London", "Sydney"]
-const STAGE_COLORS = { planning: "#f59e0b", active: "#10b981", completed: "#6b7280", "on-hold": "#ef4444" }
+function StageIcon({ type, color }: { type: "dashed-circle" | "hex-outline" | "hex-filled"; color: string }) {
+  if (type === "dashed-circle") return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="8" cy="8" r="5.5" stroke={color} strokeWidth="1.5" strokeDasharray="3 2.2"/>
+    </svg>
+  )
+  if (type === "hex-outline") return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <polygon points="8,1.5 13.5,4.75 13.5,11.25 8,14.5 2.5,11.25 2.5,4.75" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+    </svg>
+  )
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <polygon points="8,1.5 13.5,4.75 13.5,11.25 8,14.5 2.5,11.25 2.5,4.75" fill={color} strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+const STAGE_OPTIONS = [
+  { value: "estimating",  label: "Estimating",  iconType: "dashed-circle" as const, color: "#8a9099" },
+  { value: "proposal",    label: "Proposal",    iconType: "dashed-circle" as const, color: "#8a9099" },
+  { value: "likely",      label: "Likely",      iconType: "hex-outline"   as const, color: "#f59e0b" },
+  { value: "on-track",    label: "On track",    iconType: "hex-filled"    as const, color: "#10b981" },
+  { value: "off-track",   label: "Off track",   iconType: "hex-filled"    as const, color: "#10b981" },
+  { value: "deal-signed", label: "Deal signed", iconType: "hex-filled"    as const, color: "#10b981" },
+]
 const CURRENCIES = ["USD","AUD","GBP","EUR","CAD","NZD","SGD","JPY"]
 
 const ACTIVITY_LOG_DATA = [
@@ -719,39 +756,61 @@ const SAMPLE_NOTES_POOL = [
   ],
 ]
 
+function makeRng(seed: number) {
+  let s = seed >>> 0
+  return () => { s = (Math.imul(1664525, s) + 1013904223) >>> 0; return s / 0x100000000 }
+}
+
 function getBusinessUnitProjects() {
-  const stageMap: Record<string, string> = { "Active": "active", "In Progress": "active", "Planning": "planning" }
+  const rng = makeRng(42)
+  const stageMap: Record<string, string> = { "Active": "on-track", "In Progress": "on-track", "Planning": "estimating" }
   const offices = ["Global", "Beaverton HQ", "Hilversum", "Shanghai", "New York", "London", "Sydney"]
   const allProjects: any[] = []
 
-  BUSINESS_UNITS_FULL.forEach((unit, unitIdx) => {
+  BUSINESS_UNITS_FULL.forEach((unit, _unitIdx) => {
     if (unit.projectsList) {
       unit.projectsList.forEach((proj, idx) => {
         const globalIdx = allProjects.length
         const sampleNotes = globalIdx % 2 === 0
           ? SAMPLE_NOTES_POOL[globalIdx % SAMPLE_NOTES_POOL.length]
           : undefined
-        const hoursScheduled = [600,700,800,900][Math.floor(Math.random() * 4)]
-        const totalHoursAtCompletion = Math.round(hoursScheduled * (2.8 + Math.random() * 0.4) / 50) * 50
+        // rng call 1 — repurposed: billable ratio (was hoursScheduled array pick)
+        const billableRatio = 0.72 + rng() * 0.20
+        // rng call 2 — repurposed: avg bill rate factor (was totalHoursAtCompletion multiplier)
+        const avgBillRate = 140 + Math.floor(rng() * 45)
+        const projectComplete = [0,10,20,30,40,50,60,70,80,90,100][Math.floor(rng() * 11)]
+        const historyNames = ["Jake Peralta","Amy Santiago","Rosa Diaz","Terry Jeffords","Charles Boyle"]
+        const historyCount = projectComplete === 0 ? 0 : projectComplete >= 60 ? 3 : 2
+        const completionHistory = Array.from({ length: historyCount }, (_: any, i: number) => {
+          const d = new Date(2026, 3, 21); d.setDate(d.getDate() - (i + 1) * Math.floor(10 + rng() * 14))
+          return { date: d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), ts: d.getTime(), user: historyNames[Math.floor(rng() * historyNames.length)], value: Math.max(0, projectComplete - i * Math.ceil(projectComplete / Math.max(historyCount, 1))) }
+        })
+        // Derive all financials from budget
+        const budget = proj.budget
+        const scheduledBillable = Math.round(budget * billableRatio / 500) * 500
+        const hoursScheduled = Math.round(scheduledBillable / avgBillRate / 10) * 10
         allProjects.push({
           name: proj.title,
           code: `${(unit.name.split(" ").pop() ?? unit.name).toUpperCase()}-${String(idx + 1).padStart(3, "0")}`,
-          clientId: Math.floor(Math.random() * CLIENTS_FULL.length),
-          stage: stageMap[proj.status] || "planning",
-          margin: Math.floor(Math.random() * 15) + 20,
-          revenueRecognisedPct: Math.floor(Math.random() * 15) + 20,
-          budget: proj.budget,
+          clientId: Math.floor(rng() * CLIENTS_FULL.length),
+          stage: stageMap[proj.status] || "estimating",
+          margin: 20 + Math.floor(rng() * 16),
+          revenueRecognisedPct: Math.min(100, Math.max(0, projectComplete + Math.floor(rng() * 14) - 7)),
+          budget,
           startDate: "2026-01-15",
           endDate: "2026-12-31",
-          ownerId: Math.floor(Math.random() * 6),
-          office: offices[Math.floor(Math.random() * offices.length)],
+          ownerId: Math.floor(rng() * 6),
+          office: offices[Math.floor(rng() * offices.length)],
           unit: unit.name,
-          health: ["on-track","at-risk","off-track"][Math.floor(Math.random() * 3)],
-          projectComplete: [0,10,20,30,40,50,60,70,80,90,100][Math.floor(Math.random() * 11)],
-          planAccuracy: [0,10,20,30,40,50,60,70,80,90,100][Math.floor(Math.random() * 11)],
-          scheduledBillable: (Math.floor(Math.random() * 31) + 50) * 1000,
+          health: ["on-track","at-risk","off-track"][Math.floor(rng() * 3)],
+          projectComplete,
+          completionHistory,
+          planAccuracy: [0,10,20,30,40,50,60,70,80,90,100][Math.floor(rng() * 11)],
+          scheduledBillable,
           hoursScheduled,
-          totalHoursAtCompletion,
+          totalHoursAtCompletion: projectComplete > 0
+            ? Math.round(Math.min(hoursScheduled * 2.2, hoursScheduled / (projectComplete / 100) * (1 + rng() * 0.12)) / 50) * 50
+            : Math.round(hoursScheduled * (1.1 + rng() * 0.2) / 50) * 50,
           notes: sampleNotes,
         })
       })
@@ -897,28 +956,38 @@ function DetailGrid({ items }: any) {
 }
 
 function ActivityTimeline({ entries }: any) {
-  const iconColors = {
+  const iconColors: Record<string, { bg: string; fg: string }> = {
     added: { bg: "#052e16", fg: "#4ade80" }, allocation: { bg: "#451a03", fg: "#fb923c" },
     role_change: { bg: "#172554", fg: "#60a5fa" }, office_transfer: { bg: "#2e1065", fg: "#a78bfa" },
     created: { bg: "#052e16", fg: "#4ade80" }, rate_change: { bg: "#451a03", fg: "#fb923c" },
     person_assigned: { bg: "#172554", fg: "#60a5fa" }, person_removed: { bg: "#450a0a", fg: "#f87171" },
     renamed: { bg: "#451a03", fg: "#fb923c" },
+    completion: { bg: "#1e1b4b", fg: "#818cf8" }, health_change: { bg: "#042f2e", fg: "#2dd4bf" },
+    note: { bg: "#1c1917", fg: "#a8a29e" }, stage_change: { bg: "#172554", fg: "#60a5fa" },
+    budget: { bg: "#451a03", fg: "#fb923c" },
   }
   function getIcon(type: any) {
     if (type === "added" || type === "person_assigned") return <UserPlus size={13} strokeWidth={1}/>
-    if (type === "role_change" || type === "renamed") return <ArrowRightLeft size={13} strokeWidth={1}/>
-    if (type === "allocation") return <CalendarClock size={13} strokeWidth={1}/>
+    if (type === "role_change" || type === "renamed" || type === "stage_change") return <ArrowRightLeft size={13} strokeWidth={1}/>
+    if (type === "allocation" || type === "created") return <CalendarClock size={13} strokeWidth={1}/>
     if (type === "office_transfer") return <Briefcase size={13} strokeWidth={1}/>
-    if (type === "created") return <CalendarClock size={13} strokeWidth={1}/>
-    if (type === "rate_change") return <DollarSign size={13} strokeWidth={1}/>
+    if (type === "rate_change" || type === "budget") return <DollarSign size={13} strokeWidth={1}/>
     if (type === "person_removed") return <Users size={13} strokeWidth={1}/>
+    if (type === "completion") return <Activity size={13} strokeWidth={1}/>
+    if (type === "health_change") return <Circle size={13} strokeWidth={1}/>
+    if (type === "note") return <Clock size={13} strokeWidth={1}/>
     return <Settings size={13} strokeWidth={1}/>
+  }
+  function fmtEntry(e: any) {
+    if (e.date) return e.date
+    if (e.ts) return new Date(e.ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    return ""
   }
   return (
     <div style={{ position: "relative" }}>
       <div style={{ position: "absolute", left: 13, top: 12, bottom: 12, width: 1, background: t.border }}/>
       {entries.map((e: any, i: any) => {
-        const col = (iconColors as any)[e.type] || { bg: t.muted, fg: t.mutedFg }
+        const col = iconColors[e.type] || { bg: t.muted, fg: t.mutedFg }
         return (
           <div key={i} style={{ display: "flex", gap: 12, paddingBottom: 20 }}>
             <div style={{ width: 26, height: 26, borderRadius: "50%", background: col.bg, color: col.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative", zIndex: 1 }}>
@@ -926,8 +995,8 @@ function ActivityTimeline({ entries }: any) {
             </div>
             <div style={{ flex: 1, paddingTop: 2 }}>
               <p style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>{e.description}</p>
-              {e.details && <p style={{ fontSize: 12, color: t.mutedFg, marginTop: 2 }}>{e.details}</p>}
-              <p style={{ fontSize: 11, color: t.mutedFg, marginTop: 4 }}>{e.date}</p>
+              {e.details && <p style={{ fontSize: 12, color: t.secondaryFg, marginTop: 2, lineHeight: 1.4 }}>{e.details}</p>}
+              <p style={{ fontSize: 11, color: t.mutedFg, marginTop: 4 }}>{e.user ? `${e.user} · ` : ""}{fmtEntry(e)}</p>
             </div>
           </div>
         )
@@ -1997,14 +2066,128 @@ function NotesPanel({ project, currentUser, onClose, onUpdate }: any) {
 }
 
 
+function buildProjectActivity(project: any) {
+  const entries: any[] = []
+  const names = ["Jake Peralta", "Amy Santiago", "Rosa Diaz", "Terry Jeffords", "Charles Boyle"]
+  const ownerName = names[(project.ownerId ?? 0) % names.length]
+  const base = new Date("2026-01-15").getTime()
+
+  // Project created
+  entries.push({ type: "created", description: "Project created", ts: base, user: "Amy Santiago" })
+
+  // Owner assigned
+  entries.push({ type: "person_assigned", description: `${ownerName} assigned as owner`, ts: base + 3 * 86400000, user: "Amy Santiago" })
+
+  // Stage history (live changes take priority; fall back to seeded entry for initial stage)
+  const stageHistory: any[] = project.stageHistory || []
+  if (stageHistory.length > 0) {
+    stageHistory.forEach((h: any) => {
+      const fromLabel = STAGE_OPTIONS.find(o => o.value === h.from)?.label ?? h.from
+      const toLabel = STAGE_OPTIONS.find(o => o.value === h.to)?.label ?? h.to
+      entries.push({ type: "stage_change", description: `Stage changed from ${fromLabel} to ${toLabel}`, ts: h.ts, user: h.user })
+    })
+  } else if (project.stage && project.stage !== "estimating") {
+    const stageLabel = STAGE_OPTIONS.find(o => o.value === project.stage)?.label ?? project.stage
+    entries.push({ type: "stage_change", description: `Stage set to ${stageLabel}`, ts: base + 14 * 86400000, user: ownerName })
+  }
+
+  // Health history
+  const healthHistory: any[] = project.healthHistory || []
+  if (healthHistory.length > 0) {
+    healthHistory.forEach((h: any) => {
+      const fromLabel = HEALTH_OPTIONS.find(o => o.value === h.from)?.label ?? h.from
+      const toLabel = HEALTH_OPTIONS.find(o => o.value === h.to)?.label ?? h.to
+      entries.push({ type: "health_change", description: `Health changed from ${fromLabel} to ${toLabel}`, ts: h.ts, user: h.user })
+    })
+  } else {
+    const healthLabel = HEALTH_OPTIONS.find(o => o.value === project.health)?.label ?? project.health
+    entries.push({ type: "health_change", description: `Health set to ${healthLabel}`, ts: base + 25 * 86400000 + (project.ownerId ?? 0) * 3600000, user: names[((project.ownerId ?? 0) + 1) % names.length] })
+  }
+
+  // Budget set
+  entries.push({ type: "budget", description: `Budget set to $${(project.budget ?? 0).toLocaleString()}`, ts: base + 2 * 86400000, user: "Amy Santiago" })
+
+  // Completion history
+  ;(project.completionHistory || []).forEach((h: any) => {
+    entries.push({ type: "completion", description: `Completion updated to ${h.value}%`, ts: h.ts ?? 0, user: h.user })
+  })
+
+  // Notes as comments
+  ;(project.notes || []).forEach((n: any) => {
+    entries.push({ type: "note", description: `${n.author} added a comment`, details: n.text, ts: n.timestamp, user: n.author })
+  })
+
+  return entries.sort((a, b) => b.ts - a.ts)
+}
+
+function ProjectActivityPanel({ project, currentUser, onClose, onUpdate }: any) {
+  const [draft, setDraft] = useState("")
+  const entries = buildProjectActivity(project)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  function submit() {
+    const text = draft.trim()
+    if (!text) return
+    const updated = [...(project.notes || []), { text, author: currentUser, timestamp: Date.now() }]
+    onUpdate(updated)
+    setDraft("")
+  }
+
+  function handleKey(e: any) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit() }
+  }
+
+  return (
+    <div style={{ width: 340, flexShrink: 0, borderLeft: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${t.border}`, padding: "16px 20px" }}>
+        <div>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: t.fg }}>Activity</h2>
+          <p style={{ fontSize: 12, color: t.mutedFg, marginTop: 2 }}>{project.name}</p>
+        </div>
+        <HoverBtn onClick={onClose} style={{ ...s.iconBtn, color: t.mutedFg }}><X size={16} strokeWidth={1}/></HoverBtn>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+        {entries.length === 0
+          ? <p style={{ fontSize: 13, color: t.mutedFg, textAlign: "center", marginTop: 32 }}>No activity yet.</p>
+          : <ActivityTimeline entries={entries}/>
+        }
+        <div ref={bottomRef}/>
+      </div>
+      <div style={{ padding: "12px 20px", borderTop: `1px solid ${t.border}` }}>
+        <textarea
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={handleKey}
+          placeholder="Add a comment… (Enter to send)"
+          rows={3}
+          style={{ width: "100%", background: t.muted, border: `1px solid ${t.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 13, color: t.fg, resize: "none", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+        />
+        <button onClick={submit}
+          style={{ marginTop: 8, width: "100%", padding: "7px 0", borderRadius: 6, border: "none", background: t.fg, color: t.bg, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+          Add comment
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
   const [showModal, setShowModal] = useState(false)
-  const [notesIdx, setNotesIdx] = useState<number|null>(null)
+  const [panel, setPanel] = useState<{ type: "notes" | "activity"; idx: number } | null>(null)
   const [monthOffset, setMonthOffset] = useState(0)
   const [tableView, setTableView] = useState("all")
   const [selectedProjectIndices, setSelectedProjectIndices] = useState<number[]>([])
-  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
-  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem("projectTracker.hiddenCols.all") : null
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    } catch { return new Set() }
+  })
+  const toggleCol = (id: string) => setHiddenCols(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id)
+    try { localStorage.setItem("projectTracker.hiddenCols.all", JSON.stringify([...n])) } catch {}
+    return n
+  })
   const currentUser = people[1]?.name || "Amy Santiago"
 
   const monthRange = useMemo(() => {
@@ -2026,48 +2209,64 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
       )},
     { accessorKey: "clientId", header: "Client", size: 150,
       cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{clients[row.original.clientId]?.name || "—"}</span> },
+    { id: "stage", header: "Stage", size: 150, accessorFn: () => "",
+      cell: ({ row }: any) => (
+        <span onClick={e => e.stopPropagation()}>
+          <StageDropdown value={row.original.stage || "estimating"} onChange={(v: any) => {
+            const u=[...projects]; const idx=projects.indexOf(row.original)
+            const entry = { ts: Date.now(), user: currentUser, from: u[idx].stage, to: v }
+            u[idx] = { ...u[idx], stage: v, stageHistory: [entry, ...(u[idx].stageHistory || [])] }
+            onProjectsChange(u)
+          }}/>
+        </span>
+      )},
     { id: "health", header: "Health", size: 130, accessorFn: () => "",
       cell: ({ row }: any) => (
         <span onClick={e => e.stopPropagation()}>
-          <HealthDropdown value={row.original.health || "on-track"} onChange={(v: any) => { const u=[...projects]; u[projects.indexOf(row.original)].health=v; onProjectsChange(u) }}/>
+          <HealthDropdown value={row.original.health || "on-track"} onChange={(v: any) => {
+            const u=[...projects]; const idx=projects.indexOf(row.original)
+            const entry = { ts: Date.now(), user: currentUser, from: u[idx].health, to: v }
+            u[idx] = { ...u[idx], health: v, healthHistory: [entry, ...(u[idx].healthHistory || [])] }
+            onProjectsChange(u)
+          }}/>
         </span>
       )},
     { id: "projectComplete", header: "Project completion (%)", size: 160, accessorFn: () => "",
       cell: ({ row }: any) => (
-        <span onClick={e => e.stopPropagation()}>
-          <ProjectCompleteDropdown value={row.original.projectComplete ?? null} onChange={(v: any) => { const u=[...projects]; u[projects.indexOf(row.original)].projectComplete=v; onProjectsChange(u) }}/>
+        <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <ProjectCompleteDropdown value={row.original.projectComplete ?? null} onChange={(v: any) => {
+            const u=[...projects]; const idx=projects.indexOf(row.original)
+            const now = Date.now()
+            const entry = { date: new Date(now).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), ts: now, user: currentUser, value: v }
+            u[idx] = { ...u[idx], projectComplete: v, completionHistory: [entry, ...(u[idx].completionHistory || [])] }
+            onProjectsChange(u)
+          }}/>
+          <ActivityHistoryBtn history={row.original.completionHistory || []}/>
         </span>
       )},
     { id: "notes", header: "Notes", size: 220, enableResizing: false, accessorFn: () => "",
       cell: ({ row }: any) => (
-        <span onClick={e => { e.stopPropagation(); setNotesIdx(projects.indexOf(row.original)) }} style={{ display: "flex", alignItems: "flex-start" }}>
-          <NotesCell notes={row.original.notes} onClick={() => setNotesIdx(projects.indexOf(row.original))}/>
+        <span onClick={e => { e.stopPropagation(); setPanel({ type: "notes", idx: projects.indexOf(row.original) }) }} style={{ display: "flex", alignItems: "flex-start", paddingRight: 16 }}>
+          <NotesCell notes={row.original.notes} onClick={() => setPanel({ type: "notes", idx: projects.indexOf(row.original) })}/>
         </span>
       )},
-    { id: "stage", header: "Stage", size: 130, accessorFn: () => "",
-      cell: ({ row }: any) => (
-        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: (STAGE_COLORS as any)[row.original.stage], flexShrink: 0 }}/>
-          <span style={{ fontSize: 12, color: t.secondaryFg, textTransform: "capitalize" }}>{row.original.stage}</span>
-        </span>
-      )},
-    { accessorKey: "budget", header: "Budget", size: 120,
-      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>${row.original.budget?.toLocaleString()}</span> },
-    { accessorKey: "scheduledBillable", header: "Scheduled billable", size: 150,
+    { accessorKey: "scheduledBillable", header: "Scheduled billable", size: 150, meta: { dividerLeft: true },
       cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.scheduledBillable != null ? `$${row.original.scheduledBillable.toLocaleString()}` : "—"}</span> },
     { accessorKey: "margin", header: "Margin", size: 180,
       cell: ({ row }: any) => {
         const pct = row.original.margin
         const val = Math.round((pct / 100) * (row.original.budget ?? 0))
-        return <span style={{ fontSize: 13, color: t.fg }}>{pct}% <span style={{ color: t.mutedFg }}>/</span> {val.toLocaleString()}</span>
+        return <span style={{ fontSize: 13, color: t.fg }}>{pct}% <span style={{ color: t.mutedFg }}>/</span> ${val.toLocaleString()}</span>
       }},
+    { accessorKey: "budget", header: "Total budget", size: 120,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>${row.original.budget?.toLocaleString()}</span> },
     { accessorKey: "revenueRecognisedPct", header: "Revenue recognised", size: 200,
       cell: ({ row }: any) => {
         const pct = row.original.revenueRecognisedPct
         const val = Math.round((pct / 100) * (row.original.scheduledBillable ?? 0))
         return <span style={{ fontSize: 13, color: t.fg }}>{pct}% <span style={{ color: t.mutedFg }}>/</span> ${val.toLocaleString()}</span>
       }},
-    { id: "planAccuracy", header: "Plan accuracy", size: 130, accessorFn: () => "",
+    { id: "planAccuracy", header: "Plan accuracy", size: 130, meta: { dividerLeft: true }, accessorFn: () => "",
       cell: ({ row }: any) => (
         <span onClick={e => e.stopPropagation()}>
           <PlanAccuracyDropdown value={row.original.planAccuracy ?? null} onChange={(v: any) => { const u=[...projects]; u[projects.indexOf(row.original)].planAccuracy=v; onProjectsChange(u) }}/>
@@ -2183,17 +2382,29 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
         data={projects}
         hiddenCols={hiddenCols}
         onSelectionChange={setSelectedProjectIndices}
-        onRowClick={(_p: any, i: number) => setNotesIdx(i)}/>
+        onRowClick={(_p: any, i: number) => setPanel(prev => prev?.type === "activity" && prev.idx === i ? null : { type: "activity", idx: i })}/>
       {showModal && <AddProjectModal people={people} clients={clients} onAdd={(p: any) => onProjectsChange([...projects, p])} onClose={() => setShowModal(false)}/>}
     </div>
-    {notesIdx !== null && projects[notesIdx] && (
+    {panel?.type === "notes" && projects[panel.idx] && (
       <NotesPanel
-        project={projects[notesIdx]}
+        project={projects[panel.idx]}
         currentUser={currentUser}
-        onClose={() => setNotesIdx(null)}
+        onClose={() => setPanel(null)}
         onUpdate={(updated: any) => {
           const u = [...projects]
-          u[notesIdx] = { ...u[notesIdx], notes: updated }
+          u[panel.idx] = { ...u[panel.idx], notes: updated }
+          onProjectsChange(u)
+        }}
+      />
+    )}
+    {panel?.type === "activity" && projects[panel.idx] && (
+      <ProjectActivityPanel
+        project={projects[panel.idx]}
+        currentUser={currentUser}
+        onClose={() => setPanel(null)}
+        onUpdate={(updated: any) => {
+          const u = [...projects]
+          u[panel.idx] = { ...u[panel.idx], notes: updated }
           onProjectsChange(u)
         }}
       />
@@ -2337,6 +2548,50 @@ function ProjectCompleteDropdown({ value, onChange }: any) {
   )
 }
 
+function ActivityHistoryBtn({ history }: { history: { date: string; user: string; value: number }[] }) {
+  const [hov, setHov] = useState(false)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+
+  function updatePos() {
+    if (!btnRef.current) return
+    const r = btnRef.current.getBoundingClientRect()
+    setPos({ top: r.bottom + 6, left: r.left + r.width / 2 })
+  }
+
+  return (
+    <div style={{ display: "inline-flex" }}>
+      <button
+        ref={btnRef}
+        onMouseEnter={() => { updatePos(); setHov(true) }}
+        onMouseLeave={() => setHov(false)}
+        onClick={e => e.stopPropagation()}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 4, border: "none", background: "transparent", color: hov ? t.secondaryFg : t.mutedFg, cursor: "default", padding: 0 }}
+      >
+        <Activity size={12} strokeWidth={1.5}/>
+      </button>
+      {hov && typeof document !== "undefined" && createPortal(
+        <div style={{ position: "fixed", top: pos.top, left: pos.left, transform: "translateX(-50%)", background: t.popover, border: `1px solid ${t.border}`, borderRadius: 8, padding: "8px 10px", boxShadow: `0 4px 16px ${t.shadowDark}`, zIndex: 9999, minWidth: 240, pointerEvents: "none" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, marginBottom: 6, letterSpacing: "0.05em" }}>Activity</div>
+          {history.length === 0
+            ? <div style={{ fontSize: 12, color: t.secondaryFg }}>No history yet</div>
+            : <div style={{ display: "flex", flexDirection: "column" }}>
+                {history.map((entry, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, paddingTop: i > 0 ? 4 : 0, borderTop: i > 0 ? `1px solid ${t.border}` : "none", marginTop: i > 0 ? 4 : 0 }}>
+                    <span style={{ fontSize: 12, color: t.fg, fontWeight: 500 }}>{entry.user}</span>
+                    <span style={{ fontSize: 12, color: t.secondaryFg }}>set to {entry.value}%</span>
+                    <span style={{ fontSize: 11, color: t.mutedFg, marginLeft: "auto", whiteSpace: "nowrap", paddingLeft: 8 }}>{entry.date}</span>
+                  </div>
+                ))}
+              </div>
+          }
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
 function PlanAccuracyDropdown({ value, onChange }: any) {
   const [open, setOpen] = useState(false)
   const [inputVal, setInputVal] = useState("")
@@ -2374,6 +2629,33 @@ function PlanAccuracyDropdown({ value, onChange }: any) {
             </button>
           ))}
         </div>
+      </div>
+    </DropdownWrapper>
+  )
+}
+
+function StageDropdown({ value, onChange }: any) {
+  const [open, setOpen] = useState(false)
+  const current = STAGE_OPTIONS.find(o => o.value === value) || STAGE_OPTIONS[0]
+  return (
+    <DropdownWrapper open={open} setOpen={setOpen}
+      trigger={
+        <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
+          style={{ display:"flex", alignItems:"center", gap:6, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:500, color: t.fg }}>
+          <StageIcon type={current.iconType} color={current.color}/>
+          {current.label}
+          <ChevronDown size={10} strokeWidth={1} color={t.mutedFg}/>
+        </HoverBtn>
+      }>
+      <div style={{ ...s.dropdown, width: 150 }}>
+        {STAGE_OPTIONS.map(o => (
+          <button key={o.value} onClick={(e: any) => { e.stopPropagation(); onChange(o.value); setOpen(false) }}
+            style={{ ...s.dropdownItem(o.value === value), display:"flex", alignItems:"center", gap:8 }}>
+            <StageIcon type={o.iconType} color={o.color}/>
+            <span style={{ flex: 1 }}>{o.label}</span>
+            {o.value === value && <Check size={11} strokeWidth={1}/>}
+          </button>
+        ))}
       </div>
     </DropdownWrapper>
   )
@@ -2789,7 +3071,7 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
                     columns={[
                       { accessorKey: "title", header: "Project", size: 220, cell: ({ row }: any) => <span style={{ fontSize:13, fontWeight:500, color:t.fg }}>{row.original.title}</span> },
                       { accessorKey: "team", header: "Team Size", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>{row.original.team}</span> },
-                      { accessorKey: "budget", header: "Budget", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.budget?.toLocaleString()}</span> },
+                      { accessorKey: "budget", header: "Total budget", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.budget?.toLocaleString()}</span> },
                       { accessorKey: "status", header: "Status", size: 110, enableResizing: false, cell: ({ row }: any) => <span style={{ fontSize:12, display:"flex", alignItems:"center", padding:"4px 8px", borderRadius:4, background: row.original.status === "Active" ? "#d4edda" : row.original.status === "In Progress" ? "#fff3cd" : "#e7e7e7", color: row.original.status === "Active" ? "#155724" : row.original.status === "In Progress" ? "#856404" : "#666" }}>{row.original.status}</span> },
                     ]}
                     data={unit.projectsList ?? []}
@@ -2799,7 +3081,7 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
                   <DataTable
                     columns={[
                       { accessorKey: "title", header: "Department", size: 220, cell: ({ row }: any) => <span style={{ fontSize:13, fontWeight:500, color:t.fg }}>{row.original.title}</span> },
-                      { accessorKey: "budget", header: "Budget", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.budget.toLocaleString()}</span> },
+                      { accessorKey: "budget", header: "Total budget", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.budget.toLocaleString()}</span> },
                       { accessorKey: "spent", header: "Spent", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.spent.toLocaleString()}</span> },
                       { id: "roles", header: "Roles", size: 110, enableResizing: false, accessorFn: (row: any) => row.linkedRoles?.length ?? 0, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>{row.original.linkedRoles?.length ?? 0}</span> },
                     ]}
