@@ -31,8 +31,8 @@ const getGlobalStyles = (theme: any) => `
     to   { opacity: 1; transform: translateX(0); }
   }
   @keyframes colDivider {
-    0%, 100% { border-left-color: ${theme.borderAlpha25}; }
-    50%       { border-left-color: ${theme.fgAlpha20}; }
+    0%, 100% { border-left-color: ${theme.fgAlpha06}; }
+    50%       { border-left-color: ${theme.fgAlpha10}; }
   }
 `
 
@@ -243,7 +243,7 @@ function DataTable({ columns, data, onRowClick, isRowSelected, onSelectionChange
                 paddingLeft: divL ? 14 : (i === 0 ? 16 : 8),
                 background: dragOverColId === header.column.id ? t.fgAlpha06 : "transparent",
                 cursor: "grab", userSelect: "none" as const,
-                ...(divL ? { borderLeft: `1px solid ${t.borderAlpha25}`, animation: "colDivider 4s ease-in-out infinite" } : {}),
+                ...(divL ? { borderLeft: `1px solid ${t.fgAlpha06}`, animation: "colDivider 4s ease-in-out infinite" } : {}),
               }}>
               {flexRender(header.column.columnDef.header, header.getContext())}
               {header.column.getCanResize() && <ColResizeHandle header={header} colIdx={i} onHoverChange={setResizeHovCol} isHovered={activeResizeCol === i}/>}
@@ -263,7 +263,7 @@ function DataTable({ columns, data, onRowClick, isRowSelected, onSelectionChange
             {row.getVisibleCells().map((cell: any, i: number) => {
               const divL = cell.column.columnDef.meta?.dividerLeft
               return (
-              <div key={cell.id} style={{ display: "flex", alignItems: "center", padding: "10px 0", paddingLeft: divL ? 14 : (i === 0 ? 16 : 8), overflow: "hidden", fontSize: 13, ...(divL ? { borderLeft: `1px solid ${t.borderAlpha25}`, animation: "colDivider 4s ease-in-out infinite" } : {}) }}>
+              <div key={cell.id} style={{ display: "flex", alignItems: "center", padding: "10px 0", paddingLeft: divL ? 14 : (i === 0 ? 16 : 8), overflow: "hidden", fontSize: 13, ...(divL ? { borderLeft: `1px solid ${t.fgAlpha06}`, animation: "colDivider 4s ease-in-out infinite" } : {}) }}>
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
               </div>
             )})}
@@ -2231,6 +2231,7 @@ function SmartAnalysePanel({ project, onClose }: any) {
   const analysis = buildSmartAnalysis(project)
   const riskColor = analysis.score >= 55 ? "#ef4444" : analysis.score >= 25 ? "#f59e0b" : "#22c55e"
   const riskLabel = analysis.score >= 55 ? "High risk" : analysis.score >= 25 ? "At risk" : "On track"
+  const sectionHeadingStyle = { fontSize: 11, fontWeight: 500, color: t.mutedFg, marginBottom: 10, letterSpacing: "0em" }
 
   return (
     <div style={{ width: 380, flexShrink: 0, borderLeft: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
@@ -2253,7 +2254,7 @@ function SmartAnalysePanel({ project, onClose }: any) {
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, marginBottom: 10, letterSpacing: "0.05em" }}>Project health trend</div>
+          <div style={sectionHeadingStyle}>Project health trend</div>
           <div style={{ height: 130, marginLeft: -8 }}>
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={analysis.chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
@@ -2293,7 +2294,7 @@ function SmartAnalysePanel({ project, onClose }: any) {
 
         {analysis.signals.length > 0 && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, marginBottom: 8, letterSpacing: "0.05em" }}>Risk signals</div>
+            <div style={sectionHeadingStyle}>Risk signals</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {analysis.signals.map((sig: any, i: number) => {
                 const col = sig.severity === "high" ? "#ef4444" : sig.severity === "medium" ? "#f59e0b" : "#8a9099"
@@ -2322,7 +2323,7 @@ function SmartAnalysePanel({ project, onClose }: any) {
         )}
 
         <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, marginBottom: 8, letterSpacing: "0.05em" }}>Recommendations</div>
+          <div style={sectionHeadingStyle}>Recommendations</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {analysis.recs.map((rec: string, i: number) => (
               <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
