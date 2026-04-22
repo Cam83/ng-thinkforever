@@ -6,7 +6,7 @@ import {
   ChevronDown, Gauge, BarChart3, Clock, Users, Database,
   FolderOpen, Building, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
   Plus, RefreshCw, Settings2, Check, X, Circle, UserPlus, ArrowRightLeft,
-  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe, Eye, EyeOff, Columns, Activity
+  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, Sparkles, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe, Eye, EyeOff, Columns, Activity
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
@@ -2171,9 +2171,177 @@ function ProjectActivityPanel({ project, currentUser, onClose, onUpdate }: any) 
   )
 }
 
+function buildSmartAnalysis(project: any) {
+  const rng = makeRng((project.id ?? 42) * 137 + 1)
+  const completion = project.projectComplete ?? 0
+  const revPct = project.revenueRecognisedPct ?? 0
+  const margin = project.margin ?? 0
+  const health = project.health ?? "on-track"
+  const planAcc = project.planAccuracy ?? 80
+  const start = new Date(project.startDate ?? "2026-01-01").getTime()
+  const end = new Date(project.endDate ?? "2026-12-31").getTime()
+  const now = new Date("2026-04-22").getTime()
+  const timeElapsed = Math.max(0, Math.min(1, (now - start) / (end - start)))
+  const expectedCompletion = Math.round(timeElapsed * 100)
+
+  const signals: Array<{ label: string; severity: "high" | "medium" | "low"; detail: string }> = []
+  const lastHealthEntry = (project.healthHistory ?? []).slice().sort((a: any, b: any) => b.ts - a.ts)[0]
+  const lastHealthUser = lastHealthEntry?.user ?? null
+  if (health === "off-track") signals.push({ label: "Project off track", severity: "high", detail: `Project health flagged as off track${lastHealthUser ? ` by ${lastHealthUser}` : ""} — immediate intervention required.` })
+  else if (health === "at-risk") signals.push({ label: "Health at risk", severity: "medium", detail: `Project health marked at risk${lastHealthUser ? ` by ${lastHealthUser}` : ""} — review current blockers and delivery pace.` })
+  if (planAcc < 55) signals.push({ label: "Significant plan deviation", severity: "high", detail: `Plan accuracy is ${planAcc}% — logged hours are significantly over what was scheduled.` })
+  else if (planAcc < 75) signals.push({ label: "Plan accuracy degrading", severity: "medium", detail: `Plan accuracy is ${planAcc}%, tracking below the 80% healthy threshold.` })
+  if (expectedCompletion > 10 && completion < expectedCompletion - 20) signals.push({ label: "Behind schedule", severity: "high", detail: `Expected ${expectedCompletion}% complete by now — only ${completion}% done. ${expectedCompletion - completion} point gap.` })
+  else if (expectedCompletion > 10 && completion < expectedCompletion - 10) signals.push({ label: "Slightly behind schedule", severity: "medium", detail: `${expectedCompletion - completion} point gap between expected (${expectedCompletion}%) and actual completion (${completion}%).` })
+  if (completion > 20 && revPct < completion - 25) signals.push({ label: "Revenue recognition lag", severity: "medium", detail: `Revenue recognised (${revPct}%) is trailing completion (${completion}%) by ${completion - revPct} points — billing milestones may be overdue.` })
+  if (margin < 18) signals.push({ label: "Low margin alert", severity: "high", detail: `Margin is ${margin}%, well below the 25% agency benchmark. Review resourcing mix.` })
+  else if (margin < 26) signals.push({ label: "Margin pressure", severity: "low", detail: `Margin is ${margin}%, tracking slightly below typical targets.` })
+
+  let score = 0
+  signals.forEach(sig => { score += sig.severity === "high" ? 28 : sig.severity === "medium" ? 14 : 6 })
+  score = Math.min(100, score)
+
+  const recs: string[] = []
+  if (signals.some(s => s.label.includes("off track") || s.label.includes("at risk"))) recs.push("Schedule an urgent project health review with the client and delivery lead.")
+  if (signals.some(s => s.label.toLowerCase().includes("plan"))) recs.push("Conduct a scope and hours review — identify what drove the deviation and reforecast remaining work.")
+  if (signals.some(s => s.label.toLowerCase().includes("schedule"))) recs.push("Re-prioritise deliverables, surface blockers, and consider adding capacity to recover the schedule gap.")
+  if (signals.some(s => s.label.includes("Revenue"))) recs.push("Accelerate billing milestone signoff with the client to reduce the revenue recognition gap.")
+  if (signals.some(s => s.label.toLowerCase().includes("margin"))) recs.push("Review the resourcing mix — replace lower-rate resource time with appropriately-levelled staff or rebalance the fee.")
+  if (recs.length === 0) {
+    recs.push("Project is performing within expected parameters — maintain current pace.")
+    recs.push("Schedule a mid-project review to surface any emerging risks before they escalate.")
+    recs.push("Consider a forward-looking resource plan to ensure team availability for the final phase.")
+  }
+
+  const months = ["Nov", "Dec", "Jan", "Feb", "Mar", "Apr"]
+  const revenueRatio = completion > 0 ? revPct / completion : 0
+  const chartData = months.map((month, i) => {
+    const prog = i / (months.length - 1)
+    const plannedVal = Math.round(expectedCompletion * prog)
+    const actualVal = Math.min(100, Math.max(0, Math.round(completion * prog * (0.85 + rng() * 0.3))))
+    const revenueVal = Math.min(100, Math.max(0, Math.round(actualVal * revenueRatio * (0.7 + rng() * 0.35))))
+    return { month, planned: plannedVal, actual: actualVal, revenue: revenueVal }
+  })
+  chartData[chartData.length - 1] = { month: "Apr", planned: expectedCompletion, actual: completion, revenue: revPct }
+
+  return { signals, score, recs, chartData, expectedCompletion }
+}
+
+function SmartAnalysePanel({ project, onClose }: any) {
+  const analysis = buildSmartAnalysis(project)
+  const riskColor = analysis.score >= 55 ? "#ef4444" : analysis.score >= 25 ? "#f59e0b" : "#22c55e"
+  const riskLabel = analysis.score >= 55 ? "High risk" : analysis.score >= 25 ? "At risk" : "On track"
+
+  return (
+    <div style={{ width: 380, flexShrink: 0, borderLeft: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+      <div style={{ padding: "16px 20px 14px", borderBottom: `1px solid ${t.border}`, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
+            <Sparkles size={12} strokeWidth={1.5} color={t.mutedFg}/>
+            <span style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.05em" }}>Smart Analysis</span>
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: t.fg, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{project.name}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 20, background: riskColor + "18", border: `1px solid ${riskColor}40` }}>
+            <div style={{ width: 5, height: 5, borderRadius: "50%", background: riskColor }}/>
+            <span style={{ fontSize: 11, fontWeight: 600, color: riskColor }}>{riskLabel}</span>
+          </div>
+          <HoverBtn onClick={onClose} style={{ ...s.iconBtn, color: t.mutedFg }}><X size={14} strokeWidth={1}/></HoverBtn>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, marginBottom: 10, letterSpacing: "0.05em" }}>Project health trend</div>
+          <div style={{ height: 130, marginLeft: -8 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={analysis.chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={t.border} vertical={false}/>
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: t.mutedFg }} axisLine={false} tickLine={false}/>
+                <YAxis tick={{ fontSize: 10, fill: t.mutedFg }} axisLine={false} tickLine={false} domain={[0, 100]} width={28}/>
+                <Tooltip contentStyle={{ background: t.popover, border: `1px solid ${t.border}`, borderRadius: 6, fontSize: 11, padding: "6px 10px" }} labelStyle={{ color: t.fg, fontWeight: 600 }} itemStyle={{ color: t.secondaryFg }} formatter={(v: any, name: string) => [`${v}%`, name]}/>
+                <Area type="monotone" dataKey="planned" stroke={t.borderAlpha25} fill={t.fgAlpha03} strokeDasharray="4 3" name="Planned"/>
+                <Line type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={2} dot={false} name="Completion"/>
+                <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} dot={false} name="Revenue rec."/>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ display: "flex", gap: 14, marginTop: 8 }}>
+            {[{ color: t.borderAlpha25, label: "Planned" }, { color: "#3b82f6", label: "Completion" }, { color: "#10b981", label: "Revenue rec." }].map(({ color, label }) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 14, height: 2, background: color, borderRadius: 1 }}/>
+                <span style={{ fontSize: 10, color: t.mutedFg }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+          {[
+            { label: "Completion", value: `${project.projectComplete ?? 0}%`, sub: `Plan: ${analysis.expectedCompletion}%` },
+            { label: "Margin", value: `${project.margin ?? 0}%`, sub: `$${Math.round(((project.margin ?? 0) / 100) * (project.budget ?? 0)).toLocaleString()}` },
+            { label: "Plan accuracy", value: project.planAccuracy != null ? `${project.planAccuracy}%` : "—", sub: project.health === "on-track" ? "Healthy" : project.health === "at-risk" ? "At risk" : "Off track" },
+          ].map(({ label, value, sub }) => (
+            <div key={label} style={{ background: t.muted, borderRadius: 8, padding: "8px 10px" }}>
+              <div style={{ fontSize: 10, color: t.mutedFg, marginBottom: 3 }}>{label}</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: t.fg }}>{value}</div>
+              <div style={{ fontSize: 10, color: t.mutedFg }}>{sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {analysis.signals.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, marginBottom: 8, letterSpacing: "0.05em" }}>Risk signals</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {analysis.signals.map((sig: any, i: number) => {
+                const col = sig.severity === "high" ? "#ef4444" : sig.severity === "medium" ? "#f59e0b" : "#8a9099"
+                return (
+                  <div key={i} style={{ padding: "8px 10px", borderRadius: 8, background: col + "0f", border: `1px solid ${col}30` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                      <div style={{ width: 5, height: 5, borderRadius: "50%", background: col, flexShrink: 0 }}/>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: t.fg }}>{sig.label}</span>
+                    </div>
+                    <p style={{ fontSize: 11, color: t.secondaryFg, lineHeight: 1.6, margin: 0 }}>{sig.detail}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {analysis.signals.length === 0 && (
+          <div style={{ marginBottom: 20, padding: "10px 12px", borderRadius: 8, background: "#22c55e0f", border: "1px solid #22c55e30" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#22c55e", flexShrink: 0 }}/>
+              <span style={{ fontSize: 12, fontWeight: 600, color: t.fg }}>No risk signals detected</span>
+            </div>
+            <p style={{ fontSize: 11, color: t.secondaryFg, lineHeight: 1.6, margin: "4px 0 0 11px" }}>Project is tracking within healthy parameters across all dimensions.</p>
+          </div>
+        )}
+
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, marginBottom: 8, letterSpacing: "0.05em" }}>Recommendations</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {analysis.recs.map((rec: string, i: number) => (
+              <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ width: 18, height: 18, borderRadius: "50%", background: t.muted, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: t.secondaryFg, flexShrink: 0, marginTop: 1 }}>
+                  {i + 1}
+                </div>
+                <p style={{ fontSize: 12, color: t.secondaryFg, lineHeight: 1.6, margin: 0 }}>{rec}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
   const [showModal, setShowModal] = useState(false)
-  const [panel, setPanel] = useState<{ type: "notes" | "activity"; idx: number } | null>(null)
+  const [panel, setPanel] = useState<{ type: "notes" | "activity" | "analyse"; idx: number } | null>(null)
   const [monthOffset, setMonthOffset] = useState(0)
   const [tableView, setTableView] = useState("all")
   const [selectedProjectIndices, setSelectedProjectIndices] = useState<number[]>([])
@@ -2250,6 +2418,21 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
           <NotesCell notes={row.original.notes} onClick={() => setPanel({ type: "notes", idx: projects.indexOf(row.original) })}/>
         </span>
       )},
+    { id: "analyse", header: "", size: 110, enableResizing: false, accessorFn: () => "",
+      cell: ({ row }: any) => {
+        const idx = projects.indexOf(row.original)
+        const active = panel?.type === "analyse" && panel.idx === idx
+        return (
+          <span onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setPanel(active ? null : { type: "analyse", idx })}
+              style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 6, border: `1px solid ${active ? t.fgAlpha20 : t.border}`, background: active ? t.fgAlpha06 : "transparent", color: active ? t.fg : t.secondaryFg, cursor: "pointer", fontSize: 11, fontWeight: 500, fontFamily: "inherit" }}>
+              <Sparkles size={11} strokeWidth={1}/>
+              Analyse
+            </button>
+          </span>
+        )
+      }},
     { accessorKey: "scheduledBillable", header: "Scheduled billable", size: 150, meta: { dividerLeft: true },
       cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.scheduledBillable != null ? `$${row.original.scheduledBillable.toLocaleString()}` : "—"}</span> },
     { accessorKey: "margin", header: "Margin", size: 180,
@@ -2286,7 +2469,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
           {people[row.original.ownerId]?.name.charAt(0) || "?"}
         </div>
       )},
-  ], [projects, onProjectsChange, clients, people])
+  ], [projects, onProjectsChange, clients, people, panel])
 
   const recStats = useMemo(() => {
     const src = selectedProjectIndices.length > 0
@@ -2306,7 +2489,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
     <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden", background: t.bg }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 600, color: t.fg }}>{projects.length} Projects</h1>
+          <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg }}>{projects.length} Projects</h1>
           <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={1}/>Filter</HoverBtn>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -2407,6 +2590,12 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
           u[panel.idx] = { ...u[panel.idx], notes: updated }
           onProjectsChange(u)
         }}
+      />
+    )}
+    {panel?.type === "analyse" && projects[panel.idx] && (
+      <SmartAnalysePanel
+        project={projects[panel.idx]}
+        onClose={() => setPanel(null)}
       />
     )}
     </div>
