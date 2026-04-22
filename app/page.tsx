@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useRef, useEffect, useLayoutEffect, useMemo, cloneElement } from "react"
+import { createPortal } from "react-dom"
 import {
   ChevronDown, Gauge, BarChart3, Clock, Users, Database,
-  FolderOpen, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
+  FolderOpen, Building, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
   Plus, RefreshCw, Settings2, Check, X, Circle, UserPlus, ArrowRightLeft,
-  CalendarClock, Briefcase, DollarSign, ChevronLeft, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, ArrowUp, Share2, GitFork, Star, Search, MapPin
+  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, Sparkles, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe, Eye, EyeOff, Columns, Activity
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
@@ -28,6 +29,10 @@ const getGlobalStyles = (theme: any) => `
   @keyframes notifSlideIn {
     from { opacity: 0; transform: translateX(-10px); }
     to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes colDivider {
+    0%, 100% { border-left-color: ${theme.fgAlpha06}; }
+    50%       { border-left-color: ${theme.fgAlpha10}; }
   }
 `
 
@@ -153,12 +158,27 @@ function DataTableRow({ selected, onClick, template, children }: any) {
   )
 }
 
-function DataTable({ columns, data, onRowClick, isRowSelected, paddingX = 24, emptyNode }: any) {
+function DataTable({ columns, data, onRowClick, isRowSelected, onSelectionChange, hiddenCols, paddingX = 24, emptyNode }: any) {
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+  const onSelectionChangeRef = useRef(onSelectionChange)
+  useLayoutEffect(() => { onSelectionChangeRef.current = onSelectionChange })
+  useEffect(() => { onSelectionChangeRef.current?.([...selectedRows]) }, [selectedRows])
   const [resizeHovCol, setResizeHovCol] = useState<number | null>(null)
+  const [colOrder, setColOrder] = useState<string[]>(() =>
+    columns.map((c: any) => c.id ?? c.accessorKey)
+  )
+  const dragColId = useRef<string | null>(null)
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null)
+  // Pre-sort columns by drag order before passing to TanStack Table — avoids controlled-state conflicts with resize
+  const orderedCols = useMemo(() =>
+    colOrder
+      .map((id: string) => columns.find((c: any) => (c.id ?? c.accessorKey) === id))
+      .filter(Boolean)
+      .filter((c: any) => !hiddenCols?.has(c.id ?? c.accessorKey))
+  , [columns, colOrder, hiddenCols])
   const table = useReactTable({
     data,
-    columns,
+    columns: orderedCols,
     getCoreRowModel: getCoreRowModel(),
     columnResizeMode: "onChange" as any,
     defaultColumn: { minSize: 60 },
@@ -182,19 +202,54 @@ function DataTable({ columns, data, onRowClick, isRowSelected, paddingX = 24, em
     for (let i = 0; i <= colIdx; i++) x += hg.headers[i].getSize()
     return x
   }
+  function handleColDrop(targetColId: string) {
+    const from = dragColId.current
+    if (!from || from === targetColId) return
+    setColOrder(prev => {
+      const order = [...prev]
+      const fromIdx = order.indexOf(from)
+      const toIdx = order.indexOf(targetColId)
+      if (fromIdx === -1 || toIdx === -1) return prev
+      order.splice(fromIdx, 1)
+      order.splice(toIdx, 0, from)
+      return order
+    })
+    dragColId.current = null
+    setDragOverColId(null)
+  }
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: `0 ${paddingX}px` }}>
-      <div style={{ position: "relative" }}>
+    <div style={{ flex: 1, overflow: "auto", padding: `0 ${paddingX}px` }}>
+      <div style={{ position: "relative", minWidth: "max-content" }}>
         <div ref={headerRef} style={{ display: "grid", gridTemplateColumns: gridTemplate, borderBottom: `1px solid ${t.border}`, padding: "8px 0" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
             <RowCheckbox checked={allSelected} indeterminate={someSelected} onClick={toggleAll} />
           </div>
-          {hg?.headers.map((header: any, i: number) => (
-            <div key={header.id} style={{ position: "relative", fontSize: 12, fontWeight: 500, color: t.mutedFg, display: "flex", alignItems: "center", paddingLeft: i === 0 ? 16 : 8 }}>
+          {hg?.headers.map((header: any, i: number) => {
+            const divL = header.column.columnDef.meta?.dividerLeft
+            return (
+            <div
+              key={header.id}
+              draggable
+              onDragStart={(e) => { dragColId.current = header.column.id; e.dataTransfer.effectAllowed = "move" }}
+              onDragOver={(e) => { e.preventDefault(); if (dragOverColId !== header.column.id) setDragOverColId(header.column.id) }}
+              onDragLeave={() => setDragOverColId(null)}
+              onDrop={(e) => { e.preventDefault(); handleColDrop(header.column.id) }}
+              onDragEnd={() => { dragColId.current = null; setDragOverColId(null) }}
+              style={{
+                position: "relative",
+                zIndex: (hg.headers.length - i) + 1,
+                fontSize: 12, fontWeight: 500, color: t.mutedFg,
+                display: "flex", alignItems: "center",
+                paddingLeft: divL ? 14 : (i === 0 ? 16 : 8),
+                background: dragOverColId === header.column.id ? t.fgAlpha06 : "transparent",
+                cursor: "grab", userSelect: "none" as const,
+                ...(divL ? { borderLeft: `1px solid ${t.fgAlpha06}`, animation: "colDivider 4s ease-in-out infinite" } : {}),
+              }}>
               {flexRender(header.column.columnDef.header, header.getContext())}
               {header.column.getCanResize() && <ColResizeHandle header={header} colIdx={i} onHoverChange={setResizeHovCol} isHovered={activeResizeCol === i}/>}
             </div>
-          ))}
+          )})}
+
         </div>
         {rows.map((row: any, idx: number) => (
           <DataTableRow
@@ -205,11 +260,14 @@ function DataTable({ columns, data, onRowClick, isRowSelected, paddingX = 24, em
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
               <RowCheckbox checked={selectedRows.has(idx)} onClick={() => toggleRow(idx)} />
             </div>
-            {row.getVisibleCells().map((cell: any, i: number) => (
-              <div key={cell.id} style={{ display: "flex", alignItems: "center", padding: "10px 0", paddingLeft: i === 0 ? 16 : 8, overflow: "hidden", fontSize: 13 }}>
+            {row.getVisibleCells().map((cell: any, i: number) => {
+              const divL = cell.column.columnDef.meta?.dividerLeft
+              return (
+              <div key={cell.id} style={{ display: "flex", alignItems: "center", padding: "10px 0", paddingLeft: divL ? 14 : (i === 0 ? 16 : 8), overflow: "hidden", fontSize: 13, ...(divL ? { borderLeft: `1px solid ${t.fgAlpha06}`, animation: "colDivider 4s ease-in-out infinite" } : {}) }}>
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
               </div>
-            ))}
+            )})}
+
           </DataTableRow>
         ))}
         {emptyNode && rows.length === 0 && emptyNode}
@@ -252,6 +310,58 @@ function DropdownWrapper({ trigger, children, open, setOpen }: any) {
         ref: dropRef,
         style: { ...(children as any).props.style, position: "fixed", top: pos.top, bottom: "auto", left: pos.left, right: "auto", marginTop: 0, marginBottom: 0, transform: (pos as any).transform }
       })}
+    </div>
+  )
+}
+
+function ColVisibilityBtn({ columns, hiddenCols, onToggle }: any) {
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const dropRef = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<any>(null)
+  useLayoutEffect(() => {
+    if (!open || !wrapRef.current) { setPos(null); return }
+    const r = wrapRef.current.getBoundingClientRect()
+    setPos({ top: r.bottom + 4, right: window.innerWidth - r.right })
+  }, [open])
+  useEffect(() => {
+    if (!open) return
+    function h(e: any) {
+      if (wrapRef.current?.contains(e.target)) return
+      if (dropRef.current?.contains(e.target)) return
+      setOpen(false)
+    }
+    document.addEventListener("mousedown", h)
+    return () => document.removeEventListener("mousedown", h)
+  }, [open])
+  const cols = columns.map((c: any) => ({ id: c.id ?? c.accessorKey, label: typeof c.header === "string" ? c.header : (c.id ?? c.accessorKey) }))
+  const anyHidden = cols.some((c: any) => hiddenCols.has(c.id))
+  return (
+    <div ref={wrapRef}>
+      <HoverBtn onClick={() => setOpen(o => !o)} style={{ ...s.iconBtn, width: 28, height: 28, color: open ? t.fg : t.secondaryFg }}>
+        <Settings2 size={13} strokeWidth={1}/>
+      </HoverBtn>
+      {open && pos && (
+        <div ref={dropRef} style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: 9999, background: t.popover, border: `1px solid ${t.border}`, borderRadius: 8, padding: 4, boxShadow: `0 4px 16px ${t.shadowDark}`, width: 220 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px 4px" }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg }}>Columns</span>
+            {anyHidden && (
+              <button onClick={() => cols.filter((c: any) => hiddenCols.has(c.id)).forEach((c: any) => onToggle(c.id))} style={{ fontSize: 11, color: t.secondaryFg, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Show all</button>
+            )}
+          </div>
+          <div style={{ maxHeight: 300, overflowY: "auto" }}>
+            {cols.map((col: any) => {
+              const hidden = hiddenCols.has(col.id)
+              return (
+                <button key={col.id} onClick={() => onToggle(col.id)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "6px 8px", borderRadius: 5, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                  <span style={{ fontSize: 13, color: hidden ? t.mutedFg : t.fg }}>{col.label}</span>
+                  {hidden ? <EyeOff size={13} strokeWidth={1} color={t.mutedFg}/> : <Eye size={13} strokeWidth={1} color={t.secondaryFg}/>}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -452,7 +562,32 @@ const INITIAL_PROJECTS: any[] = []
 
 const INITIAL_CLIENTS_DATA = [{ name: "Agency rack rate" }, { name: "Reebok" }, { name: "Adidas" }]
 const ALL_OFFICES = ["Global", "Beaverton HQ", "Hilversum", "Shanghai", "New York", "London", "Sydney"]
-const STAGE_COLORS = { planning: "#f59e0b", active: "#10b981", completed: "#6b7280", "on-hold": "#ef4444" }
+function StageIcon({ type, color }: { type: "dashed-circle" | "hex-outline" | "hex-filled"; color: string }) {
+  if (type === "dashed-circle") return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="8" cy="8" r="5.5" stroke={color} strokeWidth="1.5" strokeDasharray="3 2.2"/>
+    </svg>
+  )
+  if (type === "hex-outline") return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <polygon points="8,1.5 13.5,4.75 13.5,11.25 8,14.5 2.5,11.25 2.5,4.75" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+    </svg>
+  )
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <polygon points="8,1.5 13.5,4.75 13.5,11.25 8,14.5 2.5,11.25 2.5,4.75" fill={color} strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+const STAGE_OPTIONS = [
+  { value: "estimating",  label: "Estimating",  iconType: "dashed-circle" as const, color: "#8a9099" },
+  { value: "proposal",    label: "Proposal",    iconType: "dashed-circle" as const, color: "#8a9099" },
+  { value: "likely",      label: "Likely",      iconType: "hex-outline"   as const, color: "#f59e0b" },
+  { value: "on-track",    label: "On track",    iconType: "hex-filled"    as const, color: "#10b981" },
+  { value: "off-track",   label: "Off track",   iconType: "hex-filled"    as const, color: "#10b981" },
+  { value: "deal-signed", label: "Deal signed", iconType: "hex-filled"    as const, color: "#10b981" },
+]
 const CURRENCIES = ["USD","AUD","GBP","EUR","CAD","NZD","SGD","JPY"]
 
 const ACTIVITY_LOG_DATA = [
@@ -621,31 +756,61 @@ const SAMPLE_NOTES_POOL = [
   ],
 ]
 
+function makeRng(seed: number) {
+  let s = seed >>> 0
+  return () => { s = (Math.imul(1664525, s) + 1013904223) >>> 0; return s / 0x100000000 }
+}
+
 function getBusinessUnitProjects() {
-  const stageMap: Record<string, string> = { "Active": "active", "In Progress": "active", "Planning": "planning" }
+  const rng = makeRng(42)
+  const stageMap: Record<string, string> = { "Active": "on-track", "In Progress": "on-track", "Planning": "estimating" }
   const offices = ["Global", "Beaverton HQ", "Hilversum", "Shanghai", "New York", "London", "Sydney"]
   const allProjects: any[] = []
 
-  BUSINESS_UNITS_FULL.forEach((unit, unitIdx) => {
+  BUSINESS_UNITS_FULL.forEach((unit, _unitIdx) => {
     if (unit.projectsList) {
       unit.projectsList.forEach((proj, idx) => {
         const globalIdx = allProjects.length
         const sampleNotes = globalIdx % 2 === 0
           ? SAMPLE_NOTES_POOL[globalIdx % SAMPLE_NOTES_POOL.length]
           : undefined
+        // rng call 1 — repurposed: billable ratio (was hoursScheduled array pick)
+        const billableRatio = 0.72 + rng() * 0.20
+        // rng call 2 — repurposed: avg bill rate factor (was totalHoursAtCompletion multiplier)
+        const avgBillRate = 140 + Math.floor(rng() * 45)
+        const projectComplete = [0,10,20,30,40,50,60,70,80,90,100][Math.floor(rng() * 11)]
+        const historyNames = ["Jake Peralta","Amy Santiago","Rosa Diaz","Terry Jeffords","Charles Boyle"]
+        const historyCount = projectComplete === 0 ? 0 : projectComplete >= 60 ? 3 : 2
+        const completionHistory = Array.from({ length: historyCount }, (_: any, i: number) => {
+          const d = new Date(2026, 3, 21); d.setDate(d.getDate() - (i + 1) * Math.floor(10 + rng() * 14))
+          return { date: d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), ts: d.getTime(), user: historyNames[Math.floor(rng() * historyNames.length)], value: Math.max(0, projectComplete - i * Math.ceil(projectComplete / Math.max(historyCount, 1))) }
+        })
+        // Derive all financials from budget
+        const budget = proj.budget
+        const scheduledBillable = Math.round(budget * billableRatio / 500) * 500
+        const hoursScheduled = Math.round(scheduledBillable / avgBillRate / 10) * 10
         allProjects.push({
           name: proj.title,
           code: `${(unit.name.split(" ").pop() ?? unit.name).toUpperCase()}-${String(idx + 1).padStart(3, "0")}`,
-          clientId: Math.floor(Math.random() * CLIENTS_FULL.length),
-          stage: stageMap[proj.status] || "planning",
-          margin: Math.floor(Math.random() * 15) + 20,
-          budget: proj.budget,
+          clientId: Math.floor(rng() * CLIENTS_FULL.length),
+          stage: stageMap[proj.status] || "estimating",
+          margin: 20 + Math.floor(rng() * 16),
+          revenueRecognisedPct: Math.min(100, Math.max(0, projectComplete + Math.floor(rng() * 14) - 7)),
+          budget,
           startDate: "2026-01-15",
           endDate: "2026-12-31",
-          ownerId: Math.floor(Math.random() * 6),
-          office: offices[Math.floor(Math.random() * offices.length)],
+          ownerId: Math.floor(rng() * 6),
+          office: offices[Math.floor(rng() * offices.length)],
           unit: unit.name,
-          health: ["on-track","at-risk","off-track"][Math.floor(Math.random() * 3)],
+          health: ["on-track","at-risk","off-track"][Math.floor(rng() * 3)],
+          projectComplete,
+          completionHistory,
+          planAccuracy: [0,10,20,30,40,50,60,70,80,90,100][Math.floor(rng() * 11)],
+          scheduledBillable,
+          hoursScheduled,
+          totalHoursAtCompletion: projectComplete > 0
+            ? Math.round(Math.min(hoursScheduled * 2.2, hoursScheduled / (projectComplete / 100) * (1 + rng() * 0.12)) / 50) * 50
+            : Math.round(hoursScheduled * (1.1 + rng() * 0.2) / 50) * 50,
           notes: sampleNotes,
         })
       })
@@ -672,7 +837,7 @@ const officeItemsMyTime = [
   { name: "Log team", icon: <LogTeamIcon/> },
 ]
 const dataHubItems = [
-  { name: "Org design", icon: <OfficeIcon/> },
+  { name: "Company", icon: <Building size={16} strokeWidth={1}/> },
   { name: "People", icon: <Users size={16} strokeWidth={1}/> },
   { name: "Roles", icon: <ChefHat size={16} strokeWidth={1}/> },
   { name: "Projects", icon: <FolderOpen size={16} strokeWidth={1}/> },
@@ -682,7 +847,7 @@ const dataHubItems = [
   { name: "Activity log", icon: <Clock size={16} strokeWidth={1}/> },
 ]
 const LOCATIONS_INIT = [
-  { name: "Global", icon: <OfficeIcon/>, expanded: true, items: globalSidebarItems },
+  { name: "Global", icon: <Globe size={16} strokeWidth={1}/>, expanded: false, items: globalSidebarItems },
   { name: "Beaverton HQ", icon: <OfficeIcon/>, expanded: false, items: officeItems },
   { name: "Hilversum", icon: <OfficeIcon/>, expanded: false, items: officeItems },
   { name: "Shanghai", icon: <OfficeIcon/>, expanded: false, items: officeItems },
@@ -739,7 +904,7 @@ function Tabs({ tabs, active, onChange }: any) {
   )
 }
 
-function SectionHeader({ count, label, onAdd, filterField, filterValue, onClearFilter }: any) {
+function SectionHeader({ count, label, onAdd, filterField, filterValue, onClearFilter, actions }: any) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 16px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -754,7 +919,10 @@ function SectionHeader({ count, label, onAdd, filterField, filterValue, onClearF
           : <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={1}/>Filter</HoverBtn>
         }
       </div>
-      <button onClick={onAdd} style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}><Plus size={16} strokeWidth={1}/></button>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        {actions}
+        <button onClick={onAdd} style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}><Plus size={16} strokeWidth={1}/></button>
+      </div>
     </div>
   )
 }
@@ -788,28 +956,38 @@ function DetailGrid({ items }: any) {
 }
 
 function ActivityTimeline({ entries }: any) {
-  const iconColors = {
+  const iconColors: Record<string, { bg: string; fg: string }> = {
     added: { bg: "#052e16", fg: "#4ade80" }, allocation: { bg: "#451a03", fg: "#fb923c" },
     role_change: { bg: "#172554", fg: "#60a5fa" }, office_transfer: { bg: "#2e1065", fg: "#a78bfa" },
     created: { bg: "#052e16", fg: "#4ade80" }, rate_change: { bg: "#451a03", fg: "#fb923c" },
     person_assigned: { bg: "#172554", fg: "#60a5fa" }, person_removed: { bg: "#450a0a", fg: "#f87171" },
     renamed: { bg: "#451a03", fg: "#fb923c" },
+    completion: { bg: "#1e1b4b", fg: "#818cf8" }, health_change: { bg: "#042f2e", fg: "#2dd4bf" },
+    note: { bg: "#1c1917", fg: "#a8a29e" }, stage_change: { bg: "#172554", fg: "#60a5fa" },
+    budget: { bg: "#451a03", fg: "#fb923c" },
   }
   function getIcon(type: any) {
     if (type === "added" || type === "person_assigned") return <UserPlus size={13} strokeWidth={1}/>
-    if (type === "role_change" || type === "renamed") return <ArrowRightLeft size={13} strokeWidth={1}/>
-    if (type === "allocation") return <CalendarClock size={13} strokeWidth={1}/>
+    if (type === "role_change" || type === "renamed" || type === "stage_change") return <ArrowRightLeft size={13} strokeWidth={1}/>
+    if (type === "allocation" || type === "created") return <CalendarClock size={13} strokeWidth={1}/>
     if (type === "office_transfer") return <Briefcase size={13} strokeWidth={1}/>
-    if (type === "created") return <CalendarClock size={13} strokeWidth={1}/>
-    if (type === "rate_change") return <DollarSign size={13} strokeWidth={1}/>
+    if (type === "rate_change" || type === "budget") return <DollarSign size={13} strokeWidth={1}/>
     if (type === "person_removed") return <Users size={13} strokeWidth={1}/>
+    if (type === "completion") return <Activity size={13} strokeWidth={1}/>
+    if (type === "health_change") return <Circle size={13} strokeWidth={1}/>
+    if (type === "note") return <Clock size={13} strokeWidth={1}/>
     return <Settings size={13} strokeWidth={1}/>
+  }
+  function fmtEntry(e: any) {
+    if (e.date) return e.date
+    if (e.ts) return new Date(e.ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    return ""
   }
   return (
     <div style={{ position: "relative" }}>
       <div style={{ position: "absolute", left: 13, top: 12, bottom: 12, width: 1, background: t.border }}/>
       {entries.map((e: any, i: any) => {
-        const col = (iconColors as any)[e.type] || { bg: t.muted, fg: t.mutedFg }
+        const col = iconColors[e.type] || { bg: t.muted, fg: t.mutedFg }
         return (
           <div key={i} style={{ display: "flex", gap: 12, paddingBottom: 20 }}>
             <div style={{ width: 26, height: 26, borderRadius: "50%", background: col.bg, color: col.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative", zIndex: 1 }}>
@@ -817,8 +995,8 @@ function ActivityTimeline({ entries }: any) {
             </div>
             <div style={{ flex: 1, paddingTop: 2 }}>
               <p style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>{e.description}</p>
-              {e.details && <p style={{ fontSize: 12, color: t.mutedFg, marginTop: 2 }}>{e.details}</p>}
-              <p style={{ fontSize: 11, color: t.mutedFg, marginTop: 4 }}>{e.date}</p>
+              {e.details && <p style={{ fontSize: 12, color: t.secondaryFg, marginTop: 2, lineHeight: 1.4 }}>{e.details}</p>}
+              <p style={{ fontSize: 11, color: t.mutedFg, marginTop: 4 }}>{e.user ? `${e.user} · ` : ""}{fmtEntry(e)}</p>
             </div>
           </div>
         )
@@ -1596,6 +1774,8 @@ function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateTo
   const [selectedIdx, setSelectedIdx] = useState<number|null>(null)
   const [showModal, setShowModal] = useState(false)
   const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const isAll = selectedOffices.length === ALL_OFFICES.length
   const filteredPeople = isAll ? (people ?? []) : (people ?? []).filter((p: any) => selectedOffices.includes(p.office))
   const display = tab === "archived" ? [] : roles
@@ -1640,18 +1820,19 @@ function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateTo
     <div style={{ display: "flex", flex: 1, overflow: "hidden", background: t.bg }}>
       {showModal && <AddRoleModal onAdd={(r: any) => onRolesChange([...roles, r])} onClose={() => setShowModal(false)}/>}
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
-        <SectionHeader count={roles.length} label="Roles" onAdd={() => setShowModal(true)}/>
+        <SectionHeader count={roles.length} label="Roles" onAdd={() => setShowModal(true)}
+          actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
           <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-          <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
           <Tabs active={tab} onChange={setTab} tabs={[{ label: `${roles.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+          <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={rolesColumns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
         </div>
         <DataTable
           columns={rolesColumns}
           data={display}
+          hiddenCols={hiddenCols}
           onRowClick={(_: any, idx: number) => setSelectedIdx(idx)}
           isRowSelected={(_: any, idx: number) => idx === selectedIdx}
           emptyNode={tab === "archived" && <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}><p style={{ fontSize: 13, color: t.mutedFg }}>No archived roles</p></div>}
@@ -1693,6 +1874,8 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
   const [showModal, setShowModal] = useState(false)
   const [deliveryTeamMode] = useState<"single"|"multiple">("single")
   const [groupMode] = useState<"single"|"multiple">("single")
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
 
   const current = view === "employees" ? people : view === "contractors" ? contractors : view === "all" ? [...people, ...contractors] : people
   const setCurrent = view === "employees" ? onPeopleChange : view === "contractors" ? onContractorsChange : onPeopleChange
@@ -1716,7 +1899,8 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
           filterField={filteredRole ? "Role" : undefined}
           filterValue={filteredRole ?? undefined}
           onClearFilter={filteredRole ? onRoleFilterClear : undefined}
-          onAdd={() => setShowModal(true)}/>
+          onAdd={() => setShowModal(true)}
+          actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <OfficeFilter selected={selectedOffices} onChange={(val: any) => { setSelectedOffices(val); if (onOfficeFilterClear) onOfficeFilterClear() }}/>
@@ -1737,12 +1921,15 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
               </TabBtn>
             ))}
           </div>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-          <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
           <Tabs active={tab} onChange={setTab} tabs={[{ label: `${filtered.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+          <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
+            { accessorKey: "name", header: "Name" }, { accessorKey: "roleId", header: "Role" }, { accessorKey: "access", header: "Access" },
+            { accessorKey: "departmentId", header: "Department" }, { accessorKey: "deliveryTeamIds", header: "Delivery team" },
+            { accessorKey: "groupIds", header: "Group" }, { accessorKey: "office", header: "Office" },
+          ]} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
         </div>
         <DataTable
           columns={[
@@ -1755,6 +1942,7 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
             { accessorKey: "office", header: "Office", size: 140, cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.office}</span> },
           ]}
           data={display}
+          hiddenCols={hiddenCols}
           onRowClick={(_: any, idx: number) => setSelectedPerson(idx)}
           isRowSelected={(_: any, idx: number) => idx === selectedPerson}
           emptyNode={tab === "archived" && <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}><p style={{ fontSize: 13, color: t.mutedFg }}>No archived people</p></div>}
@@ -1877,107 +2065,538 @@ function NotesPanel({ project, currentUser, onClose, onUpdate }: any) {
   )
 }
 
-const PT_COLS_CONFIG = [
-  { key: "name",      label: "Project", flex: "1.5fr" },
-  { key: "notes",     label: "Notes",   flex: "240px" },
-  { key: "health",    label: "Health",  flex: "120px" },
-  { key: "client",    label: "Client",  flex: "1fr" },
-  { key: "stage",     label: "Stage",   flex: "0.6fr" },
-  { key: "margin",    label: "Margin",  flex: "0.8fr" },
-  { key: "budget",    label: "Budget",  flex: "1fr" },
-  { key: "startDate", label: "Start",   flex: "1fr" },
-  { key: "endDate",   label: "End",     flex: "1fr" },
-  { key: "owner",     label: "Owner",   flex: "0.8fr" },
-]
+
+function buildProjectActivity(project: any) {
+  const entries: any[] = []
+  const names = ["Jake Peralta", "Amy Santiago", "Rosa Diaz", "Terry Jeffords", "Charles Boyle"]
+  const ownerName = names[(project.ownerId ?? 0) % names.length]
+  const base = new Date("2026-01-15").getTime()
+
+  // Project created
+  entries.push({ type: "created", description: "Project created", ts: base, user: "Amy Santiago" })
+
+  // Owner assigned
+  entries.push({ type: "person_assigned", description: `${ownerName} assigned as owner`, ts: base + 3 * 86400000, user: "Amy Santiago" })
+
+  // Stage history (live changes take priority; fall back to seeded entry for initial stage)
+  const stageHistory: any[] = project.stageHistory || []
+  if (stageHistory.length > 0) {
+    stageHistory.forEach((h: any) => {
+      const fromLabel = STAGE_OPTIONS.find(o => o.value === h.from)?.label ?? h.from
+      const toLabel = STAGE_OPTIONS.find(o => o.value === h.to)?.label ?? h.to
+      entries.push({ type: "stage_change", description: `Stage changed from ${fromLabel} to ${toLabel}`, ts: h.ts, user: h.user })
+    })
+  } else if (project.stage && project.stage !== "estimating") {
+    const stageLabel = STAGE_OPTIONS.find(o => o.value === project.stage)?.label ?? project.stage
+    entries.push({ type: "stage_change", description: `Stage set to ${stageLabel}`, ts: base + 14 * 86400000, user: ownerName })
+  }
+
+  // Health history
+  const healthHistory: any[] = project.healthHistory || []
+  if (healthHistory.length > 0) {
+    healthHistory.forEach((h: any) => {
+      const fromLabel = HEALTH_OPTIONS.find(o => o.value === h.from)?.label ?? h.from
+      const toLabel = HEALTH_OPTIONS.find(o => o.value === h.to)?.label ?? h.to
+      entries.push({ type: "health_change", description: `Health changed from ${fromLabel} to ${toLabel}`, ts: h.ts, user: h.user })
+    })
+  } else {
+    const healthLabel = HEALTH_OPTIONS.find(o => o.value === project.health)?.label ?? project.health
+    entries.push({ type: "health_change", description: `Health set to ${healthLabel}`, ts: base + 25 * 86400000 + (project.ownerId ?? 0) * 3600000, user: names[((project.ownerId ?? 0) + 1) % names.length] })
+  }
+
+  // Budget set
+  entries.push({ type: "budget", description: `Budget set to $${(project.budget ?? 0).toLocaleString()}`, ts: base + 2 * 86400000, user: "Amy Santiago" })
+
+  // Completion history
+  ;(project.completionHistory || []).forEach((h: any) => {
+    entries.push({ type: "completion", description: `Completion updated to ${h.value}%`, ts: h.ts ?? 0, user: h.user })
+  })
+
+  // Notes as comments
+  ;(project.notes || []).forEach((n: any) => {
+    entries.push({ type: "note", description: `${n.author} added a comment`, details: n.text, ts: n.timestamp, user: n.author })
+  })
+
+  return entries.sort((a, b) => b.ts - a.ts)
+}
+
+function ProjectActivityPanel({ project, currentUser, onClose, onUpdate }: any) {
+  const [draft, setDraft] = useState("")
+  const entries = buildProjectActivity(project)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  function submit() {
+    const text = draft.trim()
+    if (!text) return
+    const updated = [...(project.notes || []), { text, author: currentUser, timestamp: Date.now() }]
+    onUpdate(updated)
+    setDraft("")
+  }
+
+  function handleKey(e: any) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit() }
+  }
+
+  return (
+    <div style={{ width: 340, flexShrink: 0, borderLeft: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${t.border}`, padding: "16px 20px" }}>
+        <div>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: t.fg }}>Activity</h2>
+          <p style={{ fontSize: 12, color: t.mutedFg, marginTop: 2 }}>{project.name}</p>
+        </div>
+        <HoverBtn onClick={onClose} style={{ ...s.iconBtn, color: t.mutedFg }}><X size={16} strokeWidth={1}/></HoverBtn>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+        {entries.length === 0
+          ? <p style={{ fontSize: 13, color: t.mutedFg, textAlign: "center", marginTop: 32 }}>No activity yet.</p>
+          : <ActivityTimeline entries={entries}/>
+        }
+        <div ref={bottomRef}/>
+      </div>
+      <div style={{ padding: "12px 20px", borderTop: `1px solid ${t.border}` }}>
+        <textarea
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={handleKey}
+          placeholder="Add a comment… (Enter to send)"
+          rows={3}
+          style={{ width: "100%", background: t.muted, border: `1px solid ${t.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 13, color: t.fg, resize: "none", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+        />
+        <button onClick={submit}
+          style={{ marginTop: 8, width: "100%", padding: "7px 0", borderRadius: 6, border: "none", background: t.fg, color: t.bg, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+          Add comment
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function buildSmartAnalysis(project: any) {
+  const rng = makeRng((project.id ?? 42) * 137 + 1)
+  const completion = project.projectComplete ?? 0
+  const revPct = project.revenueRecognisedPct ?? 0
+  const margin = project.margin ?? 0
+  const health = project.health ?? "on-track"
+  const planAcc = project.planAccuracy ?? 80
+  const start = new Date(project.startDate ?? "2026-01-01").getTime()
+  const end = new Date(project.endDate ?? "2026-12-31").getTime()
+  const now = new Date("2026-04-22").getTime()
+  const timeElapsed = Math.max(0, Math.min(1, (now - start) / (end - start)))
+  const expectedCompletion = Math.round(timeElapsed * 100)
+
+  const signals: Array<{ label: string; severity: "high" | "medium" | "low"; detail: string }> = []
+  const lastHealthEntry = (project.healthHistory ?? []).slice().sort((a: any, b: any) => b.ts - a.ts)[0]
+  const lastHealthUser = lastHealthEntry?.user ?? null
+  if (health === "off-track") signals.push({ label: "Project off track", severity: "high", detail: `Project health flagged as off track${lastHealthUser ? ` by ${lastHealthUser}` : ""} — immediate intervention required.` })
+  else if (health === "at-risk") signals.push({ label: "Health at risk", severity: "medium", detail: `Project health marked at risk${lastHealthUser ? ` by ${lastHealthUser}` : ""} — review current blockers and delivery pace.` })
+  if (planAcc < 55) signals.push({ label: "Significant plan deviation", severity: "high", detail: `Plan accuracy is ${planAcc}% — logged hours are significantly over what was scheduled.` })
+  else if (planAcc < 75) signals.push({ label: "Plan accuracy degrading", severity: "medium", detail: `Plan accuracy is ${planAcc}%, tracking below the 80% healthy threshold.` })
+  if (expectedCompletion > 10 && completion < expectedCompletion - 20) signals.push({ label: "Behind schedule", severity: "high", detail: `Expected ${expectedCompletion}% complete by now — only ${completion}% done. ${expectedCompletion - completion} point gap.` })
+  else if (expectedCompletion > 10 && completion < expectedCompletion - 10) signals.push({ label: "Slightly behind schedule", severity: "medium", detail: `${expectedCompletion - completion} point gap between expected (${expectedCompletion}%) and actual completion (${completion}%).` })
+  if (completion > 20 && revPct < completion - 25) signals.push({ label: "Revenue recognition lag", severity: "medium", detail: `Revenue recognised (${revPct}%) is trailing completion (${completion}%) by ${completion - revPct} points — billing milestones may be overdue.` })
+  if (margin < 18) signals.push({ label: "Low margin alert", severity: "high", detail: `Margin is ${margin}%, well below the 25% agency benchmark. Review resourcing mix.` })
+  else if (margin < 26) signals.push({ label: "Margin pressure", severity: "low", detail: `Margin is ${margin}%, tracking slightly below typical targets.` })
+
+  let score = 0
+  signals.forEach(sig => { score += sig.severity === "high" ? 28 : sig.severity === "medium" ? 14 : 6 })
+  score = Math.min(100, score)
+
+  const recs: string[] = []
+  if (signals.some(s => s.label.includes("off track") || s.label.includes("at risk"))) recs.push("Schedule an urgent project health review with the client and delivery lead.")
+  if (signals.some(s => s.label.toLowerCase().includes("plan"))) recs.push("Conduct a scope and hours review — identify what drove the deviation and reforecast remaining work.")
+  if (signals.some(s => s.label.toLowerCase().includes("schedule"))) recs.push("Re-prioritise deliverables, surface blockers, and consider adding capacity to recover the schedule gap.")
+  if (signals.some(s => s.label.includes("Revenue"))) recs.push("Accelerate billing milestone signoff with the client to reduce the revenue recognition gap.")
+  if (signals.some(s => s.label.toLowerCase().includes("margin"))) recs.push("Review the resourcing mix — replace lower-rate resource time with appropriately-levelled staff or rebalance the fee.")
+  if (recs.length === 0) {
+    recs.push("Project is performing within expected parameters — maintain current pace.")
+    recs.push("Schedule a mid-project review to surface any emerging risks before they escalate.")
+    recs.push("Consider a forward-looking resource plan to ensure team availability for the final phase.")
+  }
+
+  const months = ["Nov", "Dec", "Jan", "Feb", "Mar", "Apr"]
+  const revenueRatio = completion > 0 ? revPct / completion : 0
+  const chartData = months.map((month, i) => {
+    const prog = i / (months.length - 1)
+    const plannedVal = Math.round(expectedCompletion * prog)
+    const actualVal = Math.min(100, Math.max(0, Math.round(completion * prog * (0.85 + rng() * 0.3))))
+    const revenueVal = Math.min(100, Math.max(0, Math.round(actualVal * revenueRatio * (0.7 + rng() * 0.35))))
+    return { month, planned: plannedVal, actual: actualVal, revenue: revenueVal }
+  })
+  chartData[chartData.length - 1] = { month: "Apr", planned: expectedCompletion, actual: completion, revenue: revPct }
+
+  return { signals, score, recs, chartData, expectedCompletion }
+}
+
+function SmartAnalysePanel({ project, onClose }: any) {
+  const analysis = buildSmartAnalysis(project)
+  const riskColor = analysis.score >= 55 ? "#ef4444" : analysis.score >= 25 ? "#f59e0b" : "#22c55e"
+  const riskLabel = analysis.score >= 55 ? "High risk" : analysis.score >= 25 ? "At risk" : "On track"
+  const sectionHeadingStyle = { fontSize: 11, fontWeight: 500, color: t.mutedFg, marginBottom: 10, letterSpacing: "0em" }
+
+  return (
+    <div style={{ width: 380, flexShrink: 0, borderLeft: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+      <div style={{ padding: "16px 20px 14px", borderBottom: `1px solid ${t.border}`, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
+            <Sparkles size={12} strokeWidth={1.5} color={t.mutedFg}/>
+            <span style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.05em" }}>Smart Analysis</span>
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: t.fg, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{project.name}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 20, background: riskColor + "18", border: `1px solid ${riskColor}40` }}>
+            <div style={{ width: 5, height: 5, borderRadius: "50%", background: riskColor }}/>
+            <span style={{ fontSize: 11, fontWeight: 600, color: riskColor }}>{riskLabel}</span>
+          </div>
+          <HoverBtn onClick={onClose} style={{ ...s.iconBtn, color: t.mutedFg }}><X size={14} strokeWidth={1}/></HoverBtn>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+        <div style={{ marginBottom: 20 }}>
+          <div style={sectionHeadingStyle}>Project health trend</div>
+          <div style={{ height: 130, marginLeft: -8 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={analysis.chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={t.border} vertical={false}/>
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: t.mutedFg }} axisLine={false} tickLine={false}/>
+                <YAxis tick={{ fontSize: 10, fill: t.mutedFg }} axisLine={false} tickLine={false} domain={[0, 100]} width={28}/>
+                <Tooltip contentStyle={{ background: t.popover, border: `1px solid ${t.border}`, borderRadius: 6, fontSize: 11, padding: "6px 10px" }} labelStyle={{ color: t.fg, fontWeight: 600 }} itemStyle={{ color: t.secondaryFg }} formatter={(v: any, name: string) => [`${v}%`, name]}/>
+                <Area type="monotone" dataKey="planned" stroke={t.borderAlpha25} fill={t.fgAlpha03} strokeDasharray="4 3" name="Planned"/>
+                <Line type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={2} dot={false} name="Completion"/>
+                <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} dot={false} name="Revenue rec."/>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ display: "flex", gap: 14, marginTop: 8 }}>
+            {[{ color: t.borderAlpha25, label: "Planned" }, { color: "#3b82f6", label: "Completion" }, { color: "#10b981", label: "Revenue rec." }].map(({ color, label }) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 14, height: 2, background: color, borderRadius: 1 }}/>
+                <span style={{ fontSize: 10, color: t.mutedFg }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+          {[
+            { label: "Completion", value: `${project.projectComplete ?? 0}%`, sub: `Plan: ${analysis.expectedCompletion}%` },
+            { label: "Margin", value: `${project.margin ?? 0}%`, sub: `$${Math.round(((project.margin ?? 0) / 100) * (project.budget ?? 0)).toLocaleString()}` },
+            { label: "Plan accuracy", value: project.planAccuracy != null ? `${project.planAccuracy}%` : "—", sub: project.health === "on-track" ? "Healthy" : project.health === "at-risk" ? "At risk" : "Off track" },
+          ].map(({ label, value, sub }) => (
+            <div key={label} style={{ background: t.muted, borderRadius: 8, padding: "8px 10px" }}>
+              <div style={{ fontSize: 10, color: t.mutedFg, marginBottom: 3 }}>{label}</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: t.fg }}>{value}</div>
+              <div style={{ fontSize: 10, color: t.mutedFg }}>{sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {analysis.signals.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={sectionHeadingStyle}>Risk signals</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {analysis.signals.map((sig: any, i: number) => {
+                const col = sig.severity === "high" ? "#ef4444" : sig.severity === "medium" ? "#f59e0b" : "#8a9099"
+                return (
+                  <div key={i} style={{ padding: "8px 10px", borderRadius: 8, background: col + "0f", border: `1px solid ${col}30` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                      <div style={{ width: 5, height: 5, borderRadius: "50%", background: col, flexShrink: 0 }}/>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: t.fg }}>{sig.label}</span>
+                    </div>
+                    <p style={{ fontSize: 11, color: t.secondaryFg, lineHeight: 1.6, margin: 0 }}>{sig.detail}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {analysis.signals.length === 0 && (
+          <div style={{ marginBottom: 20, padding: "10px 12px", borderRadius: 8, background: "#22c55e0f", border: "1px solid #22c55e30" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#22c55e", flexShrink: 0 }}/>
+              <span style={{ fontSize: 12, fontWeight: 600, color: t.fg }}>No risk signals detected</span>
+            </div>
+            <p style={{ fontSize: 11, color: t.secondaryFg, lineHeight: 1.6, margin: "4px 0 0 11px" }}>Project is tracking within healthy parameters across all dimensions.</p>
+          </div>
+        )}
+
+        <div style={{ marginBottom: 8 }}>
+          <div style={sectionHeadingStyle}>Recommendations</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {analysis.recs.map((rec: string, i: number) => (
+              <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ width: 18, height: 18, borderRadius: "50%", background: t.muted, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: t.secondaryFg, flexShrink: 0, marginTop: 1 }}>
+                  {i + 1}
+                </div>
+                <p style={{ fontSize: 12, color: t.secondaryFg, lineHeight: 1.6, margin: 0 }}>{rec}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
   const [showModal, setShowModal] = useState(false)
-  const [colOrder, setColOrder] = useState(PT_COLS_CONFIG.map(c => c.key))
-  const [dragKey, setDragKey] = useState(null)
-  const [dropKey, setDropKey] = useState(null)
-  const [notesIdx, setNotesIdx] = useState(null)
+  const [panel, setPanel] = useState<{ type: "notes" | "activity" | "analyse"; idx: number } | null>(null)
+  const [monthOffset, setMonthOffset] = useState(0)
+  const [tableView, setTableView] = useState("all")
+  const [selectedProjectIndices, setSelectedProjectIndices] = useState<number[]>([])
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem("projectTracker.hiddenCols.all") : null
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    } catch { return new Set() }
+  })
+  const toggleCol = (id: string) => setHiddenCols(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id)
+    try { localStorage.setItem("projectTracker.hiddenCols.all", JSON.stringify([...n])) } catch {}
+    return n
+  })
   const currentUser = people[1]?.name || "Amy Santiago"
 
-  const cols = colOrder.map((k: any) => PT_COLS_CONFIG.find(c => c.key === k)!)
-  const gridCols = cols.map(c => c.flex).join(" ")
+  const monthRange = useMemo(() => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + monthOffset
+    const start = new Date(year, month, 1)
+    const end = new Date(year, month + 1, 0)
+    const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    return { start: fmt(start), end: fmt(end) }
+  }, [monthOffset])
 
-  function onDragStart(key: any) { setDragKey(key) }
-  function onDragOver(e: any, key: any) { e.preventDefault(); setDropKey(key) }
-  function onDrop(key: any) {
-    if (!dragKey || dragKey === key) { setDragKey(null); setDropKey(null); return }
-    const order = [...colOrder]
-    const from = order.indexOf(dragKey)
-    const to = order.indexOf(key)
-    order.splice(from, 1)
-    order.splice(to, 0, dragKey)
-    setColOrder(order)
-    setDragKey(null)
-    setDropKey(null)
-  }
+  const columns = useMemo(() => [
+    { accessorKey: "name", header: "Project", size: 240,
+      cell: ({ row }: any) => (
+        <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}>
+          <InlineEdit value={row.original.name} onChange={(v: any) => { const u=[...projects]; u[projects.indexOf(row.original)].name=v; onProjectsChange(u) }} style={{ background: "transparent", fontWeight: 500 }}/>
+        </span>
+      )},
+    { accessorKey: "clientId", header: "Client", size: 150,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{clients[row.original.clientId]?.name || "—"}</span> },
+    { id: "stage", header: "Stage", size: 150, accessorFn: () => "",
+      cell: ({ row }: any) => (
+        <span onClick={e => e.stopPropagation()}>
+          <StageDropdown value={row.original.stage || "estimating"} onChange={(v: any) => {
+            const u=[...projects]; const idx=projects.indexOf(row.original)
+            const entry = { ts: Date.now(), user: currentUser, from: u[idx].stage, to: v }
+            u[idx] = { ...u[idx], stage: v, stageHistory: [entry, ...(u[idx].stageHistory || [])] }
+            onProjectsChange(u)
+          }}/>
+        </span>
+      )},
+    { id: "health", header: "Health", size: 130, accessorFn: () => "",
+      cell: ({ row }: any) => (
+        <span onClick={e => e.stopPropagation()}>
+          <HealthDropdown value={row.original.health || "on-track"} onChange={(v: any) => {
+            const u=[...projects]; const idx=projects.indexOf(row.original)
+            const entry = { ts: Date.now(), user: currentUser, from: u[idx].health, to: v }
+            u[idx] = { ...u[idx], health: v, healthHistory: [entry, ...(u[idx].healthHistory || [])] }
+            onProjectsChange(u)
+          }}/>
+        </span>
+      )},
+    { id: "projectComplete", header: "Project completion (%)", size: 160, accessorFn: () => "",
+      cell: ({ row }: any) => (
+        <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <ProjectCompleteDropdown value={row.original.projectComplete ?? null} onChange={(v: any) => {
+            const u=[...projects]; const idx=projects.indexOf(row.original)
+            const now = Date.now()
+            const entry = { date: new Date(now).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), ts: now, user: currentUser, value: v }
+            u[idx] = { ...u[idx], projectComplete: v, completionHistory: [entry, ...(u[idx].completionHistory || [])] }
+            onProjectsChange(u)
+          }}/>
+          <ActivityHistoryBtn history={row.original.completionHistory || []}/>
+        </span>
+      )},
+    { id: "notes", header: "Notes", size: 220, enableResizing: false, accessorFn: () => "",
+      cell: ({ row }: any) => (
+        <span onClick={e => { e.stopPropagation(); setPanel({ type: "notes", idx: projects.indexOf(row.original) }) }} style={{ display: "flex", alignItems: "flex-start", paddingRight: 16 }}>
+          <NotesCell notes={row.original.notes} onClick={() => setPanel({ type: "notes", idx: projects.indexOf(row.original) })}/>
+        </span>
+      )},
+    { id: "analyse", header: "", size: 110, enableResizing: false, accessorFn: () => "",
+      cell: ({ row }: any) => {
+        const idx = projects.indexOf(row.original)
+        const active = panel?.type === "analyse" && panel.idx === idx
+        return (
+          <span onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setPanel(active ? null : { type: "analyse", idx })}
+              style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 6, border: `1px solid ${active ? t.fgAlpha20 : t.border}`, background: active ? t.fgAlpha06 : "transparent", color: active ? t.fg : t.secondaryFg, cursor: "pointer", fontSize: 11, fontWeight: 500, fontFamily: "inherit" }}>
+              <Sparkles size={11} strokeWidth={1}/>
+              Analyse
+            </button>
+          </span>
+        )
+      }},
+    { accessorKey: "scheduledBillable", header: "Scheduled billable", size: 150, meta: { dividerLeft: true },
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.scheduledBillable != null ? `$${row.original.scheduledBillable.toLocaleString()}` : "—"}</span> },
+    { accessorKey: "margin", header: "Margin", size: 180,
+      cell: ({ row }: any) => {
+        const pct = row.original.margin
+        const val = Math.round((pct / 100) * (row.original.budget ?? 0))
+        return <span style={{ fontSize: 13, color: t.fg }}>{pct}% <span style={{ color: t.mutedFg }}>/</span> ${val.toLocaleString()}</span>
+      }},
+    { accessorKey: "budget", header: "Total budget", size: 120,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>${row.original.budget?.toLocaleString()}</span> },
+    { accessorKey: "revenueRecognisedPct", header: "Revenue recognised", size: 200,
+      cell: ({ row }: any) => {
+        const pct = row.original.revenueRecognisedPct
+        const val = Math.round((pct / 100) * (row.original.scheduledBillable ?? 0))
+        return <span style={{ fontSize: 13, color: t.fg }}>{pct}% <span style={{ color: t.mutedFg }}>/</span> ${val.toLocaleString()}</span>
+      }},
+    { id: "planAccuracy", header: "Plan accuracy", size: 130, meta: { dividerLeft: true }, accessorFn: () => "",
+      cell: ({ row }: any) => (
+        <span onClick={e => e.stopPropagation()}>
+          <PlanAccuracyDropdown value={row.original.planAccuracy ?? null} onChange={(v: any) => { const u=[...projects]; u[projects.indexOf(row.original)].planAccuracy=v; onProjectsChange(u) }}/>
+        </span>
+      )},
+    { accessorKey: "hoursScheduled", header: "Hours scheduled", size: 140,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.hoursScheduled != null ? `${row.original.hoursScheduled.toLocaleString()}h` : "—"}</span> },
+    { accessorKey: "totalHoursAtCompletion", header: "Total hours at completion", size: 210,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.totalHoursAtCompletion != null ? row.original.totalHoursAtCompletion.toLocaleString() : "—"}</span> },
+    { accessorKey: "startDate", header: "Start", size: 90,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.secondaryFg }}>{new Date(row.original.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span> },
+    { accessorKey: "endDate", header: "End", size: 90,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.secondaryFg }}>{new Date(row.original.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span> },
+    { id: "owner", header: "Owner", size: 44, enableResizing: false, accessorFn: () => "",
+      cell: ({ row }: any) => (
+        <div style={{ width: 26, height: 26, borderRadius: "50%", background: t.muted, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: t.fg }}>
+          {people[row.original.ownerId]?.name.charAt(0) || "?"}
+        </div>
+      )},
+  ], [projects, onProjectsChange, clients, people, panel])
 
-  function renderCell(col: any, p: any, i: any) {
-    const k = col.key
-    switch (k) {
-      case "name":      return <span key={k} style={{ display:"flex", alignItems:"center", fontSize:13, fontWeight:500, color:t.fg }}><InlineEdit value={p.name} onChange={(v: any) => { const u=[...projects]; u[i].name=v; onProjectsChange(u) }} style={{ background:"transparent" }}/></span>
-      case "client":    return <span key={k} style={{ display:"flex", alignItems:"center", fontSize:13, color:t.fg }}>{clients[p.clientId]?.name}</span>
-      case "stage":     return <span key={k} style={{ display:"flex", alignItems:"center" }}><div style={{ width:10, height:10, borderRadius:"50%", background:(STAGE_COLORS as any)[p.stage] }}/></span>
-      case "margin":    return <span key={k} style={{ display:"flex", alignItems:"center", fontSize:13, color:t.fg }}>{p.margin}%</span>
-      case "budget":    return <span key={k} style={{ display:"flex", alignItems:"center", fontSize:13, color:t.fg }}>${p.budget.toLocaleString()}</span>
-      case "startDate": return <span key={k} style={{ display:"flex", alignItems:"center", fontSize:13, color:t.secondaryFg }}>{new Date(p.startDate).toLocaleDateString("en-US", { month:"short", day:"numeric" })}</span>
-      case "endDate":   return <span key={k} style={{ display:"flex", alignItems:"center", fontSize:13, color:t.secondaryFg }}>{new Date(p.endDate).toLocaleDateString("en-US", { month:"short", day:"numeric" })}</span>
-      case "owner":     return <span key={k} style={{ display:"flex", alignItems:"center" }}><div style={{ width:24, height:24, borderRadius:"50%", background:t.muted, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:600, color:t.fg }}>{people[p.ownerId]?.name.charAt(0) || "?"}</div></span>
-      case "health":    return <span key={k} style={{ display:"flex", alignItems:"center" }}><HealthDropdown value={p.health || "on-track"} onChange={(v: any) => { const u=[...projects]; u[i].health=v; onProjectsChange(u) }}/></span>
-      case "notes":     return <span key={k} style={{ display:"flex", alignItems:"flex-start", paddingTop:4 }}><NotesCell notes={p.notes} onClick={() => setNotesIdx(i)}/></span>
-      default:          return null
-    }
-  }
+  const recStats = useMemo(() => {
+    const src = selectedProjectIndices.length > 0
+      ? selectedProjectIndices.map((i: number) => projects[i]).filter(Boolean)
+      : projects
+    const totalScheduledBillable = src.reduce((acc: number, p: any) => acc + (p.scheduledBillable ?? 0), 0)
+    const totalHoursScheduled = src.reduce((acc: number, p: any) => acc + (p.hoursScheduled ?? 0), 0)
+    const totalMarginVal = src.reduce((acc: number, p: any) => acc + Math.round(((p.margin ?? 0) / 100) * (p.budget ?? 0)), 0)
+    const avgMargin = src.length ? Math.round(src.reduce((acc: number, p: any) => acc + (p.margin ?? 0), 0) / src.length) : 0
+    const totalRevenueRecognised = src.reduce((acc: number, p: any) => acc + Math.round(((p.revenueRecognisedPct ?? 0) / 100) * (p.scheduledBillable ?? 0)), 0)
+    const pctRecognised = totalScheduledBillable ? Math.round((totalRevenueRecognised / totalScheduledBillable) * 100) : 0
+    return { totalScheduledBillable, totalHoursScheduled, totalMarginVal, avgMargin, totalRevenueRecognised, pctRecognised, count: src.length }
+  }, [projects, selectedProjectIndices])
 
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
     <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden", background: t.bg }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "20px 24px 16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 4 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 600, color: t.fg }}>{projects.length} Projects</h1>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg }}>{projects.length} Projects</h1>
           <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={1}/>Filter</HoverBtn>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-          <button onClick={() => setShowModal(true)} style={s.primaryBtn}><Plus size={16} strokeWidth={1}/></button>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
+          <button onClick={() => setShowModal(true)} style={s.primaryBtn}><Plus size={16} strokeWidth={1}/></button>
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 24px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: gridCols, borderBottom: `1px solid ${t.border}`, padding: "8px 0", gap: 8 }}>
-          {cols.map(col => (
-            <span key={col.key}
-              draggable
-              onDragStart={() => onDragStart(col.key)}
-              onDragOver={e => onDragOver(e, col.key)}
-              onDrop={() => onDrop(col.key)}
-              onDragEnd={() => { setDragKey(null); setDropKey(null) }}
-              style={{ fontSize:12, fontWeight:500, color: dropKey === col.key ? t.fg : t.mutedFg, cursor:"grab", userSelect:"none", display:"flex", alignItems:"center", gap:4, borderLeft: dropKey === col.key ? `2px solid ${t.fg}` : "2px solid transparent", paddingLeft: 2, transition:"border-color 0.1s, color 0.1s", opacity: dragKey === col.key ? 0.4 : 1 }}>
-              {col.label}
-            </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 24px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", border: `1px solid ${t.border}`, borderRadius: 7, overflow: "hidden" }}>
+          <HoverBtn onClick={() => setMonthOffset(o => o - 1)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 24, borderRadius: 0, border: "none", background: "transparent", color: t.secondaryFg, cursor: "pointer", borderRight: `1px solid ${t.border}` }}>
+            <ChevronLeft size={12} strokeWidth={1.5}/>
+          </HoverBtn>
+          <HoverBtn onClick={() => setMonthOffset(o => o + 1)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 24, borderRadius: 0, border: "none", background: "transparent", color: t.secondaryFg, cursor: "pointer" }}>
+            <ChevronRight size={12} strokeWidth={1.5}/>
+          </HoverBtn>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 7, border: `1px solid ${t.border}`, cursor: "pointer" }}>
+          <span style={{ fontSize: 12, color: t.mutedFg }}>This month</span>
+          <span style={{ fontSize: 12, color: t.fg, fontWeight: 500 }}>{monthRange.start} – {monthRange.end}</span>
+          <ChevronDown size={11} strokeWidth={1.5} color={t.mutedFg}/>
+        </div>
+        <div style={{ width: 1, height: 16, background: t.fgAlpha20 }}/>
+        {[["all","All"],["recognised","Revenue recognition"]].map(([v,l]) => (
+          <TabBtn key={v} active={tableView === v} onClick={() => setTableView(v)} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+            <Circle size={10} strokeWidth={1} style={{ fill: tableView === v ? t.fg : "none" }}/>{l}
+          </TabBtn>
+        ))}
+        <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={tableView === "recognised" ? columns.filter((c: any) => ["name","clientId","health","projectComplete","planAccuracy","budget","margin","revenueRecognisedPct","scheduledBillable","hoursScheduled","totalHoursAtCompletion"].includes(c.id ?? c.accessorKey)) : columns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
+      </div>
+      {tableView === "recognised" && (
+        <div style={{ display: "flex", gap: 12, padding: "4px 24px 16px" }}>
+          {[
+            {
+              label: "Revenue recognised",
+              value: `$${recStats.totalRevenueRecognised.toLocaleString()}`,
+              badge: `${recStats.pctRecognised}%`,
+              desc: `of $${recStats.totalScheduledBillable.toLocaleString()} scheduled billable`,
+            },
+            {
+              label: "Scheduled billable",
+              value: `$${recStats.totalScheduledBillable.toLocaleString()}`,
+              badge: `${recStats.count} project${recStats.count !== 1 ? "s" : ""}`,
+              desc: selectedProjectIndices.length > 0 ? `${selectedProjectIndices.length} of ${projects.length} selected` : "Total billable across all projects",
+            },
+            {
+              label: "Hours scheduled",
+              value: `${recStats.totalHoursScheduled.toLocaleString()}h`,
+              badge: recStats.count ? `avg ${Math.round(recStats.totalHoursScheduled / recStats.count)}h` : "—",
+              desc: selectedProjectIndices.length > 0 ? `${selectedProjectIndices.length} of ${projects.length} selected` : "Total hours across all projects",
+            },
+            {
+              label: "Margin",
+              value: `${recStats.avgMargin}%`,
+              badge: `$${recStats.totalMarginVal.toLocaleString()}`,
+              desc: selectedProjectIndices.length > 0 ? `${selectedProjectIndices.length} of ${projects.length} selected` : "Avg margin · total margin value",
+            },
+          ].map((card, i) => (
+            <div key={i} style={{ flex: 1, padding: "16px 20px", borderRadius: 10, border: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", gap: 6 }}>
+              <p style={{ fontSize: 11, color: t.mutedFg, fontWeight: 500 }}>{card.label}</p>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <span style={{ fontSize: 20, fontWeight: 500, color: t.fg, letterSpacing: "-0.5px", lineHeight: 1 }}>{card.value}</span>
+                <span style={{ fontSize: 12, color: t.secondaryFg }}>{card.badge}</span>
+              </div>
+              <p style={{ fontSize: 11, color: t.mutedFg }}>{card.desc}</p>
+            </div>
           ))}
         </div>
-        {projects.map((p: any, i: any) => (
-          <HoverRow key={i} selected={false} onClick={() => {}}
-            style={{ display: "grid", gridTemplateColumns: gridCols, borderBottom: `1px solid ${t.border}`, padding: "10px 0", cursor: "default", gap: 8, transition: "background 0.1s" }}>
-            {cols.map(col => renderCell(col, p, i))}
-          </HoverRow>
-        ))}
-      </div>
+      )}
+      <DataTable
+        columns={tableView === "recognised"
+          ? columns.filter((c: any) => ["name","clientId","health","projectComplete","planAccuracy","budget","margin","revenueRecognisedPct","scheduledBillable","hoursScheduled","totalHoursAtCompletion"].includes(c.id ?? c.accessorKey))
+          : columns}
+        data={projects}
+        hiddenCols={hiddenCols}
+        onSelectionChange={setSelectedProjectIndices}
+        onRowClick={(_p: any, i: number) => setPanel(prev => prev?.type === "activity" && prev.idx === i ? null : { type: "activity", idx: i })}/>
       {showModal && <AddProjectModal people={people} clients={clients} onAdd={(p: any) => onProjectsChange([...projects, p])} onClose={() => setShowModal(false)}/>}
     </div>
-    {notesIdx !== null && projects[notesIdx] && (
+    {panel?.type === "notes" && projects[panel.idx] && (
       <NotesPanel
-        project={projects[notesIdx]}
+        project={projects[panel.idx]}
         currentUser={currentUser}
-        onClose={() => setNotesIdx(null)}
+        onClose={() => setPanel(null)}
         onUpdate={(updated: any) => {
           const u = [...projects]
-          u[notesIdx] = { ...u[notesIdx], notes: updated }
+          u[panel.idx] = { ...u[panel.idx], notes: updated }
           onProjectsChange(u)
         }}
+      />
+    )}
+    {panel?.type === "activity" && projects[panel.idx] && (
+      <ProjectActivityPanel
+        project={projects[panel.idx]}
+        currentUser={currentUser}
+        onClose={() => setPanel(null)}
+        onUpdate={(updated: any) => {
+          const u = [...projects]
+          u[panel.idx] = { ...u[panel.idx], notes: updated }
+          onProjectsChange(u)
+        }}
+      />
+    )}
+    {panel?.type === "analyse" && projects[panel.idx] && (
+      <SmartAnalysePanel
+        project={projects[panel.idx]}
+        onClose={() => setPanel(null)}
       />
     )}
     </div>
@@ -1989,6 +2608,8 @@ function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, cli
   const [selectedIdx, setSelectedIdx] = useState<number|null>(null)
   const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
   const [filteredOwner, setFilteredOwner] = useState<string|null>(null)
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const isAll = selectedOffices.length === ALL_OFFICES.length
   let filtered = isAll ? projects : projects.filter((p: any) => selectedOffices.includes(p.office))
   if (filteredBusinessUnit) filtered = filtered.filter((p: any) => p.unit === filteredBusinessUnit)
@@ -2025,7 +2646,8 @@ function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, cli
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden", background: t.bg }}>
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
-        <SectionHeader count={filtered.length} label="Projects" onAdd={() => {}} filterField={filteredOwner ? "Owner" : filteredRateCard ? "Rate card" : filteredClient ? "Client" : undefined} filterValue={filteredOwner ?? (filteredRateCard?.rateCardName) ?? filteredClient} onClearFilter={filteredOwner ? () => setFilteredOwner(null) : filteredRateCard ? onRateCardFilterClear : onClientFilterClear}/>
+        <SectionHeader count={filtered.length} label="Projects" onAdd={() => {}} filterField={filteredOwner ? "Owner" : filteredRateCard ? "Rate card" : filteredClient ? "Client" : undefined} filterValue={filteredOwner ?? (filteredRateCard?.rateCardName) ?? filteredClient} onClearFilter={filteredOwner ? () => setFilteredOwner(null) : filteredRateCard ? onRateCardFilterClear : onClientFilterClear}
+          actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
@@ -2035,15 +2657,15 @@ function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, cli
               </HoverBtn>
             )}
           </div>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
-          <HoverBtn style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
           <Tabs active={tab} onChange={setTab} tabs={[{ label: `${filtered.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+          <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={projColumns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
         </div>
         <DataTable
           columns={projColumns}
           data={display}
+          hiddenCols={hiddenCols}
           onRowClick={(_: any, idx: number) => setSelectedIdx(idx)}
           isRowSelected={(_: any, idx: number) => idx === selectedIdx}
           emptyNode={tab === "archived" && <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}><p style={{ fontSize: 13, color: t.mutedFg }}>No archived projects</p></div>}
@@ -2071,6 +2693,163 @@ const HEALTH_OPTIONS = [
   { value: "at-risk",   label: "At Risk",   color: "#f59e0b" },
   { value: "off-track", label: "Off Track", color: "#ef4444" },
 ]
+
+const PLAN_ACCURACY_OPTIONS = [0,10,20,30,40,50,60,70,80,90,100]
+
+function ProjectCompleteDropdown({ value, onChange }: any) {
+  const [open, setOpen] = useState(false)
+  const [inputVal, setInputVal] = useState("")
+  const display = value == null ? "—" : `${value}%`
+  function commitInput() {
+    const n = parseInt(inputVal, 10)
+    if (!isNaN(n)) { onChange(Math.min(100, Math.max(0, n))); setOpen(false); setInputVal("") }
+  }
+  return (
+    <DropdownWrapper open={open} setOpen={setOpen}
+      trigger={
+        <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
+          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:500, color: t.fg }}>
+          {display}
+          <ChevronDown size={10} strokeWidth={1}/>
+        </HoverBtn>
+      }>
+      <div style={{ ...s.dropdown, width:120 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:4, padding:"4px 8px 6px", borderBottom:`1px solid ${t.border}` }}>
+          <input
+            type="number" min={0} max={100} placeholder="0–100"
+            value={inputVal}
+            onChange={e => setInputVal(e.target.value)}
+            onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") commitInput() }}
+            onClick={e => e.stopPropagation()}
+            style={{ width:"100%", fontSize:12, background:t.muted, border:`1px solid ${t.border}`, borderRadius:4, padding:"3px 6px", color:t.fg, outline:"none", fontFamily:"inherit" }}
+          />
+          <button onClick={(e) => { e.stopPropagation(); commitInput() }} style={{ fontSize:11, background:t.fgAlpha10, border:"none", borderRadius:4, padding:"3px 6px", color:t.fg, cursor:"pointer", whiteSpace:"nowrap" }}>Set</button>
+        </div>
+        <div style={{ maxHeight:180, overflowY:"auto" }}>
+          {PLAN_ACCURACY_OPTIONS.map(v => (
+            <button key={v} onClick={(e: any) => { e.stopPropagation(); onChange(v); setOpen(false) }} style={s.dropdownItem(v === value)}>
+              <span style={{ flex:1 }}>{v}%</span>
+              {v === value && <Check size={11} strokeWidth={1}/>}
+            </button>
+          ))}
+        </div>
+      </div>
+    </DropdownWrapper>
+  )
+}
+
+function ActivityHistoryBtn({ history }: { history: { date: string; user: string; value: number }[] }) {
+  const [hov, setHov] = useState(false)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+
+  function updatePos() {
+    if (!btnRef.current) return
+    const r = btnRef.current.getBoundingClientRect()
+    setPos({ top: r.bottom + 6, left: r.left + r.width / 2 })
+  }
+
+  return (
+    <div style={{ display: "inline-flex" }}>
+      <button
+        ref={btnRef}
+        onMouseEnter={() => { updatePos(); setHov(true) }}
+        onMouseLeave={() => setHov(false)}
+        onClick={e => e.stopPropagation()}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 4, border: "none", background: "transparent", color: hov ? t.secondaryFg : t.mutedFg, cursor: "default", padding: 0 }}
+      >
+        <Activity size={12} strokeWidth={1.5}/>
+      </button>
+      {hov && typeof document !== "undefined" && createPortal(
+        <div style={{ position: "fixed", top: pos.top, left: pos.left, transform: "translateX(-50%)", background: t.popover, border: `1px solid ${t.border}`, borderRadius: 8, padding: "8px 10px", boxShadow: `0 4px 16px ${t.shadowDark}`, zIndex: 9999, minWidth: 240, pointerEvents: "none" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, marginBottom: 6, letterSpacing: "0.05em" }}>Activity</div>
+          {history.length === 0
+            ? <div style={{ fontSize: 12, color: t.secondaryFg }}>No history yet</div>
+            : <div style={{ display: "flex", flexDirection: "column" }}>
+                {history.map((entry, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, paddingTop: i > 0 ? 4 : 0, borderTop: i > 0 ? `1px solid ${t.border}` : "none", marginTop: i > 0 ? 4 : 0 }}>
+                    <span style={{ fontSize: 12, color: t.fg, fontWeight: 500 }}>{entry.user}</span>
+                    <span style={{ fontSize: 12, color: t.secondaryFg }}>set to {entry.value}%</span>
+                    <span style={{ fontSize: 11, color: t.mutedFg, marginLeft: "auto", whiteSpace: "nowrap", paddingLeft: 8 }}>{entry.date}</span>
+                  </div>
+                ))}
+              </div>
+          }
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
+function PlanAccuracyDropdown({ value, onChange }: any) {
+  const [open, setOpen] = useState(false)
+  const [inputVal, setInputVal] = useState("")
+  const display = value == null ? "—" : `${value}%`
+  function commitInput() {
+    const n = parseInt(inputVal, 10)
+    if (!isNaN(n)) { onChange(Math.min(100, Math.max(0, n))); setOpen(false); setInputVal("") }
+  }
+  return (
+    <DropdownWrapper open={open} setOpen={setOpen}
+      trigger={
+        <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
+          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:500, color: t.fg }}>
+          {display}
+          <ChevronDown size={10} strokeWidth={1}/>
+        </HoverBtn>
+      }>
+      <div style={{ ...s.dropdown, width:120 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:4, padding:"4px 8px 6px", borderBottom:`1px solid ${t.border}` }}>
+          <input
+            type="number" min={0} max={100} placeholder="0–100"
+            value={inputVal}
+            onChange={e => setInputVal(e.target.value)}
+            onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") commitInput() }}
+            onClick={e => e.stopPropagation()}
+            style={{ width:"100%", fontSize:12, background:t.muted, border:`1px solid ${t.border}`, borderRadius:4, padding:"3px 6px", color:t.fg, outline:"none", fontFamily:"inherit" }}
+          />
+          <button onClick={(e) => { e.stopPropagation(); commitInput() }} style={{ fontSize:11, background:t.fgAlpha10, border:"none", borderRadius:4, padding:"3px 6px", color:t.fg, cursor:"pointer", whiteSpace:"nowrap" }}>Set</button>
+        </div>
+        <div style={{ maxHeight:180, overflowY:"auto" }}>
+          {PLAN_ACCURACY_OPTIONS.map(v => (
+            <button key={v} onClick={(e: any) => { e.stopPropagation(); onChange(v); setOpen(false) }} style={s.dropdownItem(v === value)}>
+              <span style={{ flex:1 }}>{v}%</span>
+              {v === value && <Check size={11} strokeWidth={1}/>}
+            </button>
+          ))}
+        </div>
+      </div>
+    </DropdownWrapper>
+  )
+}
+
+function StageDropdown({ value, onChange }: any) {
+  const [open, setOpen] = useState(false)
+  const current = STAGE_OPTIONS.find(o => o.value === value) || STAGE_OPTIONS[0]
+  return (
+    <DropdownWrapper open={open} setOpen={setOpen}
+      trigger={
+        <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
+          style={{ display:"flex", alignItems:"center", gap:6, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:500, color: t.fg }}>
+          <StageIcon type={current.iconType} color={current.color}/>
+          {current.label}
+          <ChevronDown size={10} strokeWidth={1} color={t.mutedFg}/>
+        </HoverBtn>
+      }>
+      <div style={{ ...s.dropdown, width: 150 }}>
+        {STAGE_OPTIONS.map(o => (
+          <button key={o.value} onClick={(e: any) => { e.stopPropagation(); onChange(o.value); setOpen(false) }}
+            style={{ ...s.dropdownItem(o.value === value), display:"flex", alignItems:"center", gap:8 }}>
+            <StageIcon type={o.iconType} color={o.color}/>
+            <span style={{ flex: 1 }}>{o.label}</span>
+            {o.value === value && <Check size={11} strokeWidth={1}/>}
+          </button>
+        ))}
+      </div>
+    </DropdownWrapper>
+  )
+}
 
 function HealthDropdown({ value, onChange }: any) {
   const [open, setOpen] = useState(false)
@@ -2311,6 +3090,8 @@ function Clients({ roles, people, clients, onClientsChange, projects, onNavigate
   const setClients = onClientsChange
   const [tab, setTab] = useState("active")
   const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const isAll = selectedOffices.length === ALL_OFFICES.length
   const officeFiltered = isAll ? clients : clients.filter((c: any) => selectedOffices.includes(c.office))
   const displayClients = filterClients ? officeFiltered.filter((c: any) => filterClients.includes(c.name)) : officeFiltered
@@ -2318,14 +3099,17 @@ function Clients({ roles, people, clients, onClientsChange, projects, onNavigate
   return (
     <div style={{ display:"flex", flex:1, overflow:"hidden", background:t.bg }}>
       <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden" }}>
-        <SectionHeader count={displayClients.length} label="Clients" onAdd={() => {}} filterField={filterClients ? "Client" : undefined} filterValue={filterClients} onClearFilter={onClearClientsFilter}/>
+        <SectionHeader count={displayClients.length} label="Clients" onAdd={() => {}} filterField={filterClients ? "Client" : undefined} filterValue={filterClients} onClearFilter={onClearClientsFilter}
+          actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 12px" }}>
           <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
-          <HoverBtn style={{ ...s.iconBtn, width:24, height:24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
           <Tabs active={tab} onChange={setTab} tabs={[{label:`${clients.length} Active`,value:"active"},{label:"0 Archived",value:"archived"},{label:"All",value:"all"}]}/>
+          <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
+            {accessorKey:"name",header:"Client"},{id:"contact",header:"Client contact"},{id:"owner",header:"Client owner"},
+            {id:"crm",header:"CRM"},{id:"rateCards",header:"Rate cards"},{id:"projects",header:"Projects"},
+          ]} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
         </div>
         <DataTable
           columns={[
@@ -2361,6 +3145,7 @@ function Clients({ roles, people, clients, onClientsChange, projects, onNavigate
             { id: "projects", header: "Projects", size: 100, enableResizing: false, cell: ({ row }: any) => { const idx = clients.indexOf(row.original); const count = (projects||[]).filter((p: any) => p.clientId === idx).length; return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count} onClick={() => onNavigateToProjects(row.original.name)}/></span> : <span style={{ color:t.mutedFg }}>—</span> } },
           ]}
           data={tab==="archived"?[]:displayClients}
+          hiddenCols={hiddenCols}
         />
       </div>
     </div>
@@ -2373,6 +3158,8 @@ function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilte
   const [selectedClient, setSelectedClient] = useState<number|null>(null)
   const [selectedRC, setSelectedRC] = useState<number|null>(null)
   const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   function updateClient(idx: any, updated: any) { onClientsChange((prev: any) => prev.map((c: any,i: any) => i===idx ? updated : c)) }
   const client = selectedClient !== null ? clients[selectedClient] : null
   const isAll = selectedOffices.length === ALL_OFFICES.length
@@ -2382,14 +3169,16 @@ function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilte
   return (
     <div style={{ display:"flex", flex:1, overflow:"hidden", background:t.bg }}>
       <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden" }}>
-        <SectionHeader count={displayClients.length} label="Rate cards" onAdd={() => {}} filterField={filterClient ? "Client" : undefined} filterValue={filterClient} onClearFilter={onClearFilter}/>
+        <SectionHeader count={displayClients.length} label="Rate cards" onAdd={() => {}} filterField={filterClient ? "Client" : undefined} filterValue={filterClient} onClearFilter={onClearFilter}
+          actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 12px" }}>
           <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
-          <HoverBtn style={{ ...s.iconBtn, width:24, height:24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
           <Tabs active={tab} onChange={setTab} tabs={[{label:`${displayClients.length} Active`,value:"active"},{label:"0 Archived",value:"archived"},{label:"All",value:"all"}]}/>
+          <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
+            {accessorKey:"rateCardName",header:"Rate card"},{id:"client",header:"Clients"},{id:"projects",header:"Projects"},
+          ]} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
         </div>
         <DataTable
           columns={[
@@ -2398,6 +3187,7 @@ function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilte
             { id: "projects", header: "Projects", size: 120, enableResizing: false, cell: ({ row }: any) => { const count = (projects||[]).filter((p: any) => clients[p.clientId]?.name === row.original.name).length; return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count} onClick={() => onNavigateToProjects?.(row.original.name, row.original.rateCardName || row.original.name)}/></span> : <span style={{ color:t.mutedFg }}>—</span> } },
           ]}
           data={tab==="archived"?[]:displayClients}
+          hiddenCols={hiddenCols}
           onRowClick={(_: any, idx: number) => { setSelectedClient(idx); setSelectedRC(0) }}
           isRowSelected={(_: any, idx: number) => idx === selectedClient}
         />
@@ -2413,6 +3203,8 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
   const [tab, setTab] = useState("active")
   const [units, setUnits] = useState(BUSINESS_UNITS_FULL)
   const [selectedUnit, setSelectedUnit] = useState<number|null>(null)
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
+  const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const [viewTab, setViewTab] = useState("departments")
   const [selectedDept, setSelectedDept] = useState<number|null>(null)
   function updateUnit(idx: any, updated: any) { setUnits((prev: any) => prev.map((u: any,i: any) => i===idx ? updated : u)) }
@@ -2423,14 +3215,17 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
       <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden" }}>
         {unit === null ? (
           <>
-            <SectionHeader count={units.length} label="Brands" onAdd={() => {}}/>
+            <SectionHeader count={units.length} label="Brands" onAdd={() => {}}
+              actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 12px" }}>
               <HoverBtn style={s.pillBtn(false)}><Circle size={10} strokeWidth={1}/>All regions<ChevronDown size={11} strokeWidth={1}/></HoverBtn>
-              <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
-              <HoverBtn style={{ ...s.iconBtn, width:24, height:24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
               <Tabs active={tab} onChange={setTab} tabs={[{label:`${units.length} Active`,value:"active"},{label:"0 Archived",value:"archived"},{label:"All",value:"all"}]}/>
+              <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
+                {accessorKey:"name",header:"Business Unit"},{id:"employees",header:"Employees"},
+                {id:"projects",header:"Projects"},{id:"departments",header:"Departments"},
+              ]} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
             </div>
             <DataTable
               columns={[
@@ -2440,6 +3235,7 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
                 { id: "departments", header: "Departments", size: 130, enableResizing: false, accessorFn: (row: any) => row.departments?.length ?? 0, cell: ({ row }: any) => <span style={{ display:"flex", alignItems:"center", fontSize:13, color:t.fg }}>{row.original.departments?.length ?? 0}</span> },
               ]}
               data={tab==="archived"?[]:units}
+              hiddenCols={hiddenCols}
               onRowClick={(_: any, idx: number) => { setSelectedUnit(idx); setViewTab("departments"); setSelectedDept(null) }}
             />
           </>
@@ -2465,7 +3261,7 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
                     columns={[
                       { accessorKey: "title", header: "Project", size: 220, cell: ({ row }: any) => <span style={{ fontSize:13, fontWeight:500, color:t.fg }}>{row.original.title}</span> },
                       { accessorKey: "team", header: "Team Size", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>{row.original.team}</span> },
-                      { accessorKey: "budget", header: "Budget", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.budget?.toLocaleString()}</span> },
+                      { accessorKey: "budget", header: "Total budget", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.budget?.toLocaleString()}</span> },
                       { accessorKey: "status", header: "Status", size: 110, enableResizing: false, cell: ({ row }: any) => <span style={{ fontSize:12, display:"flex", alignItems:"center", padding:"4px 8px", borderRadius:4, background: row.original.status === "Active" ? "#d4edda" : row.original.status === "In Progress" ? "#fff3cd" : "#e7e7e7", color: row.original.status === "Active" ? "#155724" : row.original.status === "In Progress" ? "#856404" : "#666" }}>{row.original.status}</span> },
                     ]}
                     data={unit.projectsList ?? []}
@@ -2475,7 +3271,7 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
                   <DataTable
                     columns={[
                       { accessorKey: "title", header: "Department", size: 220, cell: ({ row }: any) => <span style={{ fontSize:13, fontWeight:500, color:t.fg }}>{row.original.title}</span> },
-                      { accessorKey: "budget", header: "Budget", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.budget.toLocaleString()}</span> },
+                      { accessorKey: "budget", header: "Total budget", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.budget.toLocaleString()}</span> },
                       { accessorKey: "spent", header: "Spent", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.spent.toLocaleString()}</span> },
                       { id: "roles", header: "Roles", size: 110, enableResizing: false, accessorFn: (row: any) => row.linkedRoles?.length ?? 0, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>{row.original.linkedRoles?.length ?? 0}</span> },
                     ]}
@@ -4908,43 +5704,6 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
 
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden", background: t.bg }}>
-      {showNewGroupTypeModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: 24, width: 340 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, color: t.fg, marginBottom: 16 }}>Create group type</h3>
-            <input
-              autoFocus
-              value={newGroupTypeName}
-              onChange={e => setNewGroupTypeName(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter" && newGroupTypeName.trim()) {
-                  const id = `custom-${Date.now()}`
-                  setCustomGroupTypes(prev => [...prev, { id, name: newGroupTypeName.trim(), items: [] }])
-                  setTab(id)
-                  setSelectedIdx(null)
-                  setNewGroupTypeName("")
-                  setShowNewGroupTypeModal(false)
-                }
-                if (e.key === "Escape") { setNewGroupTypeName(""); setShowNewGroupTypeModal(false) }
-              }}
-              placeholder="e.g. Practice areas"
-              style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.fg, fontSize: 13, outline: "none", boxSizing: "border-box" as const, marginBottom: 16 }}
-            />
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <HoverBtn onClick={() => { setNewGroupTypeName(""); setShowNewGroupTypeModal(false) }} style={{ ...s.outlineBtn }}>Cancel</HoverBtn>
-              <HoverBtn onClick={() => {
-                if (!newGroupTypeName.trim()) return
-                const id = `custom-${Date.now()}`
-                setCustomGroupTypes(prev => [...prev, { id, name: newGroupTypeName.trim(), items: [] }])
-                setTab(id)
-                setSelectedIdx(null)
-                setNewGroupTypeName("")
-                setShowNewGroupTypeModal(false)
-              }} style={{ ...s.outlineBtn, background: t.accent, color: t.fg, border: "none" }}>Create</HoverBtn>
-            </div>
-          </div>
-        </div>
-      )}
       {showModal && <AddDepartmentModal onAdd={(item: any) => {
         if (tab === "departments") onDepartmentsChange([...departments, item])
         else if (tab === "delivery-teams") onDeliveryTeamsChange([...deliveryTeams, item])
@@ -4955,8 +5714,8 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
       {teamSettingsOpen && <TeamSettingsModal type="delivery-teams" mode={deliveryTeamMode} onSave={(m: any) => setDeliveryTeamMode(m)} onClose={() => setTeamSettingsOpen(false)}/>}
       {groupSettingsOpen && <TeamSettingsModal type="groups" mode={groupMode} onSave={(m: any) => setGroupMode(m)} onClose={() => setGroupSettingsOpen(false)}/>}
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
-        <SectionHeader count={tabCount} label={tabLabel} onAdd={(tab !== "offices") ? () => setShowModal(true) : undefined}/>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
+        <SectionHeader count={tabCount} label={tabLabel} onAdd={(tab !== "offices") ? () => setShowModal(true) : undefined} actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>}/>
+        <div style={{ display: "flex", alignItems: "center", padding: "0 24px 12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {[["offices","Offices"],["departments","Departments"],["tags","Tags"]].map(([v,l]) => (
               <TabBtn key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
@@ -4964,21 +5723,17 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
               </TabBtn>
             ))}
             <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 6px" }}/>
-            {[["groups","Groups"],["delivery-teams","Delivery teams"]].map(([v,l]) => (
+            {[["delivery-teams","Delivery teams"],["groups","Groups"]].map(([v,l]) => (
               <TabBtn key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={1} style={{ fill: tab === v ? t.fg : "none" }}/>{l}
               </TabBtn>
             ))}
-            {(tab === "delivery-teams") && <HoverBtn onClick={() => setTeamSettingsOpen(true)} style={{ ...s.iconBtn, width: 24, height: 24 }}><MoreVertical size={14} strokeWidth={1}/></HoverBtn>}
-            {(tab === "groups") && <HoverBtn onClick={() => setGroupSettingsOpen(true)} style={{ ...s.iconBtn, width: 24, height: 24 }}><MoreVertical size={14} strokeWidth={1}/></HoverBtn>}
             {customGroupTypes.map(cg => (
               <TabBtn key={cg.id} active={tab === cg.id} onClick={() => { setTab(cg.id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={1} style={{ fill: tab === cg.id ? t.fg : "none" }}/>{cg.name}
               </TabBtn>
             ))}
-            <HoverBtn onClick={() => setShowNewGroupTypeModal(true)} style={{ ...s.iconBtn, width: 24, height: 24 }}><Plus size={13} strokeWidth={1} color={t.secondaryFg}/></HoverBtn>
           </div>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={1}/>Import/Export</HoverBtn>
         </div>
 
         {tab === "offices" && (
@@ -5050,6 +5805,7 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
               <Tabs active="active" onChange={() => {}} tabs={[{ label: `${deliveryTeams.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+              <HoverBtn onClick={() => setTeamSettingsOpen(true)} style={{ ...s.iconBtn, width: 24, height: 24 }}><MoreVertical size={14} strokeWidth={1}/></HoverBtn>
             </div>
             <DataTable
               columns={[
@@ -5066,6 +5822,7 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
               <Tabs active="active" onChange={() => {}} tabs={[{ label: `${groups.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+              <HoverBtn onClick={() => setGroupSettingsOpen(true)} style={{ ...s.iconBtn, width: 24, height: 24 }}><MoreVertical size={14} strokeWidth={1}/></HoverBtn>
             </div>
             <DataTable
               columns={[
@@ -5121,16 +5878,68 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
           <DetailGrid items={[{ label: "Active people", value: deptPeopleCounts[selectedIdx!] ?? 0 }, { label: "Status", value: "Active" }]}/>
         </Sheet>
       )}
-      {selectedTeam && (
-        <Sheet title={selectedTeam.name} subtitle={`${deliveryTeamCounts[selectedIdx!] ?? 0} members`} onClose={() => setSelectedIdx(null)}>
-          <DetailGrid items={[{ label: "Members", value: deliveryTeamCounts[selectedIdx!] ?? 0 }, { label: "Status", value: "Active" }]}/>
-        </Sheet>
-      )}
-      {selectedGroup && (
-        <Sheet title={selectedGroup.name} subtitle={`${groupCounts[selectedIdx!] ?? 0} members`} onClose={() => setSelectedIdx(null)}>
-          <DetailGrid items={[{ label: "Members", value: groupCounts[selectedIdx!] ?? 0 }, { label: "Status", value: "Active" }]}/>
-        </Sheet>
-      )}
+      {selectedTeam && (() => {
+        const teamIdx = deliveryTeams.indexOf(selectedTeam)
+        const members = allPeople.filter((p: any) => (p.deliveryTeamIds || []).includes(teamIdx))
+        return (
+          <Sheet title={selectedTeam.name} subtitle={`${members.length} members`} onClose={() => setSelectedIdx(null)}>
+            <DetailGrid items={[{ label: "Members", value: members.length }, { label: "Status", value: "Active" }]}/>
+            <div style={{ marginTop: 16 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 12 }}>People</h3>
+              {members.length > 0 && (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(120px, auto)", gap: 8, paddingBottom: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 500, color: t.mutedFg }}>Name</span>
+                    <span style={{ fontSize: 11, fontWeight: 500, color: t.mutedFg }}>Role</span>
+                  </div>
+                  {members.map((p: any) => (
+                    <div key={p.name} style={{ display: "grid", gridTemplateColumns: "1fr minmax(120px, auto)", gap: 8, alignItems: "center", borderTop: `1px solid ${t.border}`, padding: "8px 0" }}>
+                      <span style={{ fontSize: 13, color: t.fg }}>{p.name}</span>
+                      <span style={{ fontSize: 12, color: t.mutedFg }}>{roles[p.roleId]?.name ?? "—"}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+              <div style={{ paddingTop: 12 }}>
+                <HoverBtn style={{ display: "flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", borderRadius: 6, border: `1px dashed ${t.border}`, background: "transparent", color: t.secondaryFg, cursor: "pointer", fontSize: 12 }}>
+                  <Plus size={12} strokeWidth={1}/>Add people
+                </HoverBtn>
+              </div>
+            </div>
+          </Sheet>
+        )
+      })()}
+      {selectedGroup && (() => {
+        const groupIdx = groups.indexOf(selectedGroup)
+        const members = allPeople.filter((p: any) => (p.groupIds || []).includes(groupIdx))
+        return (
+          <Sheet title={selectedGroup.name} subtitle={`${members.length} members`} onClose={() => setSelectedIdx(null)}>
+            <DetailGrid items={[{ label: "Members", value: members.length }, { label: "Status", value: "Active" }]}/>
+            <div style={{ marginTop: 16 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 12 }}>People</h3>
+              {members.length > 0 && (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(120px, auto)", gap: 8, paddingBottom: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 500, color: t.mutedFg }}>Name</span>
+                    <span style={{ fontSize: 11, fontWeight: 500, color: t.mutedFg }}>Role</span>
+                  </div>
+                  {members.map((p: any) => (
+                    <div key={p.name} style={{ display: "grid", gridTemplateColumns: "1fr minmax(120px, auto)", gap: 8, alignItems: "center", borderTop: `1px solid ${t.border}`, padding: "8px 0" }}>
+                      <span style={{ fontSize: 13, color: t.fg }}>{p.name}</span>
+                      <span style={{ fontSize: 12, color: t.mutedFg }}>{roles[p.roleId]?.name ?? "—"}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+              <div style={{ paddingTop: 12 }}>
+                <HoverBtn style={{ display: "flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", borderRadius: 6, border: `1px dashed ${t.border}`, background: "transparent", color: t.secondaryFg, cursor: "pointer", fontSize: 12 }}>
+                  <Plus size={12} strokeWidth={1}/>Add people
+                </HoverBtn>
+              </div>
+            </div>
+          </Sheet>
+        )
+      })()}
       {selectedCustomItem && (
         <Sheet title={selectedCustomItem.name} subtitle={activeCustomType?.name} onClose={() => setSelectedIdx(null)}>
           <DetailGrid items={[{ label: "Members", value: 0 }, { label: "Status", value: "Active" }]}/>
@@ -5165,8 +5974,8 @@ function VersionsToggle({ version, onChange }: any) {
 
 export default function App() {
   const [version, setVersion] = useState("multi")
-  const [activeItem, setActiveItem] = useState("People")
-  const [breadcrumb, setBreadcrumb] = useState(["Data centre", "People"])
+  const [activeItem, setActiveItem] = useState("Project tracker")
+  const [breadcrumb, setBreadcrumb] = useState(["Global", "Project tracker"])
   const [roles, setRoles] = useState(INITIAL_ROLES)
   const [departments, setDepartments] = useState(INITIAL_DEPARTMENTS)
   const [deliveryTeams, setDeliveryTeams] = useState(INITIAL_DELIVERY_TEAMS)
@@ -5202,10 +6011,10 @@ export default function App() {
   s = getStyles(t)
 
   function renderMain() {
-    if (activeItem === "Org design") return <OrgStructurePage people={people} contractors={contractors} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} onDeliveryTeamsChange={setDeliveryTeams} groups={groups} onGroupsChange={setGroups} roles={roles} deptPeopleCounts={deptPeopleCounts} onNavigateToPeople={(o: string) => { setFilteredOfficeForPeople(o); setInitialPeopleView(null); setActiveItem("People"); setBreadcrumb(["Data centre", "People"]) }}/>
+    if (activeItem === "Company") return <OrgStructurePage people={people} contractors={contractors} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} onDeliveryTeamsChange={setDeliveryTeams} groups={groups} onGroupsChange={setGroups} roles={roles} deptPeopleCounts={deptPeopleCounts} onNavigateToPeople={(o: string) => { setFilteredOfficeForPeople(o); setInitialPeopleView(null); setActiveItem("People"); setBreadcrumb(["Data centre", "People"]) }}/>
     if (activeItem === "Roles") return <RolesAndRates roles={roles} onRolesChange={setRoles} people={people} departments={departments} onNavigateToPeopleByRole={(role: string) => { setFilteredRoleForPeople(role); setFilteredBusinessUnitForPeople(null); setActiveItem("People"); setBreadcrumb(["People"]) }}/>
     if (activeItem === "People") return <People roles={roles} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} groups={groups} people={people} onPeopleChange={setPeople} contractors={contractors} onContractorsChange={setContractors} deptPeopleCounts={deptPeopleCounts} filteredBusinessUnit={filteredBusinessUnitForPeople} onFilterClear={() => setFilteredBusinessUnitForPeople(null)} filteredRole={filteredRoleForPeople} onRoleFilterClear={() => setFilteredRoleForPeople(null)} filteredOffice={filteredOfficeForPeople} onOfficeFilterClear={() => setFilteredOfficeForPeople(null)} initialView={initialPeopleView} onInitialViewConsumed={() => setInitialPeopleView(null)}/>
-    if (activeItem === "Project tracker") return <ProjectTracker projects={projects} onProjectsChange={setProjects} people={people} clients={clients}/>
+    if (activeItem === "Project tracker") return <ProjectTracker projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull}/>
     if (activeItem === "Projects") return <ProjectsDataHub visibleItems={visibleDataHubItems} projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull} filteredBusinessUnit={filteredBusinessUnit} onFilterClear={() => setFilteredBusinessUnit(null)} filteredClient={projectsClientFilter} onClientFilterClear={() => setProjectsClientFilter(null)} filteredRateCard={projectsRateCardFilter} onRateCardFilterClear={() => setProjectsRateCardFilter(null)}/>
     if (activeItem === "Clients") return <Clients roles={roles} people={people} clients={clientsFull} onClientsChange={setClientsFull} projects={projects} onNavigateToRateCards={(name: string) => { setRateCardFilter(name); setActiveItem("Rate cards") }} filterClients={clientsFilter} onClearClientsFilter={() => setClientsFilter(null)} onNavigateToProjects={(name: string) => { setProjectsClientFilter(name); setActiveItem("Projects") }}/>
     if (activeItem === "Rate cards") return <RateCards roles={roles} clients={clientsFull} onClientsChange={setClientsFull} filterClient={rateCardFilter} onClearFilter={() => setRateCardFilter(null)} onNavigateToClients={(names: string[]) => { setClientsFilter(names); setActiveItem("Clients") }} projects={projects} onNavigateToProjects={(clientName: string, rateCardName: string) => { setProjectsClientFilter(null); setProjectsRateCardFilter({ clientName, rateCardName }); setActiveItem("Projects"); setBreadcrumb(["Data centre", "Projects"]) }}/>
