@@ -101,12 +101,12 @@ const getStyles = (theme: any) => ({
   caseTitleXs: { fontSize: 10, fontWeight: 600, color: theme.mutedFg, letterSpacing: "0.5px" },
   sidebar: { width: 260, borderTop: "none", borderBottom: "none", borderLeft: "none", borderRight: `1px solid ${theme.sidebarBorder}`, background: theme.sidebar, display: "flex", flexDirection: "column" as const, height: "100vh", flexShrink: 0 },
   main: { flex: 1, display: "flex", flexDirection: "column" as const, background: theme.bg, overflow: "hidden", minWidth: 0 },
-  iconBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", color: theme.secondaryFg, cursor: "pointer" },
-  primaryBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, border: "none", background: theme.fg, color: theme.bg, cursor: "pointer" },
-  pillBtn: (active: any) => ({ display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 20, border: `1px solid ${active ? theme.fgAlpha30 : theme.border}`, background: active ? theme.fgAlpha10 : theme.bg, color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 500 : 400 }),
-  outlineBtn: { display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: "transparent", color: theme.secondaryFg, cursor: "pointer", fontSize: 12 },
+  iconBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: theme.secondaryFg, cursor: "pointer" },
+  primaryBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: theme.fg, color: theme.bg, cursor: "pointer" },
+  pillBtn: (active: any) => ({ display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 12px", borderRadius: 20, border: `1px solid ${active ? theme.fgAlpha30 : theme.border}`, background: active ? theme.fgAlpha10 : theme.bg, color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 450 : 400 }),
+  outlineBtn: { display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: "transparent", color: theme.secondaryFg, cursor: "pointer", fontSize: 12 },
   dropdown: { position: "absolute" as const, top: "100%", left: 0, marginTop: 4, background: theme.popover, border: `1px solid ${theme.border}`, borderRadius: 8, padding: 4, boxShadow: `0 4px 16px ${theme.shadowDark}`, zIndex: 200, minWidth: 180 },
-  dropdownItem: (active: any) => ({ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "6px 10px", borderRadius: 5, border: "none", background: "transparent", color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 500 : 400, textAlign: "left" as const }),
+  dropdownItem: (active: any) => ({ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "6px 10px", borderRadius: 5, border: "none", background: "transparent", color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 450 : 400, textAlign: "left" as const }),
 })
 
 let s = getStyles(t)
@@ -238,7 +238,7 @@ function DataTable({ columns, data, onRowClick, isRowSelected, onSelectionChange
               style={{
                 position: "relative",
                 zIndex: (hg.headers.length - i) + 1,
-                fontSize: 12, fontWeight: 500, color: t.mutedFg,
+                fontSize: 12, fontWeight: 450, color: t.mutedFg,
                 display: "flex", alignItems: "center",
                 paddingLeft: divL ? 14 : (i === 0 ? 16 : 8),
                 background: dragOverColId === header.column.id ? t.fgAlpha06 : "transparent",
@@ -338,7 +338,7 @@ function ColVisibilityBtn({ columns, hiddenCols, onToggle }: any) {
   const anyHidden = cols.some((c: any) => hiddenCols.has(c.id))
   return (
     <div ref={wrapRef}>
-      <HoverBtn onClick={() => setOpen(o => !o)} style={{ ...s.iconBtn, width: 28, height: 28, color: open ? t.fg : t.secondaryFg }}>
+      <HoverBtn onClick={() => setOpen(o => !o)} style={{ ...s.iconBtn, color: open ? t.fg : t.secondaryFg }}>
         <Settings2 size={13} strokeWidth={1}/>
       </HoverBtn>
       {open && pos && (
@@ -381,11 +381,11 @@ function InlineEdit({ value, onChange, style }: any) {
   if (editing) return (
     <input ref={ref} value={draft} onChange={e => setDraft(e.target.value)} onBlur={commit}
       onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") { setDraft(value); setEditing(false) } }}
-      style={{ fontSize: 13, fontWeight: 500, color: t.fg, background: t.accent, border: `1px solid ${t.fgAlpha20}`, borderRadius: 8, padding: "2px 8px 2px 0", outline: "none", fontFamily: "inherit", ...style }} />
+      style={{ fontSize: 13, fontWeight: 450, color: t.fg, background: t.accent, border: `1px solid ${t.fgAlpha20}`, borderRadius: 8, padding: "2px 8px 2px 0", outline: "none", fontFamily: "inherit", ...style }} />
   )
   return (
     <button onClick={() => { setDraft(value); setEditing(true) }}
-      style={{ fontSize: 13, fontWeight: 500, color: t.fg, background: t.accent, borderRadius: 4, padding: "2px 8px 2px 0", border: "none", cursor: "text", fontFamily: "inherit", ...style }}>
+      style={{ fontSize: 13, fontWeight: 450, color: t.fg, background: t.accent, borderRadius: 4, padding: "2px 8px 2px 0", border: "none", cursor: "text", fontFamily: "inherit", ...style }}>
       {value}
     </button>
   )
@@ -896,7 +896,7 @@ function Tabs({ tabs, active, onChange }: any) {
     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
       {tabs.map((tab: any) => (
         <HoverBtn key={tab.label} onClick={() => onChange(tab.value)}
-          style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: active === tab.value ? t.accent : "transparent", color: active === tab.value ? t.fg : t.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active === tab.value ? 500 : 400 }}>
+          style={{ height: 24, padding: "0 12px", borderRadius: 6, border: "none", background: active === tab.value ? t.accent : "transparent", color: active === tab.value ? t.fg : t.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active === tab.value ? 450 : 400 }}>
           {tab.label}
         </HoverBtn>
       ))}
@@ -947,7 +947,7 @@ function DetailGrid({ items }: any) {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${t.border}` }}>
       {items.map((item: any, i: any) => (
         <div key={i}>
-          <span style={{ fontSize: 11, fontWeight: 500, color: t.mutedFg }}>{item.label}</span>
+          <span style={{ fontSize: 11, fontWeight: 450, color: t.mutedFg }}>{item.label}</span>
           <p style={{ fontSize: 13, color: t.fg, marginTop: 2 }}>{item.value}</p>
         </div>
       ))}
@@ -994,7 +994,7 @@ function ActivityTimeline({ entries }: any) {
               {getIcon(e.type)}
             </div>
             <div style={{ flex: 1, paddingTop: 2 }}>
-              <p style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>{e.description}</p>
+              <p style={{ fontSize: 13, fontWeight: 450, color: t.fg }}>{e.description}</p>
               {e.details && <p style={{ fontSize: 12, color: t.secondaryFg, marginTop: 2, lineHeight: 1.4 }}>{e.details}</p>}
               <p style={{ fontSize: 11, color: t.mutedFg, marginTop: 4 }}>{e.user ? `${e.user} · ` : ""}{fmtEntry(e)}</p>
             </div>
@@ -1026,14 +1026,14 @@ function AddRoleModal({ onAdd, onClose }: any) {
           <HoverBtn onClick={onClose} style={{ ...s.iconBtn, color: t.mutedFg }}><X size={16} strokeWidth={1}/></HoverBtn>
         </div>
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Role name</label>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Role name</label>
           <input ref={nameRef} value={name} onChange={e => setName(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onClose() }}
             placeholder="e.g. Senior Developer"
             style={{ width: "100%", fontSize: 13, color: t.fg, background: t.muted, border: `1px solid ${t.border}`, borderRadius: 6, padding: "8px 12px", outline: "none", fontFamily: "inherit" }}/>
         </div>
         <div style={{ marginBottom: 24 }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Cost rate ($/hr)</label>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Cost rate ($/hr)</label>
           <input type="number" value={costRate} onChange={e => setCostRate(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onClose() }}
             placeholder="0"
@@ -1042,7 +1042,7 @@ function AddRoleModal({ onAdd, onClose }: any) {
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <HoverBtn onClick={onClose} style={{ ...s.outlineBtn, padding: "6px 16px", borderRadius: 6 }}>Cancel</HoverBtn>
           <button onClick={submit} disabled={!name.trim()}
-            style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: name.trim() ? t.fg : t.muted, color: name.trim() ? t.bg : t.mutedFg, cursor: name.trim() ? "pointer" : "not-allowed", fontSize: 13, fontWeight: 500 }}>
+            style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: name.trim() ? t.fg : t.muted, color: name.trim() ? t.bg : t.mutedFg, cursor: name.trim() ? "pointer" : "not-allowed", fontSize: 13, fontWeight: 450 }}>
             Add role
           </button>
         </div>
@@ -1076,23 +1076,23 @@ function AddPersonModal({ roles, departments, onAdd, onClose, type = "employee" 
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Full name</label>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Full name</label>
             <input ref={nameRef} value={name} onChange={e => setName(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onClose() }}
               placeholder="e.g. John Smith"
               style={{ width: "100%", fontSize: 13, color: t.fg, background: t.muted, border: `1px solid ${t.border}`, borderRadius: 6, padding: "8px 12px", outline: "none", fontFamily: "inherit" }}/>
           </div>
-          <div><label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Role</label>
+          <div><label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Role</label>
             <select value={roleId} onChange={e => setRoleId(Number(e.target.value))} style={sel}>{roles.map((r: any,i: any) => <option key={i} value={i}>{r.name}</option>)}</select></div>
-          <div><label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Department</label>
+          <div><label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Department</label>
             <select value={departmentId} onChange={e => setDepartmentId(Number(e.target.value))} style={sel}>{departments.map((d: any,i: any) => <option key={i} value={i}>{d.name}</option>)}</select></div>
-          <div><label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Office</label>
+          <div><label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Office</label>
             <select value={office} onChange={e => setOffice(e.target.value)} style={sel}>{officeOpts.map(o => <option key={o} value={o}>{o}</option>)}</select></div>
         </div>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <HoverBtn onClick={onClose} style={{ ...s.outlineBtn, padding: "6px 16px", borderRadius: 6 }}>Cancel</HoverBtn>
           <button onClick={submit} disabled={!name.trim()}
-            style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: name.trim() ? t.fg : t.muted, color: name.trim() ? t.bg : t.mutedFg, cursor: name.trim() ? "pointer" : "not-allowed", fontSize: 13, fontWeight: 500 }}>
+            style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: name.trim() ? t.fg : t.muted, color: name.trim() ? t.bg : t.mutedFg, cursor: name.trim() ? "pointer" : "not-allowed", fontSize: 13, fontWeight: 450 }}>
             Add person
           </button>
         </div>
@@ -1120,7 +1120,7 @@ function AddDepartmentModal({ onAdd, onClose }: any) {
           <HoverBtn onClick={onClose} style={{ ...s.iconBtn, color: t.mutedFg }}><X size={16} strokeWidth={1}/></HoverBtn>
         </div>
         <div style={{ marginBottom: 24 }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Department name</label>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Department name</label>
           <input ref={ref} value={name} onChange={e => setName(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onClose() }}
             placeholder="e.g. Strategy"
@@ -1129,7 +1129,7 @@ function AddDepartmentModal({ onAdd, onClose }: any) {
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <HoverBtn onClick={onClose} style={{ ...s.outlineBtn, padding: "6px 16px", borderRadius: 6 }}>Cancel</HoverBtn>
           <button onClick={submit} disabled={!name.trim()}
-            style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: name.trim() ? t.fg : t.muted, color: name.trim() ? t.bg : t.mutedFg, cursor: name.trim() ? "pointer" : "not-allowed", fontSize: 13, fontWeight: 500 }}>
+            style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: name.trim() ? t.fg : t.muted, color: name.trim() ? t.bg : t.mutedFg, cursor: name.trim() ? "pointer" : "not-allowed", fontSize: 13, fontWeight: 450 }}>
             Add
           </button>
         </div>
@@ -1169,23 +1169,23 @@ function AddProjectModal({ people, clients, onAdd, onClose }: any) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 24 }}>
           <div style={{ gridColumn: "1/-1" }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Project name</label>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Project name</label>
             <input ref={nameRef} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Q3 Campaign" style={inp}/>
           </div>
-          <div><label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Code</label><input value={code} onChange={e => setCode(e.target.value)} placeholder="e.g. CAM-001" style={inp}/></div>
-          <div><label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Client</label><select value={clientId} onChange={e => setClientId(Number(e.target.value))} style={inp}>{clients.map((c: any,i: any) => <option key={i} value={i}>{c.name}</option>)}</select></div>
-          <div><label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Stage</label><select value={stage} onChange={e => setStage(e.target.value)} style={inp}>{["planning","active","on-hold","completed"].map(s2 => <option key={s2} value={s2}>{s2}</option>)}</select></div>
-          <div><label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Office</label><select value={office} onChange={e => setOffice(e.target.value)} style={inp}>{officeOpts.map(o => <option key={o} value={o}>{o}</option>)}</select></div>
-          <div><label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Margin (%)</label><input type="number" value={margin} onChange={e => setMargin(e.target.value)} placeholder="30" style={inp}/></div>
-          <div><label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Budget ($)</label><input type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder="0" style={inp}/></div>
-          <div><label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Start date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ ...inp, colorScheme: "dark" }}/></div>
-          <div><label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>End date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ ...inp, colorScheme: "dark" }}/></div>
-          <div style={{ gridColumn: "1/-1" }}><label style={{ display: "block", fontSize: 12, fontWeight: 500, color: t.mutedFg, marginBottom: 6 }}>Owner</label><select value={ownerId} onChange={e => setOwnerId(Number(e.target.value))} style={inp}>{people.map((p: any,i: any) => <option key={i} value={i}>{p.name}</option>)}</select></div>
+          <div><label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Code</label><input value={code} onChange={e => setCode(e.target.value)} placeholder="e.g. CAM-001" style={inp}/></div>
+          <div><label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Client</label><select value={clientId} onChange={e => setClientId(Number(e.target.value))} style={inp}>{clients.map((c: any,i: any) => <option key={i} value={i}>{c.name}</option>)}</select></div>
+          <div><label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Stage</label><select value={stage} onChange={e => setStage(e.target.value)} style={inp}>{["planning","active","on-hold","completed"].map(s2 => <option key={s2} value={s2}>{s2}</option>)}</select></div>
+          <div><label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Office</label><select value={office} onChange={e => setOffice(e.target.value)} style={inp}>{officeOpts.map(o => <option key={o} value={o}>{o}</option>)}</select></div>
+          <div><label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Margin (%)</label><input type="number" value={margin} onChange={e => setMargin(e.target.value)} placeholder="30" style={inp}/></div>
+          <div><label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Budget ($)</label><input type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder="0" style={inp}/></div>
+          <div><label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Start date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ ...inp, colorScheme: "dark" }}/></div>
+          <div><label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>End date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ ...inp, colorScheme: "dark" }}/></div>
+          <div style={{ gridColumn: "1/-1" }}><label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Owner</label><select value={ownerId} onChange={e => setOwnerId(Number(e.target.value))} style={inp}>{people.map((p: any,i: any) => <option key={i} value={i}>{p.name}</option>)}</select></div>
         </div>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <HoverBtn onClick={onClose} style={{ ...s.outlineBtn, padding: "6px 16px", borderRadius: 6 }}>Cancel</HoverBtn>
           <button onClick={submit} disabled={!name.trim()}
-            style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: name.trim() ? t.fg : t.muted, color: name.trim() ? t.bg : t.mutedFg, cursor: name.trim() ? "pointer" : "not-allowed", fontSize: 13, fontWeight: 500 }}>
+            style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: name.trim() ? t.fg : t.muted, color: name.trim() ? t.bg : t.mutedFg, cursor: name.trim() ? "pointer" : "not-allowed", fontSize: 13, fontWeight: 450 }}>
             Add project
           </button>
         </div>
@@ -1242,9 +1242,9 @@ function NotificationsPanel({ onClose, floating, navHoverOpen }: { onClose: () =
             <div style={{ width: 34, height: 34, borderRadius: "50%", background: n.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "#fff", flexShrink: 0 }}>{n.initials}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 13, color: t.fg, lineHeight: 1.45, margin: 0 }}>
-                <span style={{ fontWeight: 500 }}>Jill Avis</span> {n.action} <span style={{ fontWeight: 600 }}>{n.bold}</span> {n.detail}
+                <span style={{ fontWeight: 450 }}>Jill Avis</span> {n.action} <span style={{ fontWeight: 600 }}>{n.bold}</span> {n.detail}
               </p>
-              {n.badge && <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 500, color: "#c97a1a", background: "rgba(201,122,26,0.15)", borderRadius: 4, padding: "2px 6px" }}>{n.badge}</span>}
+              {n.badge && <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 450, color: "#c97a1a", background: "rgba(201,122,26,0.15)", borderRadius: 4, padding: "2px 6px" }}>{n.badge}</span>}
             </div>
             <span style={{ fontSize: 11, color: t.mutedFg, whiteSpace: "nowrap", paddingTop: 1 }}>{n.time}</span>
           </div>
@@ -1310,7 +1310,7 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
     gap: 8, width: "100%", padding: showFullNav ? "6px 8px" : "7px 0",
     borderRadius: 6, border: "none", background: active ? t.accent : "transparent",
     color: active ? t.fg : t.sidebarFg, cursor: "pointer", fontSize: 13,
-    fontWeight: active ? 500 : 400, textAlign: "left" as const,
+    fontWeight: active ? 450 : 400, textAlign: "left" as const,
   })
 
   return (
@@ -1363,7 +1363,7 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
           {showFullNav && (
             <HoverBtn onClick={onNotificationsToggle} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 6, border: "none", background: notificationsOpen ? t.border : t.accent, cursor: "pointer", fontSize: 14 }}>
               <Bell size={14} strokeWidth={1} color={t.mutedFg}/>
-              <span style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>23</span>
+              <span style={{ fontSize: 13, fontWeight: 450, color: t.fg }}>23</span>
             </HoverBtn>
           )}
           <HoverBtn onClick={onToggleCollapsed} style={{ ...s.iconBtn, color: t.mutedFg }}>
@@ -1410,7 +1410,7 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
                     style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "6px 8px", borderRadius: 6, border: "none", background: "transparent", cursor: "pointer" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: t.fgAlpha70 }}>{loc.icon}</span>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>{loc.name}</span>
+                      <span style={{ fontSize: 13, fontWeight: 450, color: t.fg }}>{loc.name}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                       {(officeHovered === loc.name || officeKebabOpen === loc.name) && (
@@ -1485,7 +1485,7 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "6px 8px", borderRadius: 6, border: "none", background: "transparent", cursor: "pointer" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ color: t.secondaryFg }}><Database size={16} strokeWidth={1}/></span>
-                <span style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>Data studio</span>
+                <span style={{ fontSize: 13, fontWeight: 450, color: t.fg }}>Data studio</span>
               </div>
               <ChevronDown size={13} strokeWidth={1} color={t.sidebarFg} style={{ transform: dataHubExp ? "none" : "rotate(-180deg)", transition: "transform 0.2s" }}/>
             </HoverBtn>
@@ -1667,7 +1667,7 @@ function TeamSettingsModal({ type, mode, onSave, onClose }: any) {
                 {selected === opt && <div style={{ width: 7, height: 7, borderRadius: "50%", background: t.fg }}/>}
               </div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: t.fg, textTransform: "capitalize" as const }}>{opt}</div>
+                <div style={{ fontSize: 13, fontWeight: 450, color: t.fg, textTransform: "capitalize" as const }}>{opt}</div>
                 <div style={{ fontSize: 12, color: t.secondaryFg, marginTop: 2 }}>{opt === "single" ? `Each person belongs to one ${noun}` : `Each person can belong to multiple ${noun}s`}</div>
               </div>
             </label>
@@ -1675,7 +1675,7 @@ function TeamSettingsModal({ type, mode, onSave, onClose }: any) {
         </div>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <HoverBtn onClick={onClose} style={{ ...s.outlineBtn }}>Cancel</HoverBtn>
-          <button onClick={() => { onSave(selected); onClose() }} style={{ background: t.fg, color: t.bg, border: "none", borderRadius: 6, padding: "6px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Save</button>
+          <button onClick={() => { onSave(selected); onClose() }} style={{ background: t.fg, color: t.bg, border: "none", borderRadius: 6, padding: "6px 16px", fontSize: 13, fontWeight: 450, cursor: "pointer" }}>Save</button>
         </div>
       </div>
     </div>
@@ -1905,12 +1905,12 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <OfficeFilter selected={selectedOffices} onChange={(val: any) => { setSelectedOffices(val); if (onOfficeFilterClear) onOfficeFilterClear() }}/>
             {filteredOffice && (
-              <HoverBtn onClick={onOfficeFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "4px 8px", fontSize: 12 }}>
+              <HoverBtn onClick={onOfficeFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "0 8px", fontSize: 12 }}>
                 ✕ {filteredOffice}
               </HoverBtn>
             )}
             {filteredBusinessUnit && (
-              <HoverBtn onClick={onFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "4px 8px", fontSize: 12 }}>
+              <HoverBtn onClick={onFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "0 8px", fontSize: 12 }}>
                 ✕ {filteredBusinessUnit}
               </HoverBtn>
             )}
@@ -2057,7 +2057,7 @@ function NotesPanel({ project, currentUser, onClose, onUpdate }: any) {
           style={{ width:"100%", background:t.muted, border:`1px solid ${t.border}`, borderRadius:8, padding:"8px 10px", fontSize:13, color:t.fg, resize:"none", outline:"none", fontFamily:"inherit", boxSizing:"border-box" }}
         />
         <button onClick={submit}
-          style={{ marginTop:8, width:"100%", padding:"7px 0", borderRadius:6, border:"none", background:t.fg, color:t.bg, fontSize:12, fontWeight:500, cursor:"pointer" }}>
+          style={{ marginTop:8, width:"100%", padding:"7px 0", borderRadius:6, border:"none", background:t.fg, color:t.bg, fontSize:12, fontWeight:450, cursor:"pointer" }}>
           Add note
         </button>
       </div>
@@ -2163,7 +2163,7 @@ function ProjectActivityPanel({ project, currentUser, onClose, onUpdate }: any) 
           style={{ width: "100%", background: t.muted, border: `1px solid ${t.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 13, color: t.fg, resize: "none", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
         />
         <button onClick={submit}
-          style={{ marginTop: 8, width: "100%", padding: "7px 0", borderRadius: 6, border: "none", background: t.fg, color: t.bg, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+          style={{ marginTop: 8, width: "100%", padding: "7px 0", borderRadius: 6, border: "none", background: t.fg, color: t.bg, fontSize: 12, fontWeight: 450, cursor: "pointer" }}>
           Add comment
         </button>
       </div>
@@ -2231,7 +2231,7 @@ function SmartAnalysePanel({ project, onClose }: any) {
   const analysis = buildSmartAnalysis(project)
   const riskColor = analysis.score >= 55 ? "#ef4444" : analysis.score >= 25 ? "#f59e0b" : "#22c55e"
   const riskLabel = analysis.score >= 55 ? "High risk" : analysis.score >= 25 ? "At risk" : "On track"
-  const sectionHeadingStyle = { fontSize: 11, fontWeight: 500, color: t.mutedFg, marginBottom: 10, letterSpacing: "0em" }
+  const sectionHeadingStyle = { fontSize: 11, fontWeight: 450, color: t.mutedFg, marginBottom: 10, letterSpacing: "0em" }
 
   return (
     <div style={{ width: 380, flexShrink: 0, borderLeft: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
@@ -2373,7 +2373,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
     { accessorKey: "name", header: "Project", size: 240,
       cell: ({ row }: any) => (
         <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}>
-          <InlineEdit value={row.original.name} onChange={(v: any) => { const u=[...projects]; u[projects.indexOf(row.original)].name=v; onProjectsChange(u) }} style={{ background: "transparent", fontWeight: 500 }}/>
+          <InlineEdit value={row.original.name} onChange={(v: any) => { const u=[...projects]; u[projects.indexOf(row.original)].name=v; onProjectsChange(u) }} style={{ background: "transparent", fontWeight: 450 }}/>
         </span>
       )},
     { accessorKey: "clientId", header: "Client", size: 150,
@@ -2427,7 +2427,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
           <span onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setPanel(active ? null : { type: "analyse", idx })}
-              style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 6, border: `1px solid ${active ? t.fgAlpha20 : t.border}`, background: active ? t.fgAlpha06 : "transparent", color: active ? t.fg : t.secondaryFg, cursor: "pointer", fontSize: 11, fontWeight: 500, fontFamily: "inherit" }}>
+              style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 6, border: `1px solid ${active ? t.fgAlpha20 : t.border}`, background: active ? t.fgAlpha06 : "transparent", color: active ? t.fg : t.secondaryFg, cursor: "pointer", fontSize: 11, fontWeight: 450, fontFamily: "inherit" }}>
               <Sparkles size={11} strokeWidth={1}/>
               Analyse
             </button>
@@ -2509,7 +2509,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 7, border: `1px solid ${t.border}`, cursor: "pointer" }}>
           <span style={{ fontSize: 12, color: t.mutedFg }}>This month</span>
-          <span style={{ fontSize: 12, color: t.fg, fontWeight: 500 }}>{monthRange.start} – {monthRange.end}</span>
+          <span style={{ fontSize: 12, color: t.fg, fontWeight: 450 }}>{monthRange.start} – {monthRange.end}</span>
           <ChevronDown size={11} strokeWidth={1.5} color={t.mutedFg}/>
         </div>
         <div style={{ width: 1, height: 16, background: t.fgAlpha20 }}/>
@@ -2549,9 +2549,9 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
             },
           ].map((card, i) => (
             <div key={i} style={{ flex: 1, padding: "16px 20px", borderRadius: 10, border: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", gap: 6 }}>
-              <p style={{ fontSize: 11, color: t.mutedFg, fontWeight: 500 }}>{card.label}</p>
+              <p style={{ fontSize: 11, color: t.mutedFg, fontWeight: 450 }}>{card.label}</p>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <span style={{ fontSize: 20, fontWeight: 500, color: t.fg, letterSpacing: "-0.5px", lineHeight: 1 }}>{card.value}</span>
+                <span style={{ fontSize: 20, fontWeight: 450, color: t.fg, letterSpacing: "-0.5px", lineHeight: 1 }}>{card.value}</span>
                 <span style={{ fontSize: 12, color: t.secondaryFg }}>{card.badge}</span>
               </div>
               <p style={{ fontSize: 11, color: t.mutedFg }}>{card.desc}</p>
@@ -2652,7 +2652,7 @@ function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, cli
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
             {filteredBusinessUnit && (
-              <HoverBtn onClick={onFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "4px 8px", fontSize: 12 }}>
+              <HoverBtn onClick={onFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "0 8px", fontSize: 12 }}>
                 ✕ {filteredBusinessUnit}
               </HoverBtn>
             )}
@@ -2708,7 +2708,7 @@ function ProjectCompleteDropdown({ value, onChange }: any) {
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
         <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
-          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:500, color: t.fg }}>
+          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
           {display}
           <ChevronDown size={10} strokeWidth={1}/>
         </HoverBtn>
@@ -2768,7 +2768,7 @@ function ActivityHistoryBtn({ history }: { history: { date: string; user: string
             : <div style={{ display: "flex", flexDirection: "column" }}>
                 {history.map((entry, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, paddingTop: i > 0 ? 4 : 0, borderTop: i > 0 ? `1px solid ${t.border}` : "none", marginTop: i > 0 ? 4 : 0 }}>
-                    <span style={{ fontSize: 12, color: t.fg, fontWeight: 500 }}>{entry.user}</span>
+                    <span style={{ fontSize: 12, color: t.fg, fontWeight: 450 }}>{entry.user}</span>
                     <span style={{ fontSize: 12, color: t.secondaryFg }}>set to {entry.value}%</span>
                     <span style={{ fontSize: 11, color: t.mutedFg, marginLeft: "auto", whiteSpace: "nowrap", paddingLeft: 8 }}>{entry.date}</span>
                   </div>
@@ -2794,7 +2794,7 @@ function PlanAccuracyDropdown({ value, onChange }: any) {
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
         <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
-          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:500, color: t.fg }}>
+          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
           {display}
           <ChevronDown size={10} strokeWidth={1}/>
         </HoverBtn>
@@ -2831,7 +2831,7 @@ function StageDropdown({ value, onChange }: any) {
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
         <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
-          style={{ display:"flex", alignItems:"center", gap:6, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:500, color: t.fg }}>
+          style={{ display:"flex", alignItems:"center", gap:6, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
           <StageIcon type={current.iconType} color={current.color}/>
           {current.label}
           <ChevronDown size={10} strokeWidth={1} color={t.mutedFg}/>
@@ -2858,7 +2858,7 @@ function HealthDropdown({ value, onChange }: any) {
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
         <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
-          style={{ display:"flex", alignItems:"center", gap:6, height:24, padding:"0 8px", borderRadius:12, background: current.color + "18", border:`1px solid ${current.color}40`, cursor:"pointer", fontSize:11, fontWeight:500, color: current.color }}>
+          style={{ display:"flex", alignItems:"center", gap:6, height:24, padding:"0 8px", borderRadius:12, background: current.color + "18", border:`1px solid ${current.color}40`, cursor:"pointer", fontSize:11, fontWeight:450, color: current.color }}>
           <span style={{ width:6, height:6, borderRadius:"50%", background: current.color, flexShrink:0 }}/>
           {current.label}
           <ChevronDown size={10} strokeWidth={1}/>
@@ -2886,7 +2886,7 @@ function CurrencySelector({ value, onChange }: any) {
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
         <HoverBtn onClick={() => setOpen(!open)}
-          style={{ display:"flex", alignItems:"center", gap:4, height:28, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", color:t.secondaryFg, cursor:"pointer", fontSize:12, fontWeight:500 }}>
+          style={{ display:"flex", alignItems:"center", gap:4, height:28, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", color:t.secondaryFg, cursor:"pointer", fontSize:12, fontWeight:450 }}>
           {value}<ChevronDown size={12} strokeWidth={1}/>
         </HoverBtn>
       }>
@@ -2951,7 +2951,7 @@ function AddRolesBtn({ roles, linkedIds, onAdd, onAddAll }: any) {
         <div style={{ ...s.dropdown, width:240, maxHeight:320, overflowY:"auto" }}>
           {available.length > 1 && <>
             <button onClick={() => { onAddAll(available.map((r: any)=>r.i)); setOpen(false) }}
-              style={{ display:"flex", width:"100%", alignItems:"center", padding:"8px 10px", borderRadius:5, border:"none", background:"transparent", color:t.fg, cursor:"pointer", fontSize:13, fontWeight:500 }}>
+              style={{ display:"flex", width:"100%", alignItems:"center", padding:"8px 10px", borderRadius:5, border:"none", background:"transparent", color:t.fg, cursor:"pointer", fontSize:13, fontWeight:450 }}>
               Add all roles
             </button>
             <div style={{ height:1, background:t.border, margin:"4px 0" }}/>
@@ -2992,30 +2992,30 @@ function RateCardSheet({ client, clientIdx, rcIdx, roles, onUpdateClients, onClo
       </div>
       <div style={{ flex:1, overflowY:"auto", padding:"8px 20px 16px" }}>
         <div style={{ marginBottom:20 }}>
-          <p style={{ fontSize:12, fontWeight:500, color:t.mutedFg, marginBottom:6 }}>Notes</p>
+          <p style={{ fontSize:12, fontWeight:450, color:t.mutedFg, marginBottom:6 }}>Notes</p>
           {editingNotes
             ? <input ref={notesRef} value={notesDraft} onChange={e => setNotesDraft(e.target.value)}
                 onBlur={() => { update({...rc, notes:notesDraft}); setEditingNotes(false) }}
                 onKeyDown={e => { if (e.key==="Enter"||e.key==="Escape") { update({...rc,notes:notesDraft}); setEditingNotes(false) } }}
-                style={{ fontSize:13, fontWeight:500, color:t.fg, background:t.accent, border:`1px solid ${t.fgAlpha20}`, borderRadius:8, padding:"2px 8px 2px 0", outline:"none", width:"100%", fontFamily:"inherit" }}/>
+                style={{ fontSize:13, fontWeight:450, color:t.fg, background:t.accent, border:`1px solid ${t.fgAlpha20}`, borderRadius:8, padding:"2px 8px 2px 0", outline:"none", width:"100%", fontFamily:"inherit" }}/>
             : <button onClick={() => { setNotesDraft(rc.notes||"Initial Standard rates"); setEditingNotes(true) }}
-                style={{ fontSize:13, fontWeight:500, color:t.fg, background:"transparent", borderRadius:4, padding:"2px 8px 2px 0", border:"none", cursor:"text", fontFamily:"inherit" }}>
+                style={{ fontSize:13, fontWeight:450, color:t.fg, background:"transparent", borderRadius:4, padding:"2px 8px 2px 0", border:"none", cursor:"text", fontFamily:"inherit" }}>
                 {rc.notes || "Initial Standard rates"}
               </button>
           }
         </div>
         <div style={{ display:"flex", gap:16, marginBottom:24, flexWrap:"wrap" }}>
           <div>
-            <p style={{ fontSize:12, fontWeight:500, color:t.mutedFg, marginBottom:6 }}>Offices</p>
+            <p style={{ fontSize:12, fontWeight:450, color:t.mutedFg, marginBottom:6 }}>Offices</p>
             <OfficeSelectorRC value={rc.offices} onChange={(v: any) => update({...rc,offices:v})}/>
           </div>
           <div>
-            <p style={{ fontSize:12, fontWeight:500, color:t.mutedFg, marginBottom:6 }}>Currency</p>
+            <p style={{ fontSize:12, fontWeight:450, color:t.mutedFg, marginBottom:6 }}>Currency</p>
             <CurrencySelector value={rc.currency} onChange={(v: any) => update({...rc,currency:v})}/>
           </div>
           {allClients && (
             <div>
-              <p style={{ fontSize:12, fontWeight:500, color:t.mutedFg, marginBottom:6 }}>Clients</p>
+              <p style={{ fontSize:12, fontWeight:450, color:t.mutedFg, marginBottom:6 }}>Clients</p>
               <div style={{ display:"flex", flexWrap:"wrap", gap:6, alignItems:"center" }}>
                 {linkedClients.map((name: string) => (
                   <span key={name} style={{ display:"inline-flex", alignItems:"center", gap:4, background:t.muted, borderRadius:4, padding:"2px 6px 2px 8px", fontSize:12, color:t.fg }}>
@@ -3054,8 +3054,8 @@ function RateCardSheet({ client, clientIdx, rcIdx, roles, onUpdateClients, onClo
           {rc.linkedRoles.length > 0 && (
             <>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 100px 28px", gap:8, paddingBottom:8 }}>
-                <span style={{ fontSize:11, fontWeight:500, color:t.mutedFg }}>Role</span>
-                <span style={{ fontSize:11, fontWeight:500, color:t.mutedFg }}>Bill rate</span>
+                <span style={{ fontSize:11, fontWeight:450, color:t.mutedFg }}>Role</span>
+                <span style={{ fontSize:11, fontWeight:450, color:t.mutedFg }}>Bill rate</span>
                 <span/>
               </div>
               {rc.linkedRoles.map((lr: any, i: any) => (
@@ -3182,7 +3182,7 @@ function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilte
         </div>
         <DataTable
           columns={[
-            { accessorKey: "rateCardName", header: "Rate card", size: 300, cell: ({ row }: any) => <span style={{ display:"flex", alignItems:"center", fontWeight:500, color:t.fg }}>{row.original.rateCardName || row.original.name}</span> },
+            { accessorKey: "rateCardName", header: "Rate card", size: 300, cell: ({ row }: any) => <span style={{ display:"flex", alignItems:"center", fontWeight:450, color:t.fg }}>{row.original.rateCardName || row.original.name}</span> },
             { id: "client", header: "Clients", size: 160, cell: ({ row }: any) => { const linked = row.original.rateCards[0]?.linkedClients || []; return linked.length > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={linked.length} onClick={() => onNavigateToClients(linked)}/></span> : <span style={{ color:t.mutedFg }}>—</span> } },
             { id: "projects", header: "Projects", size: 120, enableResizing: false, cell: ({ row }: any) => { const count = (projects||[]).filter((p: any) => clients[p.clientId]?.name === row.original.name).length; return count > 0 ? <span onClick={e => e.stopPropagation()}><Tag label={count} onClick={() => onNavigateToProjects?.(row.original.name, row.original.rateCardName || row.original.name)}/></span> : <span style={{ color:t.mutedFg }}>—</span> } },
           ]}
@@ -3259,7 +3259,7 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
             {viewTab === "projects" ? (
                   <DataTable
                     columns={[
-                      { accessorKey: "title", header: "Project", size: 220, cell: ({ row }: any) => <span style={{ fontSize:13, fontWeight:500, color:t.fg }}>{row.original.title}</span> },
+                      { accessorKey: "title", header: "Project", size: 220, cell: ({ row }: any) => <span style={{ fontSize:13, fontWeight:450, color:t.fg }}>{row.original.title}</span> },
                       { accessorKey: "team", header: "Team Size", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>{row.original.team}</span> },
                       { accessorKey: "budget", header: "Total budget", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.budget?.toLocaleString()}</span> },
                       { accessorKey: "status", header: "Status", size: 110, enableResizing: false, cell: ({ row }: any) => <span style={{ fontSize:12, display:"flex", alignItems:"center", padding:"4px 8px", borderRadius:4, background: row.original.status === "Active" ? "#d4edda" : row.original.status === "In Progress" ? "#fff3cd" : "#e7e7e7", color: row.original.status === "Active" ? "#155724" : row.original.status === "In Progress" ? "#856404" : "#666" }}>{row.original.status}</span> },
@@ -3270,7 +3270,7 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
             ) : (
                   <DataTable
                     columns={[
-                      { accessorKey: "title", header: "Department", size: 220, cell: ({ row }: any) => <span style={{ fontSize:13, fontWeight:500, color:t.fg }}>{row.original.title}</span> },
+                      { accessorKey: "title", header: "Department", size: 220, cell: ({ row }: any) => <span style={{ fontSize:13, fontWeight:450, color:t.fg }}>{row.original.title}</span> },
                       { accessorKey: "budget", header: "Total budget", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.budget.toLocaleString()}</span> },
                       { accessorKey: "spent", header: "Spent", size: 110, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>${row.original.spent.toLocaleString()}</span> },
                       { id: "roles", header: "Roles", size: 110, enableResizing: false, accessorFn: (row: any) => row.linkedRoles?.length ?? 0, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>{row.original.linkedRoles?.length ?? 0}</span> },
@@ -3326,8 +3326,8 @@ function ActivityLog() {
       <DataTable
         columns={[
           { accessorKey: "date", header: "Date", size: 140, cell: ({ row }: any) => <span style={{ fontSize:12, color:t.mutedFg }}>{row.original.date}</span> },
-          { accessorKey: "source", header: "Source", size: 90, cell: ({ row }: any) => <span style={{ fontSize:11, fontWeight:500, color:t.mutedFg, background:t.muted, padding:"2px 8px", borderRadius:20 }}>{sourceLabel[row.original.source]}</span> },
-          { accessorKey: "entity", header: "Entity", size: 140, cell: ({ row }: any) => <span style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, fontWeight:500, color:t.fg }}><span style={{ display:"flex", alignItems:"center", justifyContent:"center", width:20, height:20, borderRadius:"50%", background:t.muted, color:t.mutedFg, flexShrink:0 }}>{typeIcon(row.original.type)}</span>{row.original.entity}</span> },
+          { accessorKey: "source", header: "Source", size: 90, cell: ({ row }: any) => <span style={{ fontSize:11, fontWeight:450, color:t.mutedFg, background:t.muted, padding:"2px 8px", borderRadius:20 }}>{sourceLabel[row.original.source]}</span> },
+          { accessorKey: "entity", header: "Entity", size: 140, cell: ({ row }: any) => <span style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, fontWeight:450, color:t.fg }}><span style={{ display:"flex", alignItems:"center", justifyContent:"center", width:20, height:20, borderRadius:"50%", background:t.muted, color:t.mutedFg, flexShrink:0 }}>{typeIcon(row.original.type)}</span>{row.original.entity}</span> },
           { accessorKey: "description", header: "Action", size: 240, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>{row.original.description}</span> },
           { accessorKey: "details", header: "Details", size: 180, enableResizing: false, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.mutedFg }}>{row.original.details||"—"}</span> },
         ]}
@@ -3530,7 +3530,7 @@ function RevenueVsCostsCard() {
   return (
     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: "hidden", width: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", borderBottom: `1px solid ${t.border}` }}>
-        <span style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>Revenue vs. costs</span>
+        <span style={{ fontSize: 13, fontWeight: 450, color: t.fg }}>Revenue vs. costs</span>
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", border: `1px solid ${t.border}`, borderRadius: 6, cursor: "pointer", fontSize: 12, color: t.mutedFg }}>
           Weeks <ChevronDown size={12} strokeWidth={1.5}/>
         </div>
@@ -3559,7 +3559,7 @@ function RevenueVsCostsCard() {
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: series.color, border: si === 1 ? `2px solid ${t.fgAlpha70}` : "none", boxSizing: "border-box" }}/>
                   <span style={{ fontSize: 12, color: t.fg }}>{series.label}</span>
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 500, color: t.fg }}>{series.total}</span>
+                <span style={{ fontSize: 12, fontWeight: 450, color: t.fg }}>{series.total}</span>
               </div>
               {REV_LEGEND.map((row, ri) => (
                 <div key={ri} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "3px 0", borderBottom: `1px dashed ${t.border}` }}>
@@ -3572,7 +3572,7 @@ function RevenueVsCostsCard() {
         </div>
       </div>
       <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.border}`, fontSize: 13, color: t.fgAlpha70 }}>
-        Revenue exceeded costs by <span style={{ color: "#3B82F6", fontWeight: 500 }}>USD 11,799</span> this month — margin of ~7.8%. Peak week was 9 Mar.
+        Revenue exceeded costs by <span style={{ color: "#3B82F6", fontWeight: 450 }}>USD 11,799</span> this month — margin of ~7.8%. Peak week was 9 Mar.
       </div>
     </div>
   )
@@ -3598,7 +3598,7 @@ function ClientRevenueCard({ projects, clientsFull }: { projects: any[], clients
   return (
     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: "hidden", width: "100%" }}>
       <div style={{ padding: "14px 18px", borderBottom: `1px solid ${t.border}` }}>
-        <span style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>Client revenue</span>
+        <span style={{ fontSize: 13, fontWeight: 450, color: t.fg }}>Client revenue</span>
       </div>
       <div style={{ display: "flex", minHeight: 220 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 8px 20px 18px" }}>
@@ -3636,8 +3636,8 @@ function ClientRevenueCard({ projects, clientsFull }: { projects: any[], clients
       </div>
       {top && (
         <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.border}`, fontSize: 13, color: t.fgAlpha70 }}>
-          <span style={{ color: t.fg, fontWeight: 500 }}>{top.name}</span> was the highest revenue client this month at {topPct}% of total —{" "}
-          <span style={{ color: momUp ? "#22C55E" : "#F97316", fontWeight: 500 }}>{momUp ? "up" : "down"} {seed}%</span> from last month.
+          <span style={{ color: t.fg, fontWeight: 450 }}>{top.name}</span> was the highest revenue client this month at {topPct}% of total —{" "}
+          <span style={{ color: momUp ? "#22C55E" : "#F97316", fontWeight: 450 }}>{momUp ? "up" : "down"} {seed}%</span> from last month.
         </div>
       )}
     </div>
@@ -3661,7 +3661,7 @@ function TimeOffCard() {
   return (
     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: "hidden", width: "100%" }}>
       <div style={{ padding: "14px 18px", borderBottom: `1px solid ${t.border}` }}>
-        <span style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>Time offs</span>
+        <span style={{ fontSize: 13, fontWeight: 450, color: t.fg }}>Time offs</span>
       </div>
       <div style={{ display: "flex", minHeight: 220 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 8px 20px 18px" }}>
@@ -3696,9 +3696,9 @@ function TimeOffCard() {
         </div>
       </div>
       <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.border}`, fontSize: 13, color: t.fgAlpha70 }}>
-        <span style={{ color: t.fg, fontWeight: 500 }}>{top.label}</span> accounts for the most time off this month at{" "}
-        <span style={{ color: t.fg, fontWeight: 500 }}>{top.days} days</span> — up{" "}
-        <span style={{ color: "#22C55E", fontWeight: 500 }}>{top.pct}%</span> from last month.
+        <span style={{ color: t.fg, fontWeight: 450 }}>{top.label}</span> accounts for the most time off this month at{" "}
+        <span style={{ color: t.fg, fontWeight: 450 }}>{top.days} days</span> — up{" "}
+        <span style={{ color: "#22C55E", fontWeight: 450 }}>{top.pct}%</span> from last month.
       </div>
     </div>
   )
@@ -3722,7 +3722,7 @@ function DeliveryCapacityCard() {
   return (
     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: "hidden", width: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", borderBottom: `1px solid ${t.border}` }}>
-        <span style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>Capacity</span>
+        <span style={{ fontSize: 13, fontWeight: 450, color: t.fg }}>Capacity</span>
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", border: `1px solid ${t.border}`, borderRadius: 6, cursor: "pointer", fontSize: 12, color: t.mutedFg }}>
           Weeks <ChevronDown size={12} strokeWidth={1.5}/>
         </div>
@@ -3758,9 +3758,9 @@ function DeliveryCapacityCard() {
             <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {row.icon}
-                <span style={{ fontSize: 12, fontWeight: 500, color: t.mutedFg }}>{row.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 450, color: t.mutedFg }}>{row.label}</span>
               </div>
-              <span style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>{row.value}</span>
+              <span style={{ fontSize: 13, fontWeight: 450, color: t.fg }}>{row.value}</span>
             </div>
           ))}
           <div style={{ borderTop: `1px solid ${t.border}`, paddingTop: 12, display: "flex", flexDirection: "column", gap: 0 }}>
@@ -3774,8 +3774,8 @@ function DeliveryCapacityCard() {
         </div>
       </div>
       <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.border}`, fontSize: 13, color: t.fgAlpha70 }}>
-        Delivery capacity is at <span style={{ color: t.fg, fontWeight: 500 }}>10,000h</span> this month — scheduled hours are{" "}
-        <span style={{ color: "#22C55E", fontWeight: 500 }}>75% utilised</span>, with 3,500h already completed.
+        Delivery capacity is at <span style={{ color: t.fg, fontWeight: 450 }}>10,000h</span> this month — scheduled hours are{" "}
+        <span style={{ color: "#22C55E", fontWeight: 450 }}>75% utilised</span>, with 3,500h already completed.
       </div>
     </div>
   )
@@ -3803,13 +3803,13 @@ function ProjectsAttentionCard({ projects, clientsFull, onRowClick }: { projects
   return (
     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: "hidden", width: "100%" }}>
       <div style={{ padding: "14px 18px", borderBottom: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 13, fontWeight: 500, color: t.fg }}>Projects Requiring Attention</span>
+        <span style={{ fontSize: 13, fontWeight: 450, color: t.fg }}>Projects Requiring Attention</span>
         <span style={{ fontSize: 12, color: t.mutedFg }}>{display.length} projects</span>
       </div>
       <div style={{ padding: "0 18px" }}>
         <div style={{ display: "grid", gridTemplateColumns: cols, borderBottom: `1px solid ${t.border}`, padding: "8px 0", gap: 8 }}>
           {["Project", "Client", "Status", "Est. vs. Actual", "Reason"].map(h => (
-            <span key={h} style={{ fontSize: 12, fontWeight: 500, color: t.mutedFg }}>{h}</span>
+            <span key={h} style={{ fontSize: 12, fontWeight: 450, color: t.mutedFg }}>{h}</span>
           ))}
         </div>
         {display.map((p: any, i: number) => {
@@ -3822,26 +3822,26 @@ function ProjectsAttentionCard({ projects, clientsFull, onRowClick }: { projects
               onMouseEnter={() => setHoveredRow(i)}
               onMouseLeave={() => setHoveredRow(null)}
               style={{ display: "grid", gridTemplateColumns: cols, borderBottom: i < display.length - 1 ? `1px solid ${t.border}` : "none", padding: "10px 8px", margin: "0 -8px", gap: 8, alignItems: "center", cursor: "pointer", borderRadius: 6, background: isHovered ? t.fgAlpha06 : "transparent", transition: "background 0.1s" }}>
-              <span style={{ fontSize: 13, fontWeight: 500, color: t.fg, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: 13, fontWeight: 450, color: t.fg, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {p.name}
                 {isHovered && <span style={{ fontSize: 11, color: t.mutedFg, marginLeft: 6, fontWeight: 400 }}>View detail →</span>}
               </span>
               <span style={{ fontSize: 13, color: t.fg }}>{clientName}</span>
               <span>
                 <div style={{ display: "inline-flex", background: p.tagBg, borderRadius: 50, padding: "3px 10px" }}>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: p.tagFg, whiteSpace: "nowrap" }}>{p.tag}</span>
+                  <span style={{ fontSize: 12, fontWeight: 450, color: p.tagFg, whiteSpace: "nowrap" }}>{p.tag}</span>
                 </div>
               </span>
-              <span style={{ fontSize: 13, fontWeight: 500, color: p.estColor }}>{p.estVsAct}</span>
+              <span style={{ fontSize: 13, fontWeight: 450, color: p.estColor }}>{p.estVsAct}</span>
               <span style={{ fontSize: 12, color: t.mutedFg, lineHeight: 1.4 }}>{p.reason}</span>
             </div>
           )
         })}
       </div>
       <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.border}`, fontSize: 13, color: t.mutedFg }}>
-        <span style={{ color: t.fg, fontWeight: 500 }}>{display.length} projects</span> need immediate attention —{" "}
-        <span style={{ color: "#EF4444", fontWeight: 500 }}>{display.filter((p: any) => p.tag === "Over budget").length} over budget</span> and{" "}
-        <span style={{ color: "#F97316", fontWeight: 500 }}>{display.filter((p: any) => p.tag === "At risk" || p.tag === "Delayed").length} at risk of missing deadlines</span>.
+        <span style={{ color: t.fg, fontWeight: 450 }}>{display.length} projects</span> need immediate attention —{" "}
+        <span style={{ color: "#EF4444", fontWeight: 450 }}>{display.filter((p: any) => p.tag === "Over budget").length} over budget</span> and{" "}
+        <span style={{ color: "#F97316", fontWeight: 450 }}>{display.filter((p: any) => p.tag === "At risk" || p.tag === "Delayed").length} at risk of missing deadlines</span>.
       </div>
     </div>
   )
@@ -3894,10 +3894,10 @@ function ProjectDetailCard({ project, clientName, people, config }: { project: a
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <h2 style={{ fontSize: 22, fontWeight: 600, color: t.fg, margin: 0, fontFamily: "var(--font-sans), sans-serif" }}>{project.name}</h2>
               <div style={{ background: config.tagBg, borderRadius: 4, padding: "3px 10px" }}>
-                <span style={{ fontSize: 12, fontWeight: 500, color: config.tagFg }}>{config.tag}</span>
+                <span style={{ fontSize: 12, fontWeight: 450, color: config.tagFg }}>{config.tag}</span>
               </div>
             </div>
-            <p style={{ fontSize: 14, fontWeight: 500, color: t.mutedFg, margin: "4px 0 0" }}>{clientName}</p>
+            <p style={{ fontSize: 14, fontWeight: 450, color: t.mutedFg, margin: "4px 0 0" }}>{clientName}</p>
           </div>
         </div>
       </div>
@@ -3922,7 +3922,7 @@ function ProjectDetailCard({ project, clientName, people, config }: { project: a
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", padding: "8px 20px 16px", gap: 12, borderBottom: `1px solid ${t.border}` }}>
         {metrics.map((m, i) => (
           <div key={i}>
-            <p style={{ fontSize: 10, fontWeight: 500, color: t.mutedFg, margin: "0 0 4px" }}>{m.label}</p>
+            <p style={{ fontSize: 10, fontWeight: 450, color: t.mutedFg, margin: "0 0 4px" }}>{m.label}</p>
             <p style={{ fontSize: 22, fontWeight: 600, color: m.color, margin: 0, fontFamily: "var(--font-sans), sans-serif" }}>{m.value}</p>
           </div>
         ))}
@@ -3933,7 +3933,7 @@ function ProjectDetailCard({ project, clientName, people, config }: { project: a
         <div style={{ flex: 1, height: 8, background: t.fgAlpha06, borderRadius: 4, overflow: "hidden" }}>
           <div style={{ width: `${Math.min(utilization, 100)}%`, height: "100%", background: utilization > 100 ? "#EF4444" : "#22C55E", borderRadius: 4 }}/>
         </div>
-        <span style={{ fontSize: 13, fontWeight: 500, color: t.fg, flexShrink: 0 }}>{utilization}% utilization</span>
+        <span style={{ fontSize: 13, fontWeight: 450, color: t.fg, flexShrink: 0 }}>{utilization}% utilization</span>
       </div>
 
       <div style={{ padding: "12px 20px 4px" }}>
@@ -3953,7 +3953,7 @@ function ProjectDetailCard({ project, clientName, people, config }: { project: a
           </div>
           <span style={{ fontSize: 20, fontWeight: 600, color: t.fg, flexShrink: 0 }}>{c.pct}%</span>
           <div style={{ background: c.statusBg, borderRadius: 4, padding: "3px 8px", flexShrink: 0 }}>
-            <span style={{ fontSize: 11, fontWeight: 500, color: c.statusFg }}>{c.status}</span>
+            <span style={{ fontSize: 11, fontWeight: 450, color: c.statusFg }}>{c.status}</span>
           </div>
         </div>
       ))}
@@ -4084,7 +4084,7 @@ function FloatAgentView({ projects, clientsFull, people, onSaveDashboard }: { pr
             placeholder="Ask a follow-up..."
             style={{ flex: 1, border: "none", background: "transparent", color: t.fg, fontSize: 14, fontFamily: "var(--font-sans), sans-serif", outline: "none" }}
           />
-          <HoverBtn onClick={submit} style={{ width: 28, height: 28, borderRadius: 7, border: `1px solid ${t.border}`, background: t.bg, color: t.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <HoverBtn onClick={submit} style={{ width: 24, height: 24, borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <ArrowUp size={14} strokeWidth={1.5}/>
           </HoverBtn>
         </div>
@@ -4099,7 +4099,7 @@ function FloatAgentView({ projects, clientsFull, people, onSaveDashboard }: { pr
             style={{ width: "100%", minHeight: 112, padding: "20px 52px 52px 20px", border: "none", borderRadius: 16, background: "transparent", color: t.fg, fontSize: 16, fontFamily: "var(--font-sans), sans-serif", resize: "none", outline: "none", boxSizing: "border-box" }}
             rows={3}
           />
-          <HoverBtn onClick={submit} style={{ position: "absolute", right: 20, bottom: 20, width: 29, height: 29, borderRadius: 8, border: `1px solid ${t.border}`, background: t.bg, color: t.fg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <HoverBtn onClick={submit} style={{ position: "absolute", right: 20, bottom: 20, width: 24, height: 24, borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.fg, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <ArrowUp size={16} strokeWidth={1.5}/>
           </HoverBtn>
         </>
@@ -4474,8 +4474,8 @@ function TalentGraphView({ people, roles, departments }: any) {
           {/* Toolbar */}
           <div style={{ position: "absolute" as const, top: 12, left: 12, right: 12, display: "flex", alignItems: "center", gap: 8, zIndex: 10 }}>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search: 'fashion, ux' or 'nike'"
-              style={{ flex: "0 0 230px", height: 32, borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.fg, fontSize: 13, padding: "0 10px", fontFamily: "var(--font-sans), sans-serif", outline: "none" }} />
-            <button style={{ height: 32, padding: "0 12px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.mutedFg, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-sans), sans-serif" }}>
+              style={{ flex: "0 0 230px", height: 24, borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.fg, fontSize: 13, padding: "0 10px", fontFamily: "var(--font-sans), sans-serif", outline: "none" }} />
+            <button style={{ height: 24, padding: "0 10px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.mutedFg, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-sans), sans-serif" }}>
               <Settings2 size={13} strokeWidth={1.5} /> Weights <ChevronDown size={12} strokeWidth={1.5} />
             </button>
             <div style={{ flex: 1 }} />
@@ -4483,7 +4483,7 @@ function TalentGraphView({ people, roles, departments }: any) {
               { label: "−", action: () => setZoom(z => Math.max(0.4, +(z - 0.15).toFixed(2))) },
               { label: <RefreshCw size={13} strokeWidth={1.5} />, action: () => setZoom(1) }].map(({ label, action }, i) => (
               <button key={i} onClick={action}
-                style={{ width: 32, height: 32, borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.mutedFg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontFamily: "var(--font-sans), sans-serif" }}>
+                style={{ width: 24, height: 24, borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.mutedFg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontFamily: "var(--font-sans), sans-serif" }}>
                 {label}
               </button>
             ))}
@@ -4543,7 +4543,7 @@ function TalentGraphView({ people, roles, departments }: any) {
           <div style={{ position: "absolute" as const, bottom: 16, left: 16, right: 16, zIndex: 10 }}>
             {agentFilter && (
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 100, background: t.fg, color: t.bg, fontSize: 12, fontFamily: "var(--font-sans), sans-serif", fontWeight: 500 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 100, background: t.fg, color: t.bg, fontSize: 12, fontFamily: "var(--font-sans), sans-serif", fontWeight: 450 }}>
                   <Share2 size={11} strokeWidth={2} />
                   {agentFilter.response}
                   <button onClick={() => { setAgentFilter(null); setAgentInput("") }}
@@ -4559,7 +4559,7 @@ function TalentGraphView({ people, roles, departments }: any) {
                 placeholder="Ask about connections… e.g. 'who worked on Nike' or 'show leadership'"
                 style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 13, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }} />
               <button type="submit" disabled={!agentInput.trim()}
-                style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: agentInput.trim() ? t.fg : t.fgAlpha10, color: agentInput.trim() ? t.bg : t.mutedFg, cursor: agentInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>
+                style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: agentInput.trim() ? t.fg : t.fgAlpha10, color: agentInput.trim() ? t.bg : t.mutedFg, cursor: agentInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>
                 <ArrowUp size={13} strokeWidth={2} />
               </button>
             </form>
@@ -4809,7 +4809,7 @@ function ProjectGraphView({ projects, roles, people, clientsFull }: any) {
             {/* Stage legend */}
             {(["active","planning","on-hold"] as const).map(s => (
               <button key={s} onClick={() => { const ids = new Set<number>(projects.map((_: any, i: number) => i).filter((i: number) => projects[i].stage === s)); setAgentFilter({ matchIds: ids, response: `${ids.size} ${s} projects` }) }}
-                style={{ height: 28, padding: "0 10px", borderRadius: 100, border: `1px solid ${t.border}`, background: t.bg, color: t.mutedFg, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-sans), sans-serif" }}>
+                style={{ height: 24, padding: "0 10px", borderRadius: 100, border: `1px solid ${t.border}`, background: t.bg, color: t.mutedFg, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-sans), sans-serif" }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: STAGE_COLOR[s], display: "inline-block", flexShrink: 0 }} />
                 {s.charAt(0).toUpperCase() + s.slice(1).replace("-", " ")}
               </button>
@@ -4818,7 +4818,7 @@ function ProjectGraphView({ projects, roles, people, clientsFull }: any) {
             {[{ label: "+", action: () => setZoom(z => Math.min(2, +(z + 0.15).toFixed(2))) },
               { label: "−", action: () => setZoom(z => Math.max(0.4, +(z - 0.15).toFixed(2))) },
               { label: <RefreshCw size={13} strokeWidth={1.5} />, action: () => setZoom(1) }].map(({ label, action }, i) => (
-              <button key={i} onClick={action} style={{ width: 32, height: 32, borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.mutedFg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontFamily: "var(--font-sans), sans-serif" }}>{label}</button>
+              <button key={i} onClick={action} style={{ width: 24, height: 24, borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.mutedFg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontFamily: "var(--font-sans), sans-serif" }}>{label}</button>
             ))}
           </div>
           {/* SVG */}
@@ -4869,7 +4869,7 @@ function ProjectGraphView({ projects, roles, people, clientsFull }: any) {
           <div style={{ position: "absolute" as const, bottom: 16, left: 16, right: 16, zIndex: 10 }}>
             {agentFilter && (
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 100, background: t.fg, color: t.bg, fontSize: 12, fontFamily: "var(--font-sans), sans-serif", fontWeight: 500 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 100, background: t.fg, color: t.bg, fontSize: 12, fontFamily: "var(--font-sans), sans-serif", fontWeight: 450 }}>
                   <Layers size={11} strokeWidth={2} />{agentFilter.response}
                   <button onClick={() => { setAgentFilter(null); setAgentInput("") }}
                     style={{ background: "none", border: "none", cursor: "pointer", color: t.bg, opacity: 0.6, padding: 0, display: "flex", alignItems: "center", marginLeft: 2 }}>
@@ -4884,7 +4884,7 @@ function ProjectGraphView({ projects, roles, people, clientsFull }: any) {
                 placeholder="Ask about projects… e.g. 'show at-risk' or 'Jordan projects' or 'over 300k'"
                 style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 13, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }} />
               <button type="submit" disabled={!agentInput.trim()}
-                style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: agentInput.trim() ? t.fg : t.fgAlpha10, color: agentInput.trim() ? t.bg : t.mutedFg, cursor: agentInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>
+                style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: agentInput.trim() ? t.fg : t.fgAlpha10, color: agentInput.trim() ? t.bg : t.mutedFg, cursor: agentInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>
                 <ArrowUp size={13} strokeWidth={2} />
               </button>
             </form>
@@ -4932,7 +4932,7 @@ function ProjectGraphView({ projects, roles, people, clientsFull }: any) {
               {([["Client", selProject.client], ["Owner / PM", selProject.owner], ["Budget", fmt(selProject.budget)], ["Team size", selProject.teamSize], ["Office", selProject.office], ["Connections", selProject.connections]] as [string, any][]).map(([label, val]) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: `1px solid ${t.fgAlpha06}` }}>
                   <span style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{label}</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{val}</span>
+                  <span style={{ fontSize: 12, fontWeight: 450, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{val}</span>
                 </div>
               ))}
               {selProject.roles.length > 0 && (
@@ -5786,12 +5786,12 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                       {group.tags.map(tag => (
-                        <div key={tag.name} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: group.color + "33", border: `1px solid ${group.color}44`, borderRadius: 4, padding: "2px 4px 2px 6px", fontSize: 11, fontWeight: 500, color: group.color }}>
+                        <div key={tag.name} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: group.color + "33", border: `1px solid ${group.color}44`, borderRadius: 4, padding: "2px 4px 2px 6px", fontSize: 11, fontWeight: 450, color: group.color }}>
                           <span>{tag.name} ({tag.count})</span>
                           <button onClick={() => setTagGroups(prev => prev.map(g => g.id === group.id ? { ...g, tags: g.tags.filter(tg => tg.name !== tag.name) } : g))} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: group.color, display: "flex", alignItems: "center", lineHeight: 1, fontSize: 13, opacity: 0.7 }}>×</button>
                         </div>
                       ))}
-                      <button style={{ display: "flex", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", color: t.mutedFg, fontSize: 11, fontWeight: 500, padding: "2px 4px" }}>
+                      <button style={{ display: "flex", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", color: t.mutedFg, fontSize: 11, fontWeight: 450, padding: "2px 4px" }}>
                         <Plus size={11} strokeWidth={1.5}/> add tag
                       </button>
                     </div>
@@ -5861,7 +5861,7 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
             { label: "Departments", value: officeDeptCount(selectedOffice) },
             { label: "Groups", value: officeGroupCount(selectedOffice) },
           ]}/>
-          <div style={{ fontSize: 11, fontWeight: 500, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 10 }}>Access</div>
+          <div style={{ fontSize: 11, fontWeight: 450, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 10 }}>Access</div>
           <div style={{ fontSize: 12, color: t.mutedFg, marginBottom: 10 }}>View and request resources:</div>
           <ul style={{ margin: "0 0 14px", paddingLeft: 18 }}>
             <li style={{ fontSize: 12, color: t.fg, marginBottom: 4 }}><strong>Resource planners</strong> in <strong>Sydney</strong> and <strong>New York</strong></li>
@@ -5889,8 +5889,8 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
               {members.length > 0 && (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(120px, auto)", gap: 8, paddingBottom: 8 }}>
-                    <span style={{ fontSize: 11, fontWeight: 500, color: t.mutedFg }}>Name</span>
-                    <span style={{ fontSize: 11, fontWeight: 500, color: t.mutedFg }}>Role</span>
+                    <span style={{ fontSize: 11, fontWeight: 450, color: t.mutedFg }}>Name</span>
+                    <span style={{ fontSize: 11, fontWeight: 450, color: t.mutedFg }}>Role</span>
                   </div>
                   {members.map((p: any) => (
                     <div key={p.name} style={{ display: "grid", gridTemplateColumns: "1fr minmax(120px, auto)", gap: 8, alignItems: "center", borderTop: `1px solid ${t.border}`, padding: "8px 0" }}>
@@ -5901,7 +5901,7 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
                 </>
               )}
               <div style={{ paddingTop: 12 }}>
-                <HoverBtn style={{ display: "flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", borderRadius: 6, border: `1px dashed ${t.border}`, background: "transparent", color: t.secondaryFg, cursor: "pointer", fontSize: 12 }}>
+                <HoverBtn style={{ display: "flex", alignItems: "center", gap: 6, height: 24, padding: "0 10px", borderRadius: 6, border: `1px dashed ${t.border}`, background: "transparent", color: t.secondaryFg, cursor: "pointer", fontSize: 12 }}>
                   <Plus size={12} strokeWidth={1}/>Add people
                 </HoverBtn>
               </div>
@@ -5920,8 +5920,8 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
               {members.length > 0 && (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(120px, auto)", gap: 8, paddingBottom: 8 }}>
-                    <span style={{ fontSize: 11, fontWeight: 500, color: t.mutedFg }}>Name</span>
-                    <span style={{ fontSize: 11, fontWeight: 500, color: t.mutedFg }}>Role</span>
+                    <span style={{ fontSize: 11, fontWeight: 450, color: t.mutedFg }}>Name</span>
+                    <span style={{ fontSize: 11, fontWeight: 450, color: t.mutedFg }}>Role</span>
                   </div>
                   {members.map((p: any) => (
                     <div key={p.name} style={{ display: "grid", gridTemplateColumns: "1fr minmax(120px, auto)", gap: 8, alignItems: "center", borderTop: `1px solid ${t.border}`, padding: "8px 0" }}>
@@ -5932,7 +5932,7 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
                 </>
               )}
               <div style={{ paddingTop: 12 }}>
-                <HoverBtn style={{ display: "flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", borderRadius: 6, border: `1px dashed ${t.border}`, background: "transparent", color: t.secondaryFg, cursor: "pointer", fontSize: 12 }}>
+                <HoverBtn style={{ display: "flex", alignItems: "center", gap: 6, height: 24, padding: "0 10px", borderRadius: 6, border: `1px dashed ${t.border}`, background: "transparent", color: t.secondaryFg, cursor: "pointer", fontSize: 12 }}>
                   <Plus size={12} strokeWidth={1}/>Add people
                 </HoverBtn>
               </div>
@@ -5956,7 +5956,7 @@ function VersionsToggle({ version, onChange }: any) {
       <DropdownWrapper open={open} setOpen={setOpen}
         trigger={
           <HoverBtn onClick={() => setOpen(!open)}
-            style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 14px", borderRadius:8, border:`1px solid ${t.border}`, background: open ? t.accent : t.bg, color:t.fg, cursor:"pointer", fontSize:13, fontWeight:500 }}>
+            style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 14px", borderRadius:8, border:`1px solid ${t.border}`, background: open ? t.accent : t.bg, color:t.fg, cursor:"pointer", fontSize:13, fontWeight:450 }}>
             <Layers size={14} strokeWidth={1}/>Versions
           </HoverBtn>
         }>
@@ -5989,7 +5989,7 @@ export default function App() {
   const [clientsFilter, setClientsFilter] = useState<string[]|null>(null)
   const [projectsClientFilter, setProjectsClientFilter] = useState<string|null>(null)
   const [projectsRateCardFilter, setProjectsRateCardFilter] = useState<{clientName: string, rateCardName: string}|null>(null)
-  const [themeMode, setThemeMode] = useState<"light" | "dark" | "black" | "float-dark">("float-dark")
+  const [themeMode, setThemeMode] = useState<"light" | "dark" | "black" | "float-dark">("light")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [navHoverOpen, setNavHoverOpen] = useState(false)
