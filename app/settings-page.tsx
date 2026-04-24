@@ -45,7 +45,7 @@ export function SettingsPage({ t, s, locations, officeTarget, onBack }: any) {
     padding: "6px 8px", borderRadius: 6, border: "none",
     background: active ? t.accent : "transparent",
     color: active ? t.fg : t.sidebarFg,
-    cursor: "pointer", fontSize: 13, fontWeight: active ? 500 : 400,
+    cursor: "pointer", fontSize: 13, fontWeight: active ? 450 : 400,
     textAlign: "left" as const,
   })
 
