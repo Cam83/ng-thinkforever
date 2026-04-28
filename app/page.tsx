@@ -825,10 +825,10 @@ const globalSidebarItems = [
 ]
 const officeItems = [
   { name: "Dashboard", icon: <Gauge size={16} strokeWidth={1}/> },
+  { name: "Report", icon: <BarChart3 size={16} strokeWidth={1}/> },
   { name: "Schedule", icon: <ScheduleIcon/> },
   { name: "Project plan", icon: <ProjectPlanIcon/> },
   { name: "Project tracker", icon: <FolderOpen size={16} strokeWidth={1}/> },
-  { name: "Report", icon: <BarChart3 size={16} strokeWidth={1}/> },
   { name: "Log team", icon: <LogTeamIcon/> },
 ]
 const officeItemsMyTime = [
