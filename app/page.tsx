@@ -6,7 +6,7 @@ import {
   ChevronDown, Gauge, BarChart3, Clock, Users, Database,
   FolderOpen, Building, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
   Plus, RefreshCw, Settings2, Check, X, Circle, UserPlus, ArrowRightLeft,
-  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, Sparkles, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe, Eye, EyeOff, Columns, Activity
+  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, Sparkles, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe, Eye, EyeOff, Columns, Activity, GripVertical
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
@@ -1265,6 +1265,34 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
   const [hoverOpen, setHoverOpen] = useState(false)
   const [officeKebabOpen, setOfficeKebabOpen] = useState<string | null>(null)
   const [officeHovered, setOfficeHovered] = useState<string | null>(null)
+  const [locItemOrders, setLocItemOrders] = useState<Record<string, string[]>>(
+    Object.fromEntries(LOCATIONS_INIT.map(l => [l.name, (l.items as any[]).map((i: any) => i.name)]))
+  )
+  const [singleItemOrder, setSingleItemOrder] = useState<string[]>(officeItems.map(i => i.name))
+  const dragSrc = useRef<{ctx: string; name: string} | null>(null)
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null)
+  const [draggingKey, setDraggingKey] = useState<string | null>(null)
+
+  function getOrderedItems(ctx: string, sourceItems: any[]): any[] {
+    const order = ctx === "__single__" ? singleItemOrder : locItemOrders[ctx]
+    if (!order) return sourceItems
+    return order.map(n => sourceItems.find((i: any) => i.name === n)).filter(Boolean) as any[]
+  }
+
+  function doReorder(ctx: string, targetName: string) {
+    if (!dragSrc.current || dragSrc.current.ctx !== ctx) return
+    const src = dragSrc.current.name
+    if (src === targetName) return
+    function reorder(arr: string[]) {
+      const a = [...arr]
+      const fi = a.indexOf(src), ti = a.indexOf(targetName)
+      if (fi === -1 || ti === -1) return arr
+      a.splice(ti, 0, a.splice(fi, 1)[0])
+      return a
+    }
+    if (ctx === "__single__") setSingleItemOrder(prev => reorder(prev))
+    else setLocItemOrders(prev => ({ ...prev, [ctx]: reorder(prev[ctx] || []) }))
+  }
 
   useEffect(() => { if (!collapsed) { setHoverOpen(false); onHoverChange?.(false) } }, [collapsed])
 
@@ -1388,10 +1416,19 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
         )}
 
         {version === "single" ? (
-          officeItems.map(item => (
-            <HoverBtn key={item.name} onClick={() => setActive(item.name, null)} style={navItemStyle(activeItem === item.name)}>
-              {item.icon}{showFullNav && item.name}
-            </HoverBtn>
+          getOrderedItems("__single__", officeItems).map((item: any) => (
+            <div key={item.name}
+              draggable={showFullNav}
+              onDragStart={() => { dragSrc.current = { ctx: "__single__", name: item.name }; setDraggingKey(`__single__::${item.name}`) }}
+              onDragOver={e => { e.preventDefault(); setDragOverKey(`__single__::${item.name}`) }}
+              onDrop={() => { doReorder("__single__", item.name); setDragOverKey(null); setDraggingKey(null); dragSrc.current = null }}
+              onDragEnd={() => { setDraggingKey(null); setDragOverKey(null); dragSrc.current = null }}
+              style={{ borderTop: dragOverKey === `__single__::${item.name}` ? `2px solid ${t.accent}` : "2px solid transparent", opacity: draggingKey === `__single__::${item.name}` ? 0.35 : 1 }}>
+              <HoverBtn onClick={() => setActive(item.name, null)} style={navItemStyle(activeItem === item.name)}>
+                {showFullNav && <GripVertical size={10} strokeWidth={1} style={{ opacity: 0.3, flexShrink: 0 }}/>}
+                {item.icon}{showFullNav && item.name}
+              </HoverBtn>
+            </div>
           ))
         ) : (
           <>
@@ -1437,11 +1474,20 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
               {showFullNav && loc.items && (
                 <Collapsible expanded={loc.expanded}>
                   <div style={{ marginTop: 2 }}>
-                    {loc.items.map(item => (
-                      <HoverBtn key={item.name} onClick={() => setActive(item.name, [loc.name, item.name])}
-                        style={{ ...navItemStyle(activeItem === item.name), paddingTop: 6, paddingBottom: 6, paddingRight: 8, paddingLeft: 32 }}>
-                        {item.icon}{item.name}
-                      </HoverBtn>
+                    {getOrderedItems(loc.name, loc.items).map((item: any) => (
+                      <div key={item.name}
+                        draggable
+                        onDragStart={() => { dragSrc.current = { ctx: loc.name, name: item.name }; setDraggingKey(`${loc.name}::${item.name}`) }}
+                        onDragOver={e => { e.preventDefault(); setDragOverKey(`${loc.name}::${item.name}`) }}
+                        onDrop={() => { doReorder(loc.name, item.name); setDragOverKey(null); setDraggingKey(null); dragSrc.current = null }}
+                        onDragEnd={() => { setDraggingKey(null); setDragOverKey(null); dragSrc.current = null }}
+                        style={{ borderTop: dragOverKey === `${loc.name}::${item.name}` ? `2px solid ${t.accent}` : "2px solid transparent", opacity: draggingKey === `${loc.name}::${item.name}` ? 0.35 : 1 }}>
+                        <HoverBtn onClick={() => setActive(item.name, [loc.name, item.name])}
+                          style={{ ...navItemStyle(activeItem === item.name), paddingTop: 6, paddingBottom: 6, paddingRight: 8, paddingLeft: 20 }}>
+                          <GripVertical size={10} strokeWidth={1} style={{ opacity: 0.3, flexShrink: 0 }}/>
+                          {item.icon}{item.name}
+                        </HoverBtn>
+                      </div>
                     ))}
                   </div>
                 </Collapsible>
