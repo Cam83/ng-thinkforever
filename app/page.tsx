@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
-import { HoverBtn as CamHoverBtn, TabBtn } from "@cam-ui/components"
+import { HoverBtn as CamHoverBtn, RadiusTab } from "@cam-ui/components"
 function HoverBtn(props: any) { return <CamHoverBtn accentColor={t.accent} {...props} /> }
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide } from "d3-force"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -47,7 +47,8 @@ const blackTheme = {
   fgAlpha20: "rgba(237,237,237,0.2)", fgAlpha70: "rgba(237,237,237,0.7)",
   borderAlpha25: "rgba(168,168,168,0.25)", scrollAlpha40: "rgba(139,139,139,0.4)",
   scrollAlpha70: "rgba(139,139,139,0.7)", overlayBg: "rgba(0,0,0,0.7)", shadowDark: "rgba(0,0,0,0.5)", shadowDarker: "rgba(0,0,0,0.6)",
-  sectionAddBtnBg: "#6AD2FF", sectionAddBtnFg: "#141618"
+  sectionAddBtnBg: "#6AD2FF", sectionAddBtnFg: "#141618",
+  primaryBtnBg: "#ededed"
 }
 
 const lightTheme = {
@@ -61,7 +62,8 @@ const lightTheme = {
   fgAlpha20: "rgba(11,12,16,0.2)", fgAlpha70: "rgba(11,12,16,0.7)",
   borderAlpha25: "rgba(11,12,16,0.15)", scrollAlpha40: "rgba(180,180,180,0.4)",
   scrollAlpha70: "rgba(180,180,180,0.7)", overlayBg: "rgba(0,0,0,0.5)", shadowDark: "rgba(0,0,0,0.3)", shadowDarker: "rgba(0,0,0,0.4)",
-  sectionAddBtnBg: "#0B0C10", sectionAddBtnFg: "#ffffff"
+  sectionAddBtnBg: "#2E5FE8", sectionAddBtnFg: "#ffffff",
+  primaryBtnBg: "#2E5FE8"
 }
 
 const darkTheme = {
@@ -75,7 +77,8 @@ const darkTheme = {
   fgAlpha20: "rgba(240,240,240,0.2)", fgAlpha70: "rgba(240,240,240,0.7)",
   borderAlpha25: "rgba(168,168,168,0.2)", scrollAlpha40: "rgba(120,120,120,0.4)",
   scrollAlpha70: "rgba(120,120,120,0.7)", overlayBg: "rgba(0,0,0,0.75)", shadowDark: "rgba(0,0,0,0.6)", shadowDarker: "rgba(0,0,0,0.75)",
-  sectionAddBtnBg: "#6AD2FF", sectionAddBtnFg: "#141618"
+  sectionAddBtnBg: "#6AD2FF", sectionAddBtnFg: "#141618",
+  primaryBtnBg: "#f0f0f0"
 }
 
 const floatDarkTheme = {
@@ -89,7 +92,8 @@ const floatDarkTheme = {
   fgAlpha20: "rgba(238,240,242,0.2)", fgAlpha70: "rgba(238,240,242,0.7)",
   borderAlpha25: "rgba(150,160,175,0.2)", scrollAlpha40: "rgba(130,140,155,0.4)",
   scrollAlpha70: "rgba(130,140,155,0.7)", overlayBg: "rgba(0,0,0,0.75)", shadowDark: "rgba(0,0,0,0.6)", shadowDarker: "rgba(0,0,0,0.75)",
-  sectionAddBtnBg: "#6AD2FF", sectionAddBtnFg: "#141618"
+  sectionAddBtnBg: "#6AD2FF", sectionAddBtnFg: "#141618",
+  primaryBtnBg: "#eef0f2"
 }
 
 let t = blackTheme
@@ -102,9 +106,9 @@ const getStyles = (theme: any) => ({
   sidebar: { width: 260, borderTop: "none", borderBottom: "none", borderLeft: "none", borderRight: `1px solid ${theme.sidebarBorder}`, background: theme.sidebar, display: "flex", flexDirection: "column" as const, height: "100vh", flexShrink: 0 },
   main: { flex: 1, display: "flex", flexDirection: "column" as const, background: theme.bg, overflow: "hidden", minWidth: 0 },
   iconBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: theme.secondaryFg, cursor: "pointer" },
-  primaryBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: theme.fg, color: theme.bg, cursor: "pointer" },
+  primaryBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: theme.primaryBtnBg, color: theme.bg, cursor: "pointer" },
   pillBtn: (active: any) => ({ display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 12px", borderRadius: 20, border: `1px solid ${active ? theme.fgAlpha30 : theme.border}`, background: active ? theme.fgAlpha10 : theme.bg, color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 450 : 400 }),
-  outlineBtn: { display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 12px", borderRadius: 8, border: `1px solid ${theme.border}`, background: "transparent", color: theme.secondaryFg, cursor: "pointer", fontSize: 12 },
+  outlineBtn: { display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 10px", borderRadius: 8, border: `1px solid ${theme.border}`, background: "transparent", color: theme.secondaryFg, cursor: "pointer", fontSize: 12 },
   dropdown: { position: "absolute" as const, top: "100%", left: 0, marginTop: 4, background: theme.popover, border: `1px solid ${theme.border}`, borderRadius: 8, padding: 4, boxShadow: `0 4px 16px ${theme.shadowDark}`, zIndex: 200, minWidth: 180 },
   dropdownItem: (active: any) => ({ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "6px 10px", borderRadius: 5, border: "none", background: "transparent", color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 450 : 400, textAlign: "left" as const }),
 })
@@ -871,18 +875,18 @@ function OfficeFilter({ selected, onChange }: any) {
   return (
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
-        <HoverBtn onClick={() => setOpen(!open)} style={{ ...s.pillBtn(!isAll), gap: 6 }}>
+        <HoverBtn onClick={() => setOpen(!open)} style={{ ...s.pillBtn(!isAll), gap: 6, padding: "0 10px" }}>
           <Circle size={10} strokeWidth={1}/>{label}
           <ChevronDown size={12} strokeWidth={1} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}/>
         </HoverBtn>
       }>
       <div style={s.dropdown}>
-        <button onClick={() => onChange([...ALL_OFFICES])} style={s.dropdownItem(isAll)}>
+        <button onClick={() => onChange([...ALL_OFFICES])} style={{ ...s.dropdownItem(isAll), padding: "6px 8px" }}>
           All offices {isAll && <Check size={12} strokeWidth={1}/>}
         </button>
         <div style={{ height: 1, background: t.border, margin: "4px 0" }}/>
         {ALL_OFFICES.map(o => (
-          <button key={o} onClick={() => toggleOffice(o)} style={s.dropdownItem(selected.includes(o))}>
+          <button key={o} onClick={() => toggleOffice(o)} style={{ ...s.dropdownItem(selected.includes(o)), padding: "6px 8px" }}>
             {o} {selected.includes(o) && !isAll && <Check size={12} strokeWidth={1}/>}
           </button>
         ))}
@@ -896,7 +900,7 @@ function Tabs({ tabs, active, onChange }: any) {
     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
       {tabs.map((tab: any) => (
         <HoverBtn key={tab.label} onClick={() => onChange(tab.value)}
-          style={{ height: 24, padding: "0 12px", borderRadius: 6, border: "none", background: active === tab.value ? t.accent : "transparent", color: active === tab.value ? t.fg : t.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active === tab.value ? 450 : 400 }}>
+          style={{ height: 24, padding: "0 10px", borderRadius: 6, border: "none", background: active === tab.value ? t.accent : "transparent", color: active === tab.value ? t.fg : t.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active === tab.value ? 450 : 400 }}>
           {tab.label}
         </HoverBtn>
       ))}
@@ -1967,9 +1971,9 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
             )}
             <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
             {[["all","All"],["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
-              <TabBtn key={v} active={view === v} onClick={() => { setView(v); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={v} active={view === v} onClick={() => { setView(v); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={1} style={{ fill: view === v ? t.fg : "none" }}/>{l}
-              </TabBtn>
+              </RadiusTab>
             ))}
           </div>
         </div>
@@ -2565,9 +2569,9 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
         </div>
         <div style={{ width: 1, height: 16, background: t.fgAlpha20 }}/>
         {[["all","All"],["recognised","Revenue recognition"]].map(([v,l]) => (
-          <TabBtn key={v} active={tableView === v} onClick={() => setTableView(v)} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+          <RadiusTab key={v} active={tableView === v} onClick={() => setTableView(v)} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
             <Circle size={10} strokeWidth={1} style={{ fill: tableView === v ? t.fg : "none" }}/>{l}
-          </TabBtn>
+          </RadiusTab>
         ))}
         <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={tableView === "recognised" ? columns.filter((c: any) => ["name","clientId","health","projectComplete","planAccuracy","budget","margin","revenueRecognisedPct","scheduledBillable","hoursScheduled","totalHoursAtCompletion"].includes(c.id ?? c.accessorKey)) : columns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
       </div>
@@ -3436,24 +3440,152 @@ function DashboardView({ breadcrumb }: any) {
   )
 }
 
+const SCHED_PEOPLE = [
+  { name: "Jake Peralta",    initials: "JP", role: "CD Nike",          team: "Engin",          util: 102, tags: ["H tag", "Red team save"], extra: 2,  color: "#2d6a4f", hasPhoto: false },
+  { name: "Cam Rickersey",   initials: "CR", role: "CD Nike",          team: "Engin",          util: 112, tags: ["Location: New york"],     extra: 10, color: "#6b7280", hasPhoto: true  },
+  { name: "Kevin Cozner",    initials: "KC", role: "UX researcher",    team: "Front end",      util: 0,   tags: ["Location: London"],       extra: 1,  color: "#0d9488", hasPhoto: false },
+  { name: "Norm Scully",     initials: "NS", role: "UX researcher",    team: "Front end",      util: 300, tags: ["Red team save"],          extra: 3,  color: "#ea580c", hasPhoto: false },
+  { name: "Doug Judy",       initials: "DJ", role: "Design director",  team: "Engin",          util: 0,   tags: ["H tag", "Reebok"],        extra: 8,  color: "#1e3a5f", hasPhoto: false },
+  { name: "Gina Linetti",    initials: "GL", role: "Creative Director",team: "New department", util: 0,   tags: ["H tag"],                  extra: 7,  color: "#7c3aed", hasPhoto: false },
+  { name: "Teddy Wells",     initials: "TW", role: "Design director",  team: "Front end",      util: 0,   tags: ["H tag", "boeing", "figma"],extra: 1,  color: "#4b5563", hasPhoto: false },
+  { name: "Madeline Wuntch", initials: "MW", role: "CreativeX",        team: "",              util: 0,   tags: [],                        extra: 0,  color: "#b45309", hasPhoto: false },
+  { name: "Raymond Holt",    initials: "RH", role: "CD Reebok",        team: "Engin",          util: 0,   tags: ["Y tag"],                  extra: 0,  color: "#1d4ed8", hasPhoto: false },
+  { name: "Rosa Diaz",       initials: "RD", role: "Developer",        team: "Core",           util: 0,   tags: [],                        extra: 0,  color: "#9f1239", hasPhoto: false },
+]
+
 function ScheduleView({ breadcrumb }: any) {
+  const PEOPLE_W = 238
+  const WEEK_W   = 57
+
+  // Build 26 weeks starting Oct 27 2025
+  const ORIGIN = new Date(2025, 9, 27)
+  const weeks = Array.from({ length: 26 }, (_, i) => {
+    const s = new Date(ORIGIN); s.setDate(s.getDate() + i * 7)
+    const e = new Date(s);      e.setDate(e.getDate() + 6)
+    return {
+      label: `${s.getDate()}-${e.getDate()}`,
+      month: s.toLocaleString("en", { month: "short" }),
+    }
+  })
+
+  // Group into month spans for the top header
+  const monthGroups: { label: string; span: number }[] = []
+  weeks.forEach(w => {
+    const last = monthGroups[monthGroups.length - 1]
+    if (last && last.label === w.month) last.span++
+    else monthGroups.push({ label: w.month, span: 1 })
+  })
+
+  const hatchBg = `repeating-linear-gradient(-45deg, transparent, transparent 3px, ${t.fgAlpha06} 3px, ${t.fgAlpha06} 4px)`
+
   return (
-    <ViewWrapper breadcrumb={breadcrumb}>
-      <svg width="467" height="284" viewBox="0 0 467 284" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <g clipPath="url(#sc-clip)"><GridBg/>
-          <path d="M215.41 197.031V212.37L175.333 189.229V173.902L215.41 197.031Z" stroke={t.fgAlpha70} strokeWidth="0.604839" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M242.499 174.026V189.341L226.628 180.184L223.773 178.526L186.551 157.043L183.708 155.397L162.357 143.071V127.756L242.499 174.026Z" stroke={t.fgAlpha70} strokeWidth="0.604839" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M282.575 158.845V174.172L266.692 164.99L263.837 163.345L186.551 118.72L183.696 117.075L162.357 104.748V89.4339L282.575 158.845Z" stroke={t.fgAlpha70} strokeWidth="0.604839" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M239.603 188.019V200.273L215.41 212.37V197.031L225.365 192.047L236.748 186.362L239.603 188.019Z" stroke={t.fgAlpha70} strokeWidth="0.604839" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M266.692 164.99V177.244L242.499 189.341V174.027L263.837 163.345L266.692 164.99Z" stroke={t.fgAlpha70} strokeWidth="0.604839" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M306.769 146.748L282.575 158.845L162.357 89.4339L186.551 77.3371L306.769 146.748Z" stroke={t.fgAlpha70} strokeWidth="0.604839" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M306.769 146.748V162.075L282.575 174.172V158.845L306.769 146.748Z" stroke={t.fgAlpha70} strokeWidth="0.604839" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M263.837 163.345L242.499 174.027L162.357 127.757L183.696 117.075L186.551 118.72L263.837 163.345Z" stroke={t.fgAlpha70} strokeWidth="0.604839" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M236.749 186.362L225.365 192.047L215.41 197.031L175.333 173.902L196.684 163.233L199.527 164.878L236.749 186.362Z" stroke={t.fgAlpha70} strokeWidth="0.604839" strokeLinecap="round" strokeLinejoin="round"/>
-        </g>
-        <defs><clipPath id="sc-clip"><rect width="467" height="284" fill="white"/></clipPath></defs>
-      </svg>
-    </ViewWrapper>
+    <div style={{ display: "flex", flex: 1, flexDirection: "column", background: t.bg, overflow: "hidden" }}>
+
+      {/* ── Top toolbar ─────────────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 14px", height: 44, borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
+        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 3, height: 26, padding: "0 8px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14, fontWeight: 500 }}>
+          Schedule <ChevronDown size={13} strokeWidth={1.5}/>
+        </HoverBtn>
+        <HoverBtn style={{ ...s.iconBtn, color: t.mutedFg }}><Settings2 size={13} strokeWidth={1}/></HoverBtn>
+        <HoverBtn style={{ ...s.outlineBtn }}><ListFilter size={11} strokeWidth={1}/>Filter</HoverBtn>
+        <div style={{ flex: 1 }}/>
+        <HoverBtn style={{ ...s.iconBtn }}><ChevronLeft size={13} strokeWidth={1.5}/></HoverBtn>
+        <HoverBtn style={{ ...s.iconBtn }}><ChevronRight size={13} strokeWidth={1.5}/></HoverBtn>
+        <HoverBtn style={{ ...s.outlineBtn }}>Today</HoverBtn>
+        <HoverBtn style={{ ...s.outlineBtn, gap: 4 }}>
+          <CalendarClock size={12} strokeWidth={1}/>Quarters<ChevronDown size={11} strokeWidth={1}/>
+        </HoverBtn>
+        <HoverBtn style={{ ...s.iconBtn, color: t.mutedFg }}><Settings2 size={13} strokeWidth={1}/></HoverBtn>
+        <HoverBtn style={{ ...s.iconBtn, color: t.mutedFg }}><Share2 size={13} strokeWidth={1}/></HoverBtn>
+        <button style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}><Plus size={15} strokeWidth={1.5}/></button>
+      </div>
+
+      {/* ── Scrollable body (sticky header + rows) ───────────────────── */}
+      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+
+        {/* Sticky header row */}
+        <div style={{ position: "sticky", top: 0, zIndex: 20, display: "flex", background: t.bg, flexShrink: 0 }}>
+
+          {/* Left: people panel controls */}
+          <div style={{ position: "sticky", left: 0, zIndex: 25, width: PEOPLE_W, flexShrink: 0, background: t.bg, borderRight: `1px solid ${t.border}`, display: "flex", alignItems: "center", gap: 5, padding: "0 10px", height: 56 }}>
+            <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 8, width: 28, height: 28 }}><UserPlus size={13} strokeWidth={1}/></HoverBtn>
+            <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 8, width: 28, height: 28 }}><ArrowUp size={11} strokeWidth={1.5} style={{ rotate: "180deg" }}/></HoverBtn>
+            <div style={{ flex: 1 }}/>
+            <HoverBtn style={{ display: "flex", alignItems: "center", gap: 5, height: 28, padding: "0 10px", borderRadius: 20, border: `1px solid ${t.border}`, background: "transparent", color: t.fg, cursor: "pointer", fontSize: 12, fontWeight: 450 }}>
+              This week <ChevronDown size={11} strokeWidth={1.5}/>
+            </HoverBtn>
+            <span style={{ height: 28, padding: "0 10px", borderRadius: 8, background: t.muted, color: t.secondaryFg, fontSize: 12, fontWeight: 450, display: "flex", alignItems: "center" }}>999h</span>
+          </div>
+
+          {/* Right: month + week columns */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            {/* Month labels */}
+            <div style={{ display: "flex", height: 28 }}>
+              {monthGroups.map((mg, i) => (
+                <div key={i} style={{ width: mg.span * WEEK_W, flexShrink: 0, display: "flex", alignItems: "flex-end", padding: "0 8px 4px", fontSize: 11, fontWeight: 500, color: t.fg, borderLeft: i > 0 ? `1px solid ${t.border}` : "none" }}>
+                  {mg.label}
+                </div>
+              ))}
+            </div>
+            {/* Week labels */}
+            <div style={{ display: "flex", height: 28 }}>
+              {weeks.map((w, i) => (
+                <div key={i} style={{ width: WEEK_W, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: t.mutedFg, borderLeft: `1px solid ${t.border}` }}>
+                  {w.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── People + grid rows ─────────────────────────────────────── */}
+        {SCHED_PEOPLE.map((person, ri) => (
+          <div key={ri} style={{ display: "flex", borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
+
+            {/* Person cell (sticky left) */}
+            <div style={{ position: "sticky", left: 0, zIndex: 10, width: PEOPLE_W, flexShrink: 0, background: t.bg, borderRight: `1px solid ${t.border}`, padding: "10px 10px 10px 8px", display: "flex", gap: 8, alignItems: "flex-start" }}>
+              {/* Avatar */}
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: person.color, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#fff", marginTop: 1 }}>
+                {person.initials}
+              </div>
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: t.fg, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{person.name}</span>
+                  {person.util > 0 && (
+                    <span style={{ fontSize: 11, fontWeight: 500, color: person.util > 100 ? "#ef4444" : t.mutedFg, flexShrink: 0 }}>
+                      {person.util}<span style={{ fontSize: 9 }}>%</span>
+                    </span>
+                  )}
+                  {person.util === 0 && (
+                    <span style={{ fontSize: 11, color: t.mutedFg, flexShrink: 0 }}>0<span style={{ fontSize: 9 }}>%</span></span>
+                  )}
+                </div>
+                {person.role && <div style={{ fontSize: 11, color: t.mutedFg, marginTop: 1 }}>{person.role}</div>}
+                {person.team && <div style={{ fontSize: 11, color: t.mutedFg }}>{person.team}</div>}
+                {(person.tags.length > 0 || person.extra > 0) && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginTop: 5 }}>
+                    {person.tags.map((tag, ti) => (
+                      <span key={ti} style={{ fontSize: 10, fontWeight: 450, color: t.mutedFg, background: t.muted, borderRadius: 4, padding: "1px 6px", whiteSpace: "nowrap" }}>{tag}</span>
+                    ))}
+                    {person.extra > 0 && (
+                      <span style={{ fontSize: 10, fontWeight: 450, color: t.mutedFg, background: t.muted, borderRadius: 4, padding: "1px 6px" }}>+{person.extra}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Grid cells */}
+            <div style={{ display: "flex", flex: 1 }}>
+              {weeks.map((_, wi) => (
+                <div key={wi} style={{ width: WEEK_W, flexShrink: 0, borderLeft: `1px solid ${t.fgAlpha06}`, background: hatchBg, minHeight: person.tags.length > 0 ? 72 : 56 }}/>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -5495,15 +5627,15 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
         <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
         <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
         {[["skills","Skills"],["experience","Experience"]].map(([v,l]) => (
-          <TabBtn key={v} active={graphMode === v} onClick={() => { setGraphMode(v); setView("categories"); setSelCat(null); setSelSkill(null); setSelPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+          <RadiusTab key={v} active={graphMode === v} onClick={() => { setGraphMode(v); setView("categories"); setSelCat(null); setSelSkill(null); setSelPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
             <Circle size={10} strokeWidth={1} style={{ fill: graphMode === v ? t.fg : "none" }}/>{l}
-          </TabBtn>
+          </RadiusTab>
         ))}
         <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
         {[["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
-          <TabBtn key={v} active={peopleFilter === v} onClick={() => { setPeopleFilter(v) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+          <RadiusTab key={v} active={peopleFilter === v} onClick={() => { setPeopleFilter(v) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
             <Circle size={10} strokeWidth={1} style={{ fill: peopleFilter === v ? t.fg : "none" }}/>{l}
-          </TabBtn>
+          </RadiusTab>
         ))}
       </div>
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -5769,20 +5901,20 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
         <div style={{ display: "flex", alignItems: "center", padding: "0 24px 12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {[["offices","Offices"],["departments","Departments"],["tags","Tags"]].map(([v,l]) => (
-              <TabBtn key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={1} style={{ fill: tab === v ? t.fg : "none" }}/>{l}
-              </TabBtn>
+              </RadiusTab>
             ))}
             <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 6px" }}/>
             {[["delivery-teams","Delivery teams"],["groups","Groups"]].map(([v,l]) => (
-              <TabBtn key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={1} style={{ fill: tab === v ? t.fg : "none" }}/>{l}
-              </TabBtn>
+              </RadiusTab>
             ))}
             {customGroupTypes.map(cg => (
-              <TabBtn key={cg.id} active={tab === cg.id} onClick={() => { setTab(cg.id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={cg.id} active={tab === cg.id} onClick={() => { setTab(cg.id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={1} style={{ fill: tab === cg.id ? t.fg : "none" }}/>{cg.name}
-              </TabBtn>
+              </RadiusTab>
             ))}
           </div>
         </div>
