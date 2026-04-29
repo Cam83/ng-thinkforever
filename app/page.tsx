@@ -1272,6 +1272,7 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
   const dragSrc = useRef<{ctx: string; name: string} | null>(null)
   const [dragOverKey, setDragOverKey] = useState<string | null>(null)
   const [draggingKey, setDraggingKey] = useState<string | null>(null)
+  const [hoveredNavItem, setHoveredNavItem] = useState<string | null>(null)
 
   function getOrderedItems(ctx: string, sourceItems: any[]): any[] {
     const order = ctx === "__single__" ? singleItemOrder : locItemOrders[ctx]
@@ -1423,10 +1424,12 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
               onDragOver={e => { e.preventDefault(); setDragOverKey(`__single__::${item.name}`) }}
               onDrop={() => { doReorder("__single__", item.name); setDragOverKey(null); setDraggingKey(null); dragSrc.current = null }}
               onDragEnd={() => { setDraggingKey(null); setDragOverKey(null); dragSrc.current = null }}
+              onMouseEnter={() => setHoveredNavItem(`__single__::${item.name}`)}
+              onMouseLeave={() => setHoveredNavItem(null)}
               style={{ borderTop: dragOverKey === `__single__::${item.name}` ? `2px solid ${t.accent}` : "2px solid transparent", opacity: draggingKey === `__single__::${item.name}` ? 0.35 : 1 }}>
               <HoverBtn onClick={() => setActive(item.name, null)} style={navItemStyle(activeItem === item.name)}>
-                {showFullNav && <GripVertical size={10} strokeWidth={1} style={{ opacity: 0.3, flexShrink: 0 }}/>}
                 {item.icon}{showFullNav && item.name}
+                {showFullNav && <GripVertical size={10} strokeWidth={1} style={{ marginLeft: "auto", opacity: hoveredNavItem === `__single__::${item.name}` ? 0.4 : 0, flexShrink: 0 }}/>}
               </HoverBtn>
             </div>
           ))
@@ -1481,11 +1484,13 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
                         onDragOver={e => { e.preventDefault(); setDragOverKey(`${loc.name}::${item.name}`) }}
                         onDrop={() => { doReorder(loc.name, item.name); setDragOverKey(null); setDraggingKey(null); dragSrc.current = null }}
                         onDragEnd={() => { setDraggingKey(null); setDragOverKey(null); dragSrc.current = null }}
+                        onMouseEnter={() => setHoveredNavItem(`${loc.name}::${item.name}`)}
+                        onMouseLeave={() => setHoveredNavItem(null)}
                         style={{ borderTop: dragOverKey === `${loc.name}::${item.name}` ? `2px solid ${t.accent}` : "2px solid transparent", opacity: draggingKey === `${loc.name}::${item.name}` ? 0.35 : 1 }}>
                         <HoverBtn onClick={() => setActive(item.name, [loc.name, item.name])}
-                          style={{ ...navItemStyle(activeItem === item.name), paddingTop: 6, paddingBottom: 6, paddingRight: 8, paddingLeft: 20 }}>
-                          <GripVertical size={10} strokeWidth={1} style={{ opacity: 0.3, flexShrink: 0 }}/>
+                          style={{ ...navItemStyle(activeItem === item.name), paddingTop: 6, paddingBottom: 6, paddingRight: 8, paddingLeft: 32 }}>
                           {item.icon}{item.name}
+                          <GripVertical size={10} strokeWidth={1} style={{ marginLeft: "auto", opacity: hoveredNavItem === `${loc.name}::${item.name}` ? 0.4 : 0, flexShrink: 0 }}/>
                         </HoverBtn>
                       </div>
                     ))}
