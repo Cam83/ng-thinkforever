@@ -2425,7 +2425,8 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
     const start = new Date(year, month, 1)
     const end = new Date(year, month + 1, 0)
     const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-    return { start: fmt(start), end: fmt(end), name: start.toLocaleString("default", { month: "long" }) }
+    const label = monthOffset === 0 ? "This month" : monthOffset === -1 ? "Last month" : monthOffset === 1 ? "Next month" : start.toLocaleString("default", { month: "long", year: "numeric" })
+    return { start: fmt(start), end: fmt(end), label }
   }, [monthOffset])
 
   const columns = useMemo(() => [
@@ -2570,7 +2571,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
           </HoverBtn>
         </div>
         <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14 }}>
-          <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>This month</span>
+          <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>{monthRange.label}</span>
           {monthRange.start} – {monthRange.end}
           <ChevronDown size={12} strokeWidth={0.9}/>
         </HoverBtn>
@@ -3432,6 +3433,7 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
   const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate()
   const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString("default", { month: "short" })} ${d.getFullYear()}`
   const rangeStr = `${fmt(base)} – ${fmt(new Date(base.getFullYear(), base.getMonth(), lastDay))}`
+  const monthLabel = dateOffset === 0 ? "This month" : dateOffset === -1 ? "Last month" : dateOffset === 1 ? "Next month" : base.toLocaleString("default", { month: "long", year: "numeric" })
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
@@ -3472,7 +3474,7 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
           </HoverBtn>
         </div>
         <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14 }}>
-          <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>This month</span>
+          <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>{monthLabel}</span>
           {rangeStr}
           <ChevronDown size={12} strokeWidth={0.9}/>
         </HoverBtn>
@@ -4013,6 +4015,7 @@ function ReportHeader() {
   const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate()
   const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString("default", { month: "short" })} ${d.getFullYear()}`
   const rangeStr = `${fmt(base)} – ${fmt(new Date(base.getFullYear(), base.getMonth(), lastDay))}`
+  const monthLabel = dateOffset === 0 ? "This month" : dateOffset === -1 ? "Last month" : dateOffset === 1 ? "Next month" : base.toLocaleString("default", { month: "long", year: "numeric" })
   const [activeTab, setActiveTab] = useState<"people"|"projects">("people")
   return (
     <div>
@@ -4057,7 +4060,7 @@ function ReportHeader() {
           </HoverBtn>
         </div>
         <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14 }}>
-          <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>This month</span>
+          <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>{monthLabel}</span>
           {rangeStr}
           <ChevronDown size={12} strokeWidth={0.9}/>
         </HoverBtn>
