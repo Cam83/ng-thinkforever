@@ -2569,7 +2569,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
             <ChevronRight size={14} strokeWidth={0.9}/>
           </HoverBtn>
         </div>
-        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 13 }}>
+        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14 }}>
           <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>This month</span>
           {monthRange.start} – {monthRange.end}
           <ChevronDown size={12} strokeWidth={0.9}/>
@@ -3471,7 +3471,7 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
             <ChevronRight size={14} strokeWidth={0.9}/>
           </HoverBtn>
         </div>
-        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 13 }}>
+        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14 }}>
           <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>This month</span>
           {rangeStr}
           <ChevronDown size={12} strokeWidth={0.9}/>
@@ -4056,7 +4056,7 @@ function ReportHeader() {
             <ChevronRight size={14} strokeWidth={0.9}/>
           </HoverBtn>
         </div>
-        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 13 }}>
+        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14 }}>
           <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>This month</span>
           {rangeStr}
           <ChevronDown size={12} strokeWidth={0.9}/>
