@@ -4,10 +4,17 @@
       "WebFetch(domain:www.dropbox.com)",
       "WebFetch(domain:uc885a62d7198e0541351d7994d4.dl.dropboxusercontent.com)",
       "Read(//tmp/**)",
-      "Read(//private/tmp/**)"
+      "Read(//private/tmp/**)",
+      "Read(//Users/cam/coding/cam-ui/**)",
+      "mcp__claude_ai_Figma__get_design_context",
+      "mcp__claude_ai_Figma__get_screenshot",
+      "mcp__claude_ai_Figma__get_metadata",
+      "mcp__claude_ai_Figma__use_figma",
+      "mcp__claude_ai_Figma__search_design_system"
     ],
     "additionalDirectories": [
-      "/Users/cam/.claude/projects/-Users-cam-coding-v0-nike-v2-v0-nike/00acedc7-7aeb-46b8-9ca7-e5de7210e9c6/tool-results"
+      "/Users/cam/.claude/projects/-Users-cam-coding-v0-nike-v2-v0-nike/00acedc7-7aeb-46b8-9ca7-e5de7210e9c6/tool-results",
+      "/Users/cam/coding/cam-ui"
     ]
   }
 }

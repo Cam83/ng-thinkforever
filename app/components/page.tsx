@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { RadiusTab } from "@cam-ui/components"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -85,6 +86,7 @@ export default function ComponentsPage() {
   const [switched, setSwitched] = useState(true)
   const [toggled, setToggled] = useState(false)
   const [theme, setTheme] = useState<"light" | "dark" | "float-dark">("light")
+  const [radiusTab, setRadiusTab] = useState<"people" | "roles" | "rates">("people")
 
   return (
     <TooltipProvider>
@@ -240,6 +242,33 @@ export default function ComponentsPage() {
                 <span className="text-sm">Left</span>
                 <Separator orientation="vertical" className="h-4" />
                 <span className="text-sm">Right</span>
+              </div>
+            </div>
+          </Section>
+
+          {/* Radius tab (cam-ui) */}
+          <Section title="Radius tab">
+            <div className="flex flex-col gap-3">
+              <p className="text-xs text-muted-foreground w-full">Pill tabs from @cam-ui/components — tighter horizontal padding than TabBtn.</p>
+              <div className="flex flex-wrap items-center gap-1">
+                {([
+                  ["people", "People"],
+                  ["roles", "Roles"],
+                  ["rates", "Rate cards"],
+                ] as const).map(([id, label]) => (
+                  <RadiusTab
+                    key={id}
+                    active={radiusTab === id}
+                    onClick={() => setRadiusTab(id)}
+                    activeColor="hsl(var(--foreground) / 0.28)"
+                    activeBg="hsl(var(--accent))"
+                    mutedColor="hsl(var(--muted-foreground))"
+                    bg="hsl(var(--background))"
+                    borderColor="hsl(var(--border))"
+                  >
+                    {label}
+                  </RadiusTab>
+                ))}
               </div>
             </div>
           </Section>

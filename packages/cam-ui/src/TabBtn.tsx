@@ -14,6 +14,8 @@ export interface TabBtnProps {
   bg?: string
   /** Base border color (inactive), e.g. theme.border */
   borderColor?: string
+  /** Horizontal + vertical padding. Default `0 12px`. */
+  padding?: string
   style?: React.CSSProperties
 }
 
@@ -26,6 +28,7 @@ export function TabBtn({
   mutedColor = "rgba(255,255,255,0.5)",
   bg = "transparent",
   borderColor = "rgba(255,255,255,0.12)",
+  padding = "0 12px",
   style,
 }: TabBtnProps) {
   const [hov, setHov] = useState(false)
@@ -42,14 +45,14 @@ export function TabBtn({
         gap: 5,
         boxSizing: "border-box",
         height: 24,
-        padding: "0 12px",
+        padding,
         borderRadius: 20,
         border: `1px solid ${active ? activeColor : borderColor}`,
         background: active ? activeBg : hov ? activeBg : bg,
         color: active ? "inherit" : mutedColor,
         cursor: "pointer",
         fontSize: 12,
-        fontWeight: active ? 450 : 400,
+        fontWeight: 400,
         fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
         transition: "background 0.15s ease, border-color 0.15s ease",
         ...style,
