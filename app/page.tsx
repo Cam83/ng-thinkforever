@@ -1342,7 +1342,9 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
 
   const navItemStyle = (active: any) => ({
     display: "flex", alignItems: "center", justifyContent: showFullNav ? "flex-start" : "center",
-    gap: 8, width: "100%", padding: showFullNav ? "6px 8px" : "7px 0",
+    gap: 8, width: "100%",
+    paddingTop: showFullNav ? 6 : 7, paddingBottom: showFullNav ? 6 : 7,
+    paddingLeft: showFullNav ? 8 : 0, paddingRight: showFullNav ? 8 : 0,
     borderRadius: 6, border: "none", background: active ? t.accent : "transparent",
     color: active ? t.fg : t.sidebarFg, cursor: "pointer", fontSize: 13,
     fontWeight: active ? 450 : 400, textAlign: "left" as const,
@@ -3447,7 +3449,7 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <HoverBtn style={{ ...s.outlineBtn, gap: 4, paddingRight: 8 }}>
+          <HoverBtn style={{ ...s.outlineBtn, gap: 4, padding: "0 8px 0 10px" }}>
             Past logged + Future scheduled
             <ChevronDown size={13} strokeWidth={0.9}/>
           </HoverBtn>
@@ -4029,7 +4031,7 @@ function ReportHeader() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <HoverBtn style={{ ...s.outlineBtn, gap: 4, paddingRight: 8 }}>
+          <HoverBtn style={{ ...s.outlineBtn, gap: 4, padding: "0 8px 0 10px" }}>
             Past logged + Future scheduled
             <ChevronDown size={13} strokeWidth={0.9}/>
           </HoverBtn>
