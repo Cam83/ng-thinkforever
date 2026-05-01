@@ -1828,7 +1828,7 @@ function GroupSelector({ groupIds, groups, mode, onChange }: any) {
 }
 
 // ── Pages ──
-function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateToPeopleByRole }: any) {
+function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateToPeopleByRole, version }: any) {
   const [tab, setTab] = useState("active")
   const [selectedIdx, setSelectedIdx] = useState<number|null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -1881,9 +1881,11 @@ function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateTo
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
         <SectionHeader count={roles.length} label="Roles" onAdd={() => setShowModal(true)}
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 4px" }}>
-          <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
-        </div>
+        {version !== "single" && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 4px" }}>
+            <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
           <Tabs active={tab} onChange={setTab} tabs={[{ label: `${roles.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
           <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={rolesColumns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
@@ -1913,7 +1915,7 @@ function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateTo
   )
 }
 
-function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups, people, onPeopleChange, contractors, onContractorsChange, deptPeopleCounts, filteredBusinessUnit, onFilterClear, filteredRole, onRoleFilterClear, filteredOffice, onOfficeFilterClear, initialView, onInitialViewConsumed }: any) {
+function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups, people, onPeopleChange, contractors, onContractorsChange, deptPeopleCounts, filteredBusinessUnit, onFilterClear, filteredRole, onRoleFilterClear, filteredOffice, onOfficeFilterClear, initialView, onInitialViewConsumed, version }: any) {
   const [tab, setTab] = useState("active")
   const [view, setView] = useState("employees")
   const [selectedPerson, setSelectedPerson] = useState<number|null>(null)
@@ -1962,8 +1964,8 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 4px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <OfficeFilter selected={selectedOffices} onChange={(val: any) => { setSelectedOffices(val); if (onOfficeFilterClear) onOfficeFilterClear() }}/>
-            {filteredOffice && (
+            {version !== "single" && <OfficeFilter selected={selectedOffices} onChange={(val: any) => { setSelectedOffices(val); if (onOfficeFilterClear) onOfficeFilterClear() }}/>}
+            {version !== "single" && filteredOffice && (
               <HoverBtn onClick={onOfficeFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "0 8px", fontSize: 12 }}>
                 ✕ {filteredOffice}
               </HoverBtn>
@@ -1973,7 +1975,7 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
                 ✕ {filteredBusinessUnit}
               </HoverBtn>
             )}
-            <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
+            {(version !== "single" || !!filteredBusinessUnit) && <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>}
             {[["all","View all"],["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
               <RadiusTab key={v} active={view === v} onClick={() => { setView(v); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: view === v ? t.fg : "none" }}/>{l}
@@ -2666,7 +2668,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
   )
 }
 
-function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, clients, filteredBusinessUnit, onFilterClear, filteredClient, onClientFilterClear, filteredRateCard, onRateCardFilterClear }: any) {
+function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, clients, filteredBusinessUnit, onFilterClear, filteredClient, onClientFilterClear, filteredRateCard, onRateCardFilterClear, version }: any) {
   const [tab, setTab] = useState("active")
   const [selectedIdx, setSelectedIdx] = useState<number|null>(null)
   const [selectedOffices, setSelectedOffices] = useState(["Beaverton HQ"])
@@ -2711,16 +2713,18 @@ function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, cli
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
         <SectionHeader count={filtered.length} label="Projects" onAdd={() => {}} filterField={filteredOwner ? "Owner" : filteredRateCard ? "Rate card" : filteredClient ? "Client" : undefined} filterValue={filteredOwner ?? (filteredRateCard?.rateCardName) ?? filteredClient} onClearFilter={filteredOwner ? () => setFilteredOwner(null) : filteredRateCard ? onRateCardFilterClear : onClientFilterClear}
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 4px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
-            {filteredBusinessUnit && (
-              <HoverBtn onClick={onFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "0 8px", fontSize: 12 }}>
-                ✕ {filteredBusinessUnit}
-              </HoverBtn>
-            )}
+        {(version !== "single" || !!filteredBusinessUnit) && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 4px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {version !== "single" && <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>}
+              {filteredBusinessUnit && (
+                <HoverBtn onClick={onFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "0 8px", fontSize: 12 }}>
+                  ✕ {filteredBusinessUnit}
+                </HoverBtn>
+              )}
+            </div>
           </div>
-        </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
           <Tabs active={tab} onChange={setTab} tabs={[{ label: `${filtered.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
           <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={projColumns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
@@ -3149,7 +3153,7 @@ function RateCardSheet({ client, clientIdx, rcIdx, roles, onUpdateClients, onClo
   )
 }
 
-function Clients({ roles, people, clients, onClientsChange, projects, onNavigateToRateCards, filterClients, onClearClientsFilter, onNavigateToProjects }: any) {
+function Clients({ roles, people, clients, onClientsChange, projects, onNavigateToRateCards, filterClients, onClearClientsFilter, onNavigateToProjects, version }: any) {
   const setClients = onClientsChange
   const [tab, setTab] = useState("active")
   const [selectedOffices, setSelectedOffices] = useState(["Beaverton HQ"])
@@ -3164,9 +3168,11 @@ function Clients({ roles, people, clients, onClientsChange, projects, onNavigate
       <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden" }}>
         <SectionHeader count={displayClients.length} label="Clients" onAdd={() => {}} filterField={filterClients ? "Client" : undefined} filterValue={filterClients} onClearFilter={onClearClientsFilter}
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 4px" }}>
-          <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
-        </div>
+        {version !== "single" && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 4px" }}>
+            <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
+          </div>
+        )}
         <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
           <Tabs active={tab} onChange={setTab} tabs={[{label:`${clients.length} Active`,value:"active"},{label:"0 Archived",value:"archived"},{label:"All",value:"all"}]}/>
           <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
@@ -3215,7 +3221,7 @@ function Clients({ roles, people, clients, onClientsChange, projects, onNavigate
   )
 }
 
-function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilter, onNavigateToClients, projects, onNavigateToProjects }: any) {
+function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilter, onNavigateToClients, projects, onNavigateToProjects, version }: any) {
   const setClients = onClientsChange
   const [tab, setTab] = useState("active")
   const [selectedClient, setSelectedClient] = useState<number|null>(null)
@@ -3234,9 +3240,11 @@ function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilte
       <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden" }}>
         <SectionHeader count={displayClients.length} label="Rate cards" onAdd={() => {}} filterField={filterClient ? "Client" : undefined} filterValue={filterClient} onClearFilter={onClearFilter}
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 4px" }}>
-          <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
-        </div>
+        {version !== "single" && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 4px" }}>
+            <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
+          </div>
+        )}
         <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
           <Tabs active={tab} onChange={setTab} tabs={[{label:`${displayClients.length} Active`,value:"active"},{label:"0 Archived",value:"archived"},{label:"All",value:"all"}]}/>
           <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
@@ -3888,7 +3896,7 @@ function ScheduleView({ breadcrumb }: any) {
             <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 8, width: 28, height: 28 }}><UserPlus size={13} strokeWidth={0.9}/></HoverBtn>
             <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 8, width: 28, height: 28 }}><ArrowUp size={11} strokeWidth={0.9} style={{ rotate: "180deg" }}/></HoverBtn>
             <div style={{ flex: 1 }}/>
-            <HoverBtn style={{ display: "flex", alignItems: "center", gap: 5, height: 28, padding: "0 10px", borderRadius: 20, border: `1px solid ${t.border}`, background: "transparent", color: t.fg, cursor: "pointer", fontSize: 12, fontWeight: 450 }}>
+            <HoverBtn style={{ display: "flex", alignItems: "center", gap: 5, height: 28, padding: "0 10px", borderRadius: 20, border: `1px solid ${t.border}`, background: "transparent", color: t.fg, cursor: "pointer", fontSize: 12, fontWeight: 450, whiteSpace: "nowrap" }}>
               This week <ChevronDown size={11} strokeWidth={0.9}/>
             </HoverBtn>
             <span style={{ height: 28, padding: "0 10px", borderRadius: 8, background: t.muted, color: t.secondaryFg, fontSize: 12, fontWeight: 450, display: "flex", alignItems: "center" }}>999h</span>
@@ -6660,12 +6668,12 @@ export default function App() {
 
   function renderMain() {
     if (activeItem === "Company") return <OrgStructurePage people={people} contractors={contractors} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} onDeliveryTeamsChange={setDeliveryTeams} groups={groups} onGroupsChange={setGroups} roles={roles} deptPeopleCounts={deptPeopleCounts} onNavigateToPeople={(o: string) => { setFilteredOfficeForPeople(o); setInitialPeopleView(null); setActiveItem("People"); setBreadcrumb(["Data studio", "People"]) }}/>
-    if (activeItem === "Roles") return <RolesAndRates roles={roles} onRolesChange={setRoles} people={people} departments={departments} onNavigateToPeopleByRole={(role: string) => { setFilteredRoleForPeople(role); setFilteredBusinessUnitForPeople(null); setActiveItem("People"); setBreadcrumb(["People"]) }}/>
-    if (activeItem === "People") return <People roles={roles} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} groups={groups} people={people} onPeopleChange={setPeople} contractors={contractors} onContractorsChange={setContractors} deptPeopleCounts={deptPeopleCounts} filteredBusinessUnit={filteredBusinessUnitForPeople} onFilterClear={() => setFilteredBusinessUnitForPeople(null)} filteredRole={filteredRoleForPeople} onRoleFilterClear={() => setFilteredRoleForPeople(null)} filteredOffice={filteredOfficeForPeople} onOfficeFilterClear={() => setFilteredOfficeForPeople(null)} initialView={initialPeopleView} onInitialViewConsumed={() => setInitialPeopleView(null)}/>
+    if (activeItem === "Roles") return <RolesAndRates roles={roles} onRolesChange={setRoles} people={people} departments={departments} onNavigateToPeopleByRole={(role: string) => { setFilteredRoleForPeople(role); setFilteredBusinessUnitForPeople(null); setActiveItem("People"); setBreadcrumb(["People"]) }} version={version}/>
+    if (activeItem === "People") return <People roles={roles} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} groups={groups} people={people} onPeopleChange={setPeople} contractors={contractors} onContractorsChange={setContractors} deptPeopleCounts={deptPeopleCounts} filteredBusinessUnit={filteredBusinessUnitForPeople} onFilterClear={() => setFilteredBusinessUnitForPeople(null)} filteredRole={filteredRoleForPeople} onRoleFilterClear={() => setFilteredRoleForPeople(null)} filteredOffice={filteredOfficeForPeople} onOfficeFilterClear={() => setFilteredOfficeForPeople(null)} initialView={initialPeopleView} onInitialViewConsumed={() => setInitialPeopleView(null)} version={version}/>
     if (activeItem === "Project tracker") return <ProjectTracker projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull}/>
-    if (activeItem === "Projects") return <ProjectsDataHub visibleItems={visibleDataHubItems} projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull} filteredBusinessUnit={filteredBusinessUnit} onFilterClear={() => setFilteredBusinessUnit(null)} filteredClient={projectsClientFilter} onClientFilterClear={() => setProjectsClientFilter(null)} filteredRateCard={projectsRateCardFilter} onRateCardFilterClear={() => setProjectsRateCardFilter(null)}/>
-    if (activeItem === "Clients") return <Clients roles={roles} people={people} clients={clientsFull} onClientsChange={setClientsFull} projects={projects} onNavigateToRateCards={(name: string) => { setRateCardFilter(name); setActiveItem("Rate cards") }} filterClients={clientsFilter} onClearClientsFilter={() => setClientsFilter(null)} onNavigateToProjects={(name: string) => { setProjectsClientFilter(name); setActiveItem("Projects") }}/>
-    if (activeItem === "Rate cards") return <RateCards roles={roles} clients={clientsFull} onClientsChange={setClientsFull} filterClient={rateCardFilter} onClearFilter={() => setRateCardFilter(null)} onNavigateToClients={(names: string[]) => { setClientsFilter(names); setActiveItem("Clients") }} projects={projects} onNavigateToProjects={(clientName: string, rateCardName: string) => { setProjectsClientFilter(null); setProjectsRateCardFilter({ clientName, rateCardName }); setActiveItem("Projects"); setBreadcrumb(["Data studio", "Projects"]) }}/>
+    if (activeItem === "Projects") return <ProjectsDataHub visibleItems={visibleDataHubItems} projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull} filteredBusinessUnit={filteredBusinessUnit} onFilterClear={() => setFilteredBusinessUnit(null)} filteredClient={projectsClientFilter} onClientFilterClear={() => setProjectsClientFilter(null)} filteredRateCard={projectsRateCardFilter} onRateCardFilterClear={() => setProjectsRateCardFilter(null)} version={version}/>
+    if (activeItem === "Clients") return <Clients roles={roles} people={people} clients={clientsFull} onClientsChange={setClientsFull} projects={projects} onNavigateToRateCards={(name: string) => { setRateCardFilter(name); setActiveItem("Rate cards") }} filterClients={clientsFilter} onClearClientsFilter={() => setClientsFilter(null)} onNavigateToProjects={(name: string) => { setProjectsClientFilter(name); setActiveItem("Projects") }} version={version}/>
+    if (activeItem === "Rate cards") return <RateCards roles={roles} clients={clientsFull} onClientsChange={setClientsFull} filterClient={rateCardFilter} onClearFilter={() => setRateCardFilter(null)} onNavigateToClients={(names: string[]) => { setClientsFilter(names); setActiveItem("Clients") }} projects={projects} onNavigateToProjects={(clientName: string, rateCardName: string) => { setProjectsClientFilter(null); setProjectsRateCardFilter({ clientName, rateCardName }); setActiveItem("Projects"); setBreadcrumb(["Data studio", "Projects"]) }} version={version}/>
     if (activeItem === "Brands") return <BusinessUnits roles={roles} onProjectsClick={(unitName: any) => { setFilteredBusinessUnit(unitName); setActiveItem("Projects"); }} onEmployeesClick={(unitName: any) => { setFilteredBusinessUnitForPeople(unitName); setActiveItem("People"); }}/>
     if (activeItem === "Activity log") return <ActivityLog/>
     if (activeItem === "Talent graph") return <TalentGraphView people={people} roles={roles} departments={departments}/>
