@@ -2118,7 +2118,7 @@ function NotesPanel({ project, currentUser, onClose, onUpdate }: any) {
           style={{ width:"100%", background:t.muted, border:`1px solid ${t.border}`, borderRadius:8, padding:"8px 10px", fontSize:13, color:t.fg, resize:"none", outline:"none", fontFamily:"inherit", boxSizing:"border-box" }}
         />
         <button onClick={submit}
-          style={{ marginTop:8, width:"100%", padding:"7px 0", borderRadius:6, border:"none", background:t.fg, color:t.bg, fontSize:12, fontWeight:450, cursor:"pointer" }}>
+          style={{ marginTop:8, width:"100%", padding:"7px 0", borderRadius:6, border:"none", background:"#2E5FE8", color:"#fff", fontSize:12, fontWeight:450, cursor:"pointer" }}>
           Add note
         </button>
       </div>
