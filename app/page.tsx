@@ -21,6 +21,7 @@ const getGlobalStyles = (theme: any) => `
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: ${theme.bg}; color: ${theme.fg}; font-family: Inter, sans-serif; }
   svg.lucide { color: ${theme.iconFg}; }
+  button svg.lucide { color: inherit; }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: ${theme.scrollAlpha40}; border-radius: 3px; }
@@ -48,7 +49,7 @@ const blackTheme = {
   fgAlpha20: "rgba(237,237,237,0.2)", fgAlpha70: "rgba(237,237,237,0.7)",
   borderAlpha25: "rgba(168,168,168,0.25)", scrollAlpha40: "rgba(139,139,139,0.4)",
   scrollAlpha70: "rgba(139,139,139,0.7)", overlayBg: "rgba(0,0,0,0.7)", shadowDark: "rgba(0,0,0,0.5)", shadowDarker: "rgba(0,0,0,0.6)",
-  sectionAddBtnBg: "#6AD2FF", sectionAddBtnFg: "#141618",
+  sectionAddBtnBg: "#2E5FE8", sectionAddBtnFg: "#ffffff",
   primaryBtnBg: "#ededed", iconFg: "#ededed"
 }
 
@@ -56,7 +57,7 @@ const lightTheme = {
   bg: "#ffffff", fg: "#0B0C10", card: "#ffffff", popover: "#f5f5f5",
   primary: "#0B0C10", primaryFg: "#ffffff", secondary: "#f0f0f0",
   secondaryFg: "#0B0C10", muted: "#f0f0f0", mutedFg: "#333333",
-  accent: "#f0f0f0", accentFg: "#0B0C10", border: "#e0e0e0",
+  accent: "#E6E6E8", accentFg: "#0B0C10", border: "#e0e0e0",
   sidebar: "#F8F7F9", sidebarFg: "#0B0C10", sidebarBorder: "#f0f0f0",
   fgAlpha30: "rgba(11,12,16,0.3)", fgAlpha10: "rgba(11,12,16,0.1)",
   fgAlpha06: "rgba(11,12,16,0.06)", fgAlpha03: "rgba(11,12,16,0.03)",
@@ -78,7 +79,7 @@ const darkTheme = {
   fgAlpha20: "rgba(240,240,240,0.2)", fgAlpha70: "rgba(240,240,240,0.7)",
   borderAlpha25: "rgba(168,168,168,0.2)", scrollAlpha40: "rgba(120,120,120,0.4)",
   scrollAlpha70: "rgba(120,120,120,0.7)", overlayBg: "rgba(0,0,0,0.75)", shadowDark: "rgba(0,0,0,0.6)", shadowDarker: "rgba(0,0,0,0.75)",
-  sectionAddBtnBg: "#6AD2FF", sectionAddBtnFg: "#141618",
+  sectionAddBtnBg: "#2E5FE8", sectionAddBtnFg: "#ffffff",
   primaryBtnBg: "#f0f0f0", iconFg: "#f0f0f0"
 }
 
@@ -93,7 +94,7 @@ const floatDarkTheme = {
   fgAlpha20: "rgba(238,240,242,0.2)", fgAlpha70: "rgba(238,240,242,0.7)",
   borderAlpha25: "rgba(150,160,175,0.2)", scrollAlpha40: "rgba(130,140,155,0.4)",
   scrollAlpha70: "rgba(130,140,155,0.7)", overlayBg: "rgba(0,0,0,0.75)", shadowDark: "rgba(0,0,0,0.6)", shadowDarker: "rgba(0,0,0,0.75)",
-  sectionAddBtnBg: "#6AD2FF", sectionAddBtnFg: "#141618",
+  sectionAddBtnBg: "#2E5FE8", sectionAddBtnFg: "#ffffff",
   primaryBtnBg: "#eef0f2", iconFg: "#eef0f2"
 }
 
@@ -108,8 +109,8 @@ const getStyles = (theme: any) => ({
   main: { flex: 1, display: "flex", flexDirection: "column" as const, background: theme.bg, overflow: "hidden", minWidth: 0 },
   iconBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: theme.secondaryFg, cursor: "pointer" },
   primaryBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: theme.primaryBtnBg, color: theme.bg, cursor: "pointer" },
-  pillBtn: (active: any) => ({ display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 12px", borderRadius: 20, border: `1px solid ${active ? theme.fgAlpha30 : theme.border}`, background: active ? theme.fgAlpha10 : theme.bg, color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 450 : 400 }),
-  outlineBtn: { display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 10px", borderRadius: 8, border: `1px solid ${theme.border}`, background: "transparent", color: theme.secondaryFg, cursor: "pointer", fontSize: 12 },
+  pillBtn: (active: any) => ({ display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 12px", borderRadius: 20, border: `1px solid ${active ? theme.fgAlpha30 : theme.border}`, background: active ? theme.accent : theme.bg, color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 450 : 400 }),
+  outlineBtn: { display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 10px 0 8px", borderRadius: 8, border: `1px solid ${theme.border}`, background: "transparent", color: theme.secondaryFg, cursor: "pointer", fontSize: 12 },
   dropdown: { position: "absolute" as const, top: "100%", left: 0, marginTop: 4, background: theme.popover, border: `1px solid ${theme.border}`, borderRadius: 8, padding: 4, boxShadow: `0 4px 16px ${theme.shadowDark}`, zIndex: 200, minWidth: 180 },
   dropdownItem: (active: any) => ({ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "6px 10px", borderRadius: 5, border: "none", background: "transparent", color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 450 : 400, textAlign: "left" as const }),
 })
@@ -911,7 +912,7 @@ function Tabs({ tabs, active, onChange }: any) {
 
 function SectionHeader({ count, label, onAdd, filterField, filterValue, onClearFilter, actions }: any) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 16px" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 12px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg }}>{count} {label}</h1>
         {filterField && filterValue
@@ -1376,7 +1377,7 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
         boxShadow: collapsed && hoverOpen ? `0 2px 12px rgba(0,0,0,0.25)` : "none",
       }}>
       <style>{getGlobalStyles(t)}</style>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: showFullNav ? "space-between" : "center", padding: "12px 12px 4px", minWidth: 260 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: showFullNav ? "space-between" : "center", padding: "16px 12px 4px", minWidth: 260 }}>
         {showFullNav && (
           <DropdownWrapper open={orgOpen} setOpen={setOrgOpen}
             trigger={
@@ -1878,7 +1879,7 @@ function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateTo
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
         <SectionHeader count={roles.length} label="Roles" onAdd={() => setShowModal(true)}
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 4px" }}>
           <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
@@ -1957,7 +1958,7 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
           onClearFilter={filteredRole ? onRoleFilterClear : undefined}
           onAdd={() => setShowModal(true)}
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 4px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <OfficeFilter selected={selectedOffices} onChange={(val: any) => { setSelectedOffices(val); if (onOfficeFilterClear) onOfficeFilterClear() }}/>
             {filteredOffice && (
@@ -1971,8 +1972,8 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
               </HoverBtn>
             )}
             <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
-            {[["all","All"],["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
-              <RadiusTab key={v} active={view === v} onClick={() => { setView(v); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+            {[["all","View all"],["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
+              <RadiusTab key={v} active={view === v} onClick={() => { setView(v); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: view === v ? t.fg : "none" }}/>{l}
               </RadiusTab>
             ))}
@@ -2422,7 +2423,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
     const start = new Date(year, month, 1)
     const end = new Date(year, month + 1, 0)
     const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-    return { start: fmt(start), end: fmt(end) }
+    return { start: fmt(start), end: fmt(end), name: start.toLocaleString("default", { month: "long" }) }
   }, [monthOffset])
 
   const columns = useMemo(() => [
@@ -2544,9 +2545,12 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
     <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden", background: t.bg }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg }}>{projects.length} Projects</h1>
+          <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+            <Layers size={13} strokeWidth={0.9}/>
+          </HoverBtn>
           <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -2554,23 +2558,23 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
           <button onClick={() => setShowModal(true)} style={s.primaryBtn}><Plus size={16} strokeWidth={0.9}/></button>
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 24px 12px" }}>
-        <div style={{ display: "flex", alignItems: "center", border: `1px solid ${t.border}`, borderRadius: 7, overflow: "hidden" }}>
-          <HoverBtn onClick={() => setMonthOffset(o => o - 1)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 24, borderRadius: 0, border: "none", background: "transparent", color: t.secondaryFg, cursor: "pointer", borderRight: `1px solid ${t.border}` }}>
-            <ChevronLeft size={12} strokeWidth={0.9}/>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 24px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <HoverBtn onClick={() => setMonthOffset(o => o - 1)} style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+            <ChevronLeft size={14} strokeWidth={0.9}/>
           </HoverBtn>
-          <HoverBtn onClick={() => setMonthOffset(o => o + 1)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 24, borderRadius: 0, border: "none", background: "transparent", color: t.secondaryFg, cursor: "pointer" }}>
-            <ChevronRight size={12} strokeWidth={0.9}/>
+          <HoverBtn onClick={() => setMonthOffset(o => o + 1)} style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+            <ChevronRight size={14} strokeWidth={0.9}/>
           </HoverBtn>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 7, border: `1px solid ${t.border}`, cursor: "pointer" }}>
-          <span style={{ fontSize: 12, color: t.mutedFg }}>This month</span>
-          <span style={{ fontSize: 12, color: t.fg, fontWeight: 450 }}>{monthRange.start} – {monthRange.end}</span>
-          <ChevronDown size={11} strokeWidth={0.9} color={t.mutedFg}/>
-        </div>
-        <div style={{ width: 1, height: 16, background: t.fgAlpha20 }}/>
-        {[["all","All"],["recognised","Revenue recognition"]].map(([v,l]) => (
-          <RadiusTab key={v} active={tableView === v} onClick={() => setTableView(v)} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 13 }}>
+          <span style={{ color: t.mutedFg }}>This month</span>
+          {monthRange.start} – {monthRange.end}
+          <ChevronDown size={12} strokeWidth={0.9}/>
+        </HoverBtn>
+        <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
+        {[["all","View all"],["recognised","Revenue recognition"]].map(([v,l]) => (
+          <RadiusTab key={v} active={tableView === v} onClick={() => setTableView(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
             <Circle size={10} strokeWidth={0.9} style={{ fill: tableView === v ? t.fg : "none" }}/>{l}
           </RadiusTab>
         ))}
@@ -2704,7 +2708,7 @@ function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, cli
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
         <SectionHeader count={filtered.length} label="Projects" onAdd={() => {}} filterField={filteredOwner ? "Owner" : filteredRateCard ? "Rate card" : filteredClient ? "Client" : undefined} filterValue={filteredOwner ?? (filteredRateCard?.rateCardName) ?? filteredClient} onClearFilter={filteredOwner ? () => setFilteredOwner(null) : filteredRateCard ? onRateCardFilterClear : onClientFilterClear}
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 4px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
             {filteredBusinessUnit && (
@@ -3157,7 +3161,7 @@ function Clients({ roles, people, clients, onClientsChange, projects, onNavigate
       <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden" }}>
         <SectionHeader count={displayClients.length} label="Clients" onAdd={() => {}} filterField={filterClients ? "Client" : undefined} filterValue={filterClients} onClearFilter={onClearClientsFilter}
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 12px" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 4px" }}>
           <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
@@ -3227,7 +3231,7 @@ function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilte
       <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden" }}>
         <SectionHeader count={displayClients.length} label="Rate cards" onAdd={() => {}} filterField={filterClient ? "Client" : undefined} filterValue={filterClient} onClearFilter={onClearFilter}
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 12px" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 4px" }}>
           <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
@@ -3273,7 +3277,7 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
           <>
             <SectionHeader count={units.length} label="Brands" onAdd={() => {}}
               actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 12px" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 4px" }}>
               <HoverBtn style={s.pillBtn(false)}><Circle size={10} strokeWidth={0.9}/>All regions<ChevronDown size={11} strokeWidth={0.9}/></HoverBtn>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
@@ -3297,7 +3301,7 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
           </>
         ) : (
           <>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"20px 24px 16px", borderBottom:`1px solid ${t.border}` }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 24px 12px", borderBottom:`1px solid ${t.border}` }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <HoverBtn onClick={() => { setSelectedUnit(null); setSelectedDept(null) }} style={{ ...s.iconBtn, color:t.secondaryFg }}>
                   <ChevronLeft size={18} strokeWidth={0.9}/>
@@ -3410,7 +3414,7 @@ function GridBg() {
 function ViewWrapper({ breadcrumb, children }: any) {
   return (
     <div style={{ display:"flex", flex:1, flexDirection:"column", background:t.bg }}>
-      <div style={{ padding:"20px 24px 16px" }}>
+      <div style={{ padding:"16px 24px 12px" }}>
         <h2 style={{ fontSize:18, fontWeight:600, color:t.fg }}>{breadcrumb[breadcrumb.length-1]}</h2>
         <p style={{ fontSize:13, color:t.mutedFg, marginTop:4 }}>{breadcrumb.length>=2 ? `The ${breadcrumb[breadcrumb.length-1]} for ${breadcrumb[0]}` : ""}</p>
       </div>
@@ -3421,26 +3425,29 @@ function ViewWrapper({ breadcrumb, children }: any) {
 
 function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"people"; setActiveTab: (v: "finance"|"people") => void }) {
   const [dateOffset, setDateOffset] = useState(0)
-  const base = new Date(2026, 3 + dateOffset, 1)
-  const monthName = base.toLocaleString("default", { month: "long" })
+  const now = new Date()
+  const base = new Date(now.getFullYear(), now.getMonth() + dateOffset, 1)
   const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate()
   const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString("default", { month: "short" })} ${d.getFullYear()}`
   const rangeStr = `${fmt(base)} – ${fmt(new Date(base.getFullYear(), base.getMonth(), lastDay))}`
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <h1 style={{ fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Dashboard</h1>
+          <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Dashboard</h1>
+          <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+            <Layers size={13} strokeWidth={0.9}/>
+          </HoverBtn>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {([["people", "People operations"], ["finance", "Project finance"]] as const).map(([v, l]) => (
-              <RadiusTab key={v} active={activeTab === v} onClick={() => setActiveTab(v)} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={v} active={activeTab === v} onClick={() => setActiveTab(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: activeTab === v ? t.fg : "none" }}/>{l}
               </RadiusTab>
             ))}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <HoverBtn style={{ ...s.outlineBtn, gap: 4 }}>
+          <HoverBtn style={{ ...s.outlineBtn, gap: 4, paddingRight: 8 }}>
             Past logged + Future scheduled
             <ChevronDown size={13} strokeWidth={0.9}/>
           </HoverBtn>
@@ -3448,9 +3455,12 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
             Weeks
             <ChevronDown size={13} strokeWidth={0.9}/>
           </HoverBtn>
+          <button style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}>
+            <Plus size={14} strokeWidth={0.9}/>
+          </button>
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "18px 24px 12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 24px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
           <HoverBtn onClick={() => setDateOffset(o => o - 1)} style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
             <ChevronLeft size={14} strokeWidth={0.9}/>
@@ -3460,19 +3470,17 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
           </HoverBtn>
         </div>
         <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 13 }}>
-          <span style={{ color: t.secondaryFg }}>{monthName}</span>
+          <span style={{ color: t.mutedFg }}>This month</span>
           {rangeStr}
           <ChevronDown size={12} strokeWidth={0.9}/>
         </HoverBtn>
-        <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
-          <Layers size={13} strokeWidth={0.9}/>
-        </HoverBtn>
-        <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
-          <ListFilter size={13} strokeWidth={0.9}/>
-        </HoverBtn>
+        <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
         <FilterChip category="Project stage" operator="is any of" value="On track, +2" onClear={() => {}}/>
         <FilterChip category="People type" operator="is any of" value="Active, +4" onClear={() => {}}/>
         <FilterChip category="Time off" operator="is any of" value="Active, +1" onClear={() => {}}/>
+        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: `1px solid ${t.border}`, background: "transparent", color: t.secondaryFg, cursor: "pointer", fontSize: 12 }}>
+          <Plus size={11} strokeWidth={0.9}/>Filter
+        </HoverBtn>
       </div>
     </div>
   )
@@ -3496,14 +3504,26 @@ function PeopleOpsDashboard() {
     to4: "https://www.figma.com/api/mcp/asset/5c2aa20d-0510-41dc-b69c-43019ae95b43",
     to5: "https://www.figma.com/api/mcp/asset/1335b0da-4a51-434a-b15d-b5d704e7444f",
     to6: "https://www.figma.com/api/mcp/asset/42c20b9d-d9c2-4adc-9846-935c4de3513d",
-    capBand:  "https://www.figma.com/api/mcp/asset/d83e2cae-8e42-401e-956b-122b33a332e4",
-    capLine:  "https://www.figma.com/api/mcp/asset/59dc61b4-1112-4dd3-a701-8335bd1c48af",
+    // Capacity vs demand chart images (Vector positions: all relative to card top=63, left=69)
+    capFillBand: "https://www.figma.com/api/mcp/asset/e6dcf911-66a5-4efb-994a-05d945f0157c", // Vector3780: bg fill band, 831×150px, opacity 50%
+    capTopBand:  "https://www.figma.com/api/mcp/asset/907434d6-4359-4bd0-b8d1-e2132b072774", // Vector3776: narrow top band, 831×77.5px
+    capFuture:   "https://www.figma.com/api/mcp/asset/d8f7d86b-8bb9-4575-9f29-1858be6cae50", // Vector3779: thin left-half underlay, 396×17.9px
+    capGross:    "https://www.figma.com/api/mcp/asset/fd6ee0fe-6e9d-4a07-8ab7-79f1779839b3", // Vector3778: main capacity lines full-width, 831.5×113.5px
+    capDeliv:    "https://www.figma.com/api/mcp/asset/daa10891-cabe-4f31-ad5b-858acda53ba7", // Vector3777: orange demand line right-half, 434.5×94.5px
+    // Capacity legend line separators (breakdown rows)
+    capSepFsOnTrack:  "https://www.figma.com/api/mcp/asset/67f3ae33-f718-4ec1-abfd-d7ea061782bb", // Line184
+    capSepFsOffTrack: "https://www.figma.com/api/mcp/asset/009c0d27-9327-4ef9-9fe8-310aa6ca924c", // Line185
+    capSepFsCompleted:"https://www.figma.com/api/mcp/asset/e5b587e4-cc12-4e68-88e2-a028950dec46", // Line186
+    capSepPlOnTrack:  "https://www.figma.com/api/mcp/asset/009c0d27-9327-4ef9-9fe8-310aa6ca924c", // Line185 (reused)
+    capSepPlOffTrack: "https://www.figma.com/api/mcp/asset/781e8568-ec34-40b3-8f2a-63227ba5958d", // Line187
+    capSepPlCompleted:"https://www.figma.com/api/mcp/asset/79e6c4c6-37e9-45e4-8bb3-2e51473a7686", // Line188
     utilBand: "https://www.figma.com/api/mcp/asset/d4428835-0188-4285-b165-b38e6f37a3f3",
     utilL1:   "https://www.figma.com/api/mcp/asset/4caa89c2-a977-473f-aeff-69d0fce6b83a",
     utilL2:   "https://www.figma.com/api/mcp/asset/597e8e6b-001b-4bbe-8a11-17a58d5bef99",
-    lgGross:    "https://www.figma.com/api/mcp/asset/54f16f42-6784-445c-a46e-c2b0bf409b32",
-    lgDelivery: "https://www.figma.com/api/mcp/asset/38d37049-a708-4ada-8c4e-aa030b55e22b",
-    lgFuture:   "https://www.figma.com/api/mcp/asset/7fa7bae2-6e5c-4e5c-9f3a-7c14da799cba",
+    lgGross:    "https://www.figma.com/api/mcp/asset/06ff2c38-545e-4268-9330-d2b547876b0b", // Vector3723
+    lgDelivery: "https://www.figma.com/api/mcp/asset/59d67c16-727c-44eb-8151-50fa0b4872f6", // Vector3724
+    lgFuture:   "https://www.figma.com/api/mcp/asset/789adbb3-c7de-48b7-aee5-26a2398b6ff5", // Vector3725
+    lgPastLog:  "https://www.figma.com/api/mcp/asset/864a0f04-5cfe-436d-8689-018b4e3a6b05", // Vector3726
     lgUtil:     "https://www.figma.com/api/mcp/asset/0edb8202-6379-4719-bdc1-b5897a43e23f",
     lgBillable: "https://www.figma.com/api/mcp/asset/6acc8a1c-94a2-4793-b7ab-2ff463a4a900",
     lgNonBill:  "https://www.figma.com/api/mcp/asset/ae3a115c-7555-4431-89c0-6c6fe4d7e514",
@@ -3527,12 +3547,17 @@ function PeopleOpsDashboard() {
       </div>
     )
   }
-  function BreakRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  function BreakRow({ label, value, sub, sepSrc }: { label: string; value: string; sub?: string; sepSrc?: string }) {
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 4, height: 24, paddingTop: 4, paddingBottom: 4 }}>
-        <span style={{ ...mutTxt, width: 58 }}>{label}</span>
-        <div style={sep}/>
-        <span style={mutTxt}>{value}</span>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, paddingTop: 4, paddingBottom: 4 }}>
+        <span style={{ ...mutTxt, flexShrink: 0 }}>{label}</span>
+        {sepSrc
+          ? <div style={{ flex: "1 0 0", minWidth: 1, height: 0, position: "relative", marginBottom: 2 }}>
+              <img alt="" src={sepSrc} style={{ position: "absolute", top: -1, left: 0, right: 0, display: "block", width: "100%", height: 2, maxWidth: "none" as const, objectFit: "fill" as const }}/>
+            </div>
+          : <div style={sep}/>
+        }
+        <span style={{ ...mutTxt, flexShrink: 0 }}>{value}</span>
         {sub && <span style={mutTxt}>{sub}</span>}
       </div>
     )
@@ -3588,7 +3613,7 @@ function PeopleOpsDashboard() {
           <div key={k.label} style={{ ...card, flex: 1, padding: 16, display: "flex", flexDirection: "column", gap: 4 }}>
             <span style={{ fontSize: 12, fontWeight: 500, color: t.secondaryFg, lineHeight: "16px" }}>{k.label}</span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 20, fontWeight: 500, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", whiteSpace: "nowrap" }}>{k.value}</span>
+              <span style={{ fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", whiteSpace: "nowrap" }}>{k.value}</span>
               {k.meta && <span style={{ fontSize: 12, fontWeight: 500, color: t.secondaryFg, lineHeight: "16px" }}>{k.meta}</span>}
               {k.pct && <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
                 {k.arr && <span style={{ fontSize: 10, color: t.secondaryFg, lineHeight: "1" }}>{k.arr}</span>}
@@ -3601,40 +3626,70 @@ function PeopleOpsDashboard() {
       </div>
 
       {/* Capacity vs. demand */}
-      <div style={{ ...card, height: 444 }}>
-        <div style={{ padding: "15px 15px 0", fontSize: 13, fontWeight: 500, color: t.fg }}>Capacity vs. demand</div>
-        <div style={{ display: "flex", padding: "12px 15px 0", height: 390 }}>
-          <div style={{ flex: "0 0 65%", display: "flex", flexDirection: "column", minWidth: 0 }}>
-            <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-              <YAxis labels={["6,000h", "4,000h", "2,000h", "1,000h", "0h"]}/>
-              <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-                <img src={I.capBand} alt="" style={{ position: "absolute", left: "4%", top: "9%", width: "96%", height: "46%", opacity: 0.5 }}/>
-                <img src={I.capLine} alt="" style={{ position: "absolute", left: "4%", top: "9%", width: "96%", height: "24%" }}/>
+      <div style={{ ...card, flexShrink: 0 }}>
+        {/* Title */}
+        <div style={{ padding: "15px 15px 12px", fontSize: 13, fontWeight: 500, color: t.fg, lineHeight: "16px" }}>Capacity vs. demand</div>
+        {/* Body: chart column + divider + legend column — all in-flow flex */}
+        <div style={{ display: "flex", paddingLeft: 15, paddingRight: 15, paddingBottom: 15 }}>
+
+          {/* Chart column */}
+          <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column" }}>
+            {/* Chart body — fixed 325px height matches Figma canvas exactly */}
+            <div style={{ display: "flex", height: 325 }}>
+              {/* Y-axis labels at Figma-exact grid percentages */}
+              <div style={{ position: "relative", width: 48, flexShrink: 0 }}>
+                {([["4.27%","6,000h"],["27.96%","4,000h"],["51.65%","2,000h"],["75.35%","1,000h"],["99.35%","0h"]] as const).map(([top,lbl]) => (
+                  <span key={lbl} style={{ position: "absolute", top, right: 6, fontSize: 12, color: t.secondaryFg, lineHeight: "16px", transform: "translateY(-50%)", whiteSpace: "nowrap" as const }}>{lbl}</span>
+                ))}
+              </div>
+              {/* Chart image canvas */}
+              <div style={{ flex: 1, position: "relative", overflow: "hidden", borderLeft: `1px solid ${t.border}` }}>
+                {/* Grid lines at Figma positions (tops: 13.88/90.88/167.88/244.88/322.88 in 325px) */}
+                {[4.27, 27.96, 51.65, 75.35, 99.35].map(pct => (
+                  <div key={pct} style={{ position: "absolute", top: `${pct}%`, left: 0, right: 0, height: 1, background: t.border, opacity: 0.45 }}/>
+                ))}
+                {/* Figma z-order: fillBand → topBand → future(underlay) → gross(on top) → deliv(orange, top) */}
+                <img src={I.capFillBand} alt="" style={{ position: "absolute", left: 0,       top: "8.92%",  width: "100%",   height: "46.15%", opacity: 0.5 }}/>
+                <img src={I.capTopBand}  alt="" style={{ position: "absolute", left: 0,       top: "8.92%",  width: "100%",   height: "23.85%" }}/>
+                <img src={I.capFuture}   alt="" style={{ position: "absolute", left: 0,       top: "34.17%", width: "47.65%", height: "5.51%" }}/>
+                <img src={I.capGross}    alt="" style={{ position: "absolute", left: 0,       top: "20%",    width: "100%",   height: "34.92%" }}/>
+                <img src={I.capDeliv}    alt="" style={{ position: "absolute", left: "47.65%",top: "36.46%", width: "52.28%", height: "29.08%" }}/>
               </div>
             </div>
-            {dateAxis}
+            {/* Date axis */}
+            <div style={{ display: "flex", justifyContent: "space-between", paddingLeft: 48, paddingTop: 8, fontSize: 12, color: t.secondaryFg }}>
+              {["1 Dec","8 Dec","15 Dec","22 Dec","29 Dec"].map(d => <span key={d}>{d}</span>)}
+            </div>
           </div>
-          <div style={{ flex: "0 0 35%", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 20, paddingTop: 4, minWidth: 0, overflow: "hidden" }}>
-            <LegRow indicator={<LineSample src={I.lgGross}/>} label="Gross capacity" value="30,346h"/>
-            <LegRow indicator={<div style={{ width: 10, height: 10, borderRadius: "50%", background: "#dce2eb", flexShrink: 0 }}/>} label="Time off" value="466h"/>
+
+          {/* Vertical divider */}
+          <div style={{ width: 1, background: t.border, opacity: 0.4, height: 325, flexShrink: 0, alignSelf: "flex-start" }}/>
+
+          {/* Legend column — Figma: gap=24 between top-level rows */}
+          <div style={{ flex: "0 0 27%", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
+            <LegRow indicator={<LineSample src={I.lgGross}/>}    label="Gross capacity"   value="30,346h"/>
+            <LegRow indicator={<div style={{ width: 10, height: 10, borderRadius: 5, background: "#dce2eb", flexShrink: 0 }}/>} label="Time off" value="466h"/>
             <LegRow indicator={<LineSample src={I.lgDelivery}/>} label="Delivery capacity" value="29,880h"/>
-            <div style={{ flexShrink: 0 }}>
+            {/* Future scheduled — header + gap-8 + breakdown gap-4 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <LegRow indicator={<LineSample src={I.lgFuture}/>} label="Future scheduled" value="18,000h"/>
-              <div style={{ paddingLeft: 18 }}>
-                <BreakRow label="On track" value="7,200h"/>
-                <BreakRow label="Off track" value="3,600h"/>
-                <BreakRow label="Completed" value="7,200h"/>
+              <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
+                <BreakRow label="On track"  value="7,200h" sepSrc={I.capSepFsOnTrack}/>
+                <BreakRow label="Off track" value="3,600h" sepSrc={I.capSepFsOffTrack}/>
+                <BreakRow label="Completed" value="7,200h" sepSrc={I.capSepFsCompleted}/>
               </div>
             </div>
-            <div style={{ flexShrink: 0 }}>
-              <LegRow indicator={<LineSample src={I.lgUtil}/>} label="Past logged" value="6,800h"/>
-              <div style={{ paddingLeft: 18 }}>
-                <BreakRow label="On track" value="2,400h"/>
-                <BreakRow label="Off track" value="1,800h"/>
-                <BreakRow label="Completed" value="1,800h"/>
+            {/* Past logged */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <LegRow indicator={<LineSample src={I.lgPastLog}/>} label="Past logged" value="6,800h"/>
+              <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
+                <BreakRow label="On track"  value="2,400h" sepSrc={I.capSepPlOnTrack}/>
+                <BreakRow label="Off track" value="1,800h" sepSrc={I.capSepPlOffTrack}/>
+                <BreakRow label="Completed" value="1,800h" sepSrc={I.capSepPlCompleted}/>
               </div>
             </div>
           </div>
+
         </div>
       </div>
 
@@ -3643,11 +3698,12 @@ function PeopleOpsDashboard() {
         <div style={{ ...card, flex: 1, height: 512 }}>
           <p style={{ position: "absolute", top: 15, left: 15, margin: 0, fontSize: 13, fontWeight: 500, color: t.fg }}>People types</p>
           <div style={{ position: "absolute", left: "50%", top: "calc(50% - 77px)", transform: "translate(-50%, -50%)", width: 238, height: 238 }}>
-            <Arc src={I.pt1} inset="-1.04% -1.04% 48.96% 48.96%"/>
-            <Arc src={I.pt2} inset="48.96% -1.04% 8.19% 72.07%"/>
-            <Arc src={I.pt3} inset="82.61% 21.63% -1.04% 44.15%"/>
-            <Arc src={I.pt4} inset="-1.01% 49.71% -0.61% -1.04%"/>
-            <p style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", margin: 0, fontSize: 20, fontWeight: 500, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, whiteSpace: "nowrap" }}>24,000h</p>
+            <PieChart width={238} height={238}>
+              <Pie data={[{v:15514},{v:6000},{v:1486},{v:1000}]} dataKey="v" cx={119} cy={119} innerRadius={93} outerRadius={110} startAngle={90} endAngle={-270} stroke={t.card} strokeWidth={2}>
+                <Cell fill="#baa7ff"/><Cell fill="#7d66d9"/><Cell fill="#8290aa"/><Cell fill="#cfd8e5"/>
+              </Pie>
+            </PieChart>
+            <p style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", margin: 0, fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, whiteSpace: "nowrap" }}>24,000h</p>
           </div>
           <div style={{ position: "absolute", left: "50%", top: "calc(50% + 115px)", transform: "translate(-50%, -50%)", width: "calc(100% - 30px)", display: "flex", flexDirection: "column", gap: 6 }}>
             {([
@@ -3662,14 +3718,13 @@ function PeopleOpsDashboard() {
         <div style={{ ...card, flex: 1, height: 512 }}>
           <p style={{ position: "absolute", top: 15, left: 15, margin: 0, fontSize: 13, fontWeight: 500, color: t.fg }}>Time offs</p>
           <div style={{ position: "absolute", left: "50%", top: "calc(50% - 77px)", transform: "translate(-50%, -50%)", width: 238, height: 238 }}>
-            <Arc src={I.to1} inset="-1.04% -1.04% 48.96% 48.96%"/>
-            <Arc src={I.to2} inset="48.96% -1.04% 7.46% 71.34%"/>
-            <Arc src={I.to3} inset="81.88% 20.9% -1.04% 43.97%"/>
-            <Arc src={I.to4} inset="80.77% 53.5% -0.82% 18.93%"/>
-            <Arc src={I.to5} inset="69.54% 72.97% 8.94% 5.99%"/>
-            <Arc src={I.to6} inset="-1.05% 49.22% 22.78% -1.04%"/>
+            <PieChart width={238} height={238}>
+              <Pie data={[{v:26},{v:12},{v:9},{v:4},{v:4},{v:3}]} dataKey="v" cx={119} cy={119} innerRadius={93} outerRadius={110} startAngle={90} endAngle={-270} stroke={t.card} strokeWidth={2}>
+                <Cell fill="#0094ff"/><Cell fill="#f93446"/><Cell fill="#ff5b00"/><Cell fill="#10e1ff"/><Cell fill="#e92ca2"/><Cell fill="#8290aa"/>
+              </Pie>
+            </PieChart>
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" as const }}>
-              <p style={{ margin: 0, fontSize: 20, fontWeight: 500, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, whiteSpace: "nowrap" }}>58 days</p>
+              <p style={{ margin: 0, fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, whiteSpace: "nowrap" }}>58 days</p>
               <p style={{ margin: 0, fontSize: 13, color: t.mutedFg, lineHeight: "20px", whiteSpace: "nowrap" }}>(466 h)</p>
             </div>
           </div>
@@ -3798,21 +3853,23 @@ function ScheduleView({ breadcrumb }: any) {
     <div style={{ display: "flex", flex: 1, flexDirection: "column", background: t.bg, overflow: "hidden" }}>
 
       {/* ── Top toolbar ─────────────────────────────────────────────── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 14px", height: 44, borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
-        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 3, height: 26, padding: "0 8px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14, fontWeight: 500 }}>
-          Schedule <ChevronDown size={13} strokeWidth={0.9}/>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 24px 12px", flexShrink: 0 }}>
+        <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Schedule</h1>
+        <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+          <Layers size={13} strokeWidth={0.9}/>
         </HoverBtn>
-        <HoverBtn style={{ ...s.iconBtn, color: t.mutedFg }}><Settings2 size={13} strokeWidth={0.9}/></HoverBtn>
-        <HoverBtn style={{ ...s.outlineBtn }}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
+        <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
         <div style={{ flex: 1 }}/>
-        <HoverBtn style={{ ...s.iconBtn }}><ChevronLeft size={13} strokeWidth={0.9}/></HoverBtn>
-        <HoverBtn style={{ ...s.iconBtn }}><ChevronRight size={13} strokeWidth={0.9}/></HoverBtn>
-        <HoverBtn style={{ ...s.outlineBtn }}>Today</HoverBtn>
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}><ChevronLeft size={14} strokeWidth={0.9}/></HoverBtn>
+          <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}><ChevronRight size={14} strokeWidth={0.9}/></HoverBtn>
+        </div>
+        <HoverBtn style={s.outlineBtn}>Today</HoverBtn>
         <HoverBtn style={{ ...s.outlineBtn, gap: 4 }}>
-          <CalendarClock size={12} strokeWidth={0.9}/>Quarters<ChevronDown size={11} strokeWidth={0.9}/>
+          <CalendarClock size={16} strokeWidth={0.9}/>Quarters<ChevronDown size={11} strokeWidth={0.9}/>
         </HoverBtn>
-        <HoverBtn style={{ ...s.iconBtn, color: t.mutedFg }}><Settings2 size={13} strokeWidth={0.9}/></HoverBtn>
-        <HoverBtn style={{ ...s.iconBtn, color: t.mutedFg }}><Share2 size={13} strokeWidth={0.9}/></HoverBtn>
+        <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}><MoreVertical size={13} strokeWidth={0.9}/></HoverBtn>
+        <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}><Share2 size={13} strokeWidth={0.9}/></HoverBtn>
         <button style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}><Plus size={15} strokeWidth={0.9}/></button>
       </div>
 
@@ -3949,28 +4006,35 @@ function FilterChip({ category, operator, value, onClear }: any) {
 
 function ReportHeader() {
   const [dateOffset, setDateOffset] = useState(0)
-  const base = new Date(2026, 3 + dateOffset, 1)
-  const monthName = base.toLocaleString("default", { month: "long" })
+  const now = new Date()
+  const base = new Date(now.getFullYear(), now.getMonth() + dateOffset, 1)
   const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate()
   const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString("default", { month: "short" })} ${d.getFullYear()}`
   const rangeStr = `${fmt(base)} – ${fmt(new Date(base.getFullYear(), base.getMonth(), lastDay))}`
   const [activeTab, setActiveTab] = useState<"people"|"projects">("people")
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <h1 style={{ fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Report</h1>
+          <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Report</h1>
+          <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+            <Layers size={13} strokeWidth={0.9}/>
+          </HoverBtn>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {([["people", "62 People"], ["projects", "129 Projects"]] as const).map(([v, l]) => (
-              <RadiusTab key={v} active={activeTab === v} onClick={() => setActiveTab(v)} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={v} active={activeTab === v} onClick={() => setActiveTab(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: activeTab === v ? t.fg : "none" }}/>{l}
               </RadiusTab>
             ))}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <HoverBtn style={{ ...s.outlineBtn, gap: 4 }}>
+          <HoverBtn style={{ ...s.outlineBtn, gap: 4, paddingRight: 8 }}>
             Past logged + Future scheduled
+            <ChevronDown size={13} strokeWidth={0.9}/>
+          </HoverBtn>
+          <HoverBtn style={{ ...s.outlineBtn, gap: 4 }}>
+            Days
             <ChevronDown size={13} strokeWidth={0.9}/>
           </HoverBtn>
           <HoverBtn style={s.outlineBtn}>
@@ -3981,7 +4045,7 @@ function ReportHeader() {
           </button>
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "18px 24px 12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 24px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
           <HoverBtn onClick={() => setDateOffset(o => o - 1)} style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
             <ChevronLeft size={14} strokeWidth={0.9}/>
@@ -3991,18 +4055,16 @@ function ReportHeader() {
           </HoverBtn>
         </div>
         <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 13 }}>
-          <span style={{ color: t.secondaryFg }}>{monthName}</span>
+          <span style={{ color: t.mutedFg }}>This month</span>
           {rangeStr}
           <ChevronDown size={12} strokeWidth={0.9}/>
         </HoverBtn>
-        <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
-          <Layers size={13} strokeWidth={0.9}/>
-        </HoverBtn>
-        <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
-          <ListFilter size={13} strokeWidth={0.9}/>
-        </HoverBtn>
+        <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
         <FilterChip category="Person type" operator="is" value="Active, Archived, Contractor +3" onClear={() => {}}/>
         <FilterChip category="Project status" operator="is" value="Draft, Tentative" onClear={() => {}}/>
+        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: `1px solid ${t.border}`, background: "transparent", color: t.secondaryFg, cursor: "pointer", fontSize: 12 }}>
+          <Plus size={11} strokeWidth={0.9}/>Filter
+        </HoverBtn>
       </div>
     </div>
   )
@@ -4185,7 +4247,7 @@ function ClientRevenueCard({ projects, clientsFull }: { projects: any[], clients
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 8px 20px 18px" }}>
           <div style={{ position: "relative", width: 200, height: 200, flexShrink: 0 }}>
             <PieChart width={200} height={200}>
-              <Pie data={data} cx={95} cy={95} innerRadius={78} outerRadius={92} dataKey="value" startAngle={90} endAngle={-270} strokeWidth={0}>
+              <Pie data={data} cx={95} cy={95} innerRadius={78} outerRadius={92} dataKey="value" startAngle={90} endAngle={-270} stroke={t.card} strokeWidth={2}>
                 {data.map((_, i) => <Cell key={i} fill={CLIENT_COLORS[i % CLIENT_COLORS.length]}/>)}
               </Pie>
             </PieChart>
@@ -4770,7 +4832,7 @@ function FloatAgentView({ projects, clientsFull, people, onSaveDashboard }: { pr
 function PlaceholderView({ title, breadcrumb }: any) {
   return (
     <div style={{ display:"flex", flex:1, flexDirection:"column" }}>
-      <div style={{ padding:"20px 24px 16px" }}>
+      <div style={{ padding:"16px 24px 12px" }}>
         <h2 style={{ fontSize:18, fontWeight:600, color:t.fg }}>{title}</h2>
         <p style={{ fontSize:13, color:t.mutedFg, marginTop:4 }}>
           {breadcrumb.length >= 2 ? `The ${breadcrumb[breadcrumb.length-1]} for ${breadcrumb[0]}` : "View details and manage settings for this section"}
@@ -6025,13 +6087,13 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
         <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
         <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
         {[["skills","Skills"],["experience","Experience"]].map(([v,l]) => (
-          <RadiusTab key={v} active={graphMode === v} onClick={() => { setGraphMode(v); setView("categories"); setSelCat(null); setSelSkill(null); setSelPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+          <RadiusTab key={v} active={graphMode === v} onClick={() => { setGraphMode(v); setView("categories"); setSelCat(null); setSelSkill(null); setSelPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
             <Circle size={10} strokeWidth={0.9} style={{ fill: graphMode === v ? t.fg : "none" }}/>{l}
           </RadiusTab>
         ))}
         <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
         {[["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
-          <RadiusTab key={v} active={peopleFilter === v} onClick={() => { setPeopleFilter(v) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+          <RadiusTab key={v} active={peopleFilter === v} onClick={() => { setPeopleFilter(v) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
             <Circle size={10} strokeWidth={0.9} style={{ fill: peopleFilter === v ? t.fg : "none" }}/>{l}
           </RadiusTab>
         ))}
@@ -6296,21 +6358,21 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
       {groupSettingsOpen && <TeamSettingsModal type="groups" mode={groupMode} onSave={(m: any) => setGroupMode(m)} onClose={() => setGroupSettingsOpen(false)}/>}
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
         <SectionHeader count={tabCount} label={tabLabel} onAdd={(tab !== "offices") ? () => setShowModal(true) : undefined} actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-        <div style={{ display: "flex", alignItems: "center", padding: "0 24px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "0 24px 4px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {[["offices","Offices"],["departments","Departments"],["tags","Tags"]].map(([v,l]) => (
-              <RadiusTab key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: tab === v ? t.fg : "none" }}/>{l}
               </RadiusTab>
             ))}
             <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 6px" }}/>
             {[["delivery-teams","Delivery teams"],["groups","Groups"]].map(([v,l]) => (
-              <RadiusTab key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: tab === v ? t.fg : "none" }}/>{l}
               </RadiusTab>
             ))}
             {customGroupTypes.map(cg => (
-              <RadiusTab key={cg.id} active={tab === cg.id} onClick={() => { setTab(cg.id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.fgAlpha10} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={cg.id} active={tab === cg.id} onClick={() => { setTab(cg.id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: tab === cg.id ? t.fg : "none" }}/>{cg.name}
               </RadiusTab>
             ))}
