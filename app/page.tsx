@@ -41,7 +41,7 @@ const getGlobalStyles = (theme: any) => `
 const blackTheme = {
   bg: "#000000", fg: "#ededed", card: "#000000", popover: "#111111",
   primary: "#ededed", primaryFg: "#000000", secondary: "#1a1a1a",
-  secondaryFg: "#a1a1a1", muted: "#1a1a1a", mutedFg: "#888888",
+  secondaryFg: "#a1a1a1", muted: "#1a1a1a", mutedFg: "#888888", captionMutedFg: "#888888",
   accent: "#1a1a1a", accentFg: "#ededed", border: "#1f1f1f",
   sidebar: "#000000", sidebarFg: "#a1a1a1", sidebarBorder: "#1f1f1f",
   fgAlpha30: "rgba(237,237,237,0.3)", fgAlpha10: "rgba(237,237,237,0.1)",
@@ -56,7 +56,7 @@ const blackTheme = {
 const lightTheme = {
   bg: "#ffffff", fg: "#0B0C10", card: "#ffffff", popover: "#f5f5f5",
   primary: "#0B0C10", primaryFg: "#ffffff", secondary: "#f0f0f0",
-  secondaryFg: "#0B0C10", muted: "#f0f0f0", mutedFg: "#333333",
+  secondaryFg: "#0B0C10", muted: "#f0f0f0", mutedFg: "#333333", captionMutedFg: "#605c5c",
   accent: "#E6E6E8", accentFg: "#0B0C10", border: "#e0e0e0",
   sidebar: "#F8F7F9", sidebarFg: "#0B0C10", sidebarBorder: "#f0f0f0",
   fgAlpha30: "rgba(11,12,16,0.3)", fgAlpha10: "rgba(11,12,16,0.1)",
@@ -71,7 +71,7 @@ const lightTheme = {
 const darkTheme = {
   bg: "#141414", fg: "#f0f0f0", card: "#1a1a1a", popover: "#202020",
   primary: "#f0f0f0", primaryFg: "#141414", secondary: "#242424",
-  secondaryFg: "#909090", muted: "#242424", mutedFg: "#686868",
+  secondaryFg: "#909090", muted: "#242424", mutedFg: "#686868", captionMutedFg: "#686868",
   accent: "#2a2a2a", accentFg: "#f0f0f0", border: "#282828",
   sidebar: "#1a1a1a", sidebarFg: "#909090", sidebarBorder: "#242424",
   fgAlpha30: "rgba(240,240,240,0.3)", fgAlpha10: "rgba(240,240,240,0.1)",
@@ -86,7 +86,7 @@ const darkTheme = {
 const floatDarkTheme = {
   bg: "#141618", fg: "#eef0f2", card: "#191b1e", popover: "#1e2022",
   primary: "#eef0f2", primaryFg: "#141618", secondary: "#1d1f22",
-  secondaryFg: "#8a9099", muted: "#1d1f22", mutedFg: "#626b74",
+  secondaryFg: "#8a9099", muted: "#1d1f22", mutedFg: "#626b74", captionMutedFg: "#626b74",
   accent: "#1e2124", accentFg: "#eef0f2", border: "#242628",
   sidebar: "#111314", sidebarFg: "#8a9099", sidebarBorder: "#1d1f22",
   fgAlpha30: "rgba(238,240,242,0.3)", fgAlpha10: "rgba(238,240,242,0.1)",
@@ -2570,7 +2570,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
           </HoverBtn>
         </div>
         <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 13 }}>
-          <span style={{ color: t.mutedFg }}>This month</span>
+          <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>This month</span>
           {monthRange.start} – {monthRange.end}
           <ChevronDown size={12} strokeWidth={0.9}/>
         </HoverBtn>
@@ -3472,7 +3472,7 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
           </HoverBtn>
         </div>
         <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 13 }}>
-          <span style={{ color: t.mutedFg }}>This month</span>
+          <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>This month</span>
           {rangeStr}
           <ChevronDown size={12} strokeWidth={0.9}/>
         </HoverBtn>
@@ -4057,7 +4057,7 @@ function ReportHeader() {
           </HoverBtn>
         </div>
         <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 13 }}>
-          <span style={{ color: t.mutedFg }}>This month</span>
+          <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>This month</span>
           {rangeStr}
           <ChevronDown size={12} strokeWidth={0.9}/>
         </HoverBtn>
