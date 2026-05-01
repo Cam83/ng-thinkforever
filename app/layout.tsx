@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, Lexend, Space_Grotesk, Plus_Jakarta_Sans } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import Script from 'next/script'
 import './globals.css'
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -39,12 +38,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <Script
-          src="https://mcp.figma.com/mcp/html-to-design/capture.js"
-          strategy="afterInteractive"
-        />
-      </head>
       <body className={`${inter.variable} ${lexend.variable} ${spaceGrotesk.variable} ${plusJakarta.variable} font-sans antialiased`}>
         {children}
         <Analytics />
