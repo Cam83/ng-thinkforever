@@ -3965,7 +3965,7 @@ function ProjectFinanceDashboard() {
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <LegRow indicator={<Dot color="#344765"/>} label="Delivery costs" value="$74,000"/>
+              <LegRow indicator={<Dot color="#344765"/>} label="Delivery costs" value="$300,000"/>
               <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
                 <BreakRow label="On track"  value="$8,000" sepSrc={I.sep4}/>
                 <BreakRow label="Off track" value="$8,000" sepSrc={I.sep2}/>
