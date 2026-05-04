@@ -1274,6 +1274,7 @@ function NotificationsPanel({ onClose, floating, navHoverOpen }: { onClose: () =
 function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChange, themeMode, onThemeChange, visibleDataHubItems, onVisibleDataHubItemsChange, collapsed, onToggleCollapsed, notificationsOpen, onNotificationsToggle, onHoverChange, onSettingsOffice, hasSavedDashboard, onSavedDashboardClick, showFloatAgent, onFloatAgentToggle }: any) {
   const [locs, setLocs] = useState(LOCATIONS_INIT)
   const [dataHubExp, setDataHubExp] = useState(true)
+  const [graphExp, setGraphExp] = useState(true)
   const [dataHubSettingsOpen, setDataHubSettingsOpen] = useState(false)
   const dataHubSettingsRef = useRef<HTMLDivElement>(null)
   const [orgOpen, setOrgOpen] = useState(false)
@@ -1520,31 +1521,39 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
           </>
         )}
 
-        {/* Skills Graph — primary nav item */}
+        {/* Graphs collapsible group */}
         <div style={{ marginTop: 24 }}>
-          <HoverBtn onClick={() => setActive("Skills graph", ["Skills graph"])}
-            style={{ ...navItemStyle(activeItem === "Skills graph"), justifyContent: showFullNav ? "flex-start" : "center" }}>
-            <Star size={16} strokeWidth={0.9}/>{showFullNav && "Skills graph"}
-          </HoverBtn>
+          {!showFullNav ? (
+            <HoverBtn style={{ ...navItemStyle(false), justifyContent: "center" }}>
+              <span style={{ color: t.secondaryFg }}><Share2 size={16} strokeWidth={0.9}/></span>
+            </HoverBtn>
+          ) : (
+            <HoverBtn onClick={() => setGraphExp(!graphExp)}
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "6px 8px", borderRadius: 6, border: "none", background: "transparent", cursor: "pointer" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ color: t.secondaryFg }}><Share2 size={16} strokeWidth={0.9}/></span>
+                <span style={{ fontSize: 13, fontWeight: 450, color: t.fg }}>Talent graph</span>
+              </div>
+              <ChevronDown size={13} strokeWidth={0.9} color={t.sidebarFg} style={{ transform: graphExp ? "none" : "rotate(-180deg)", transition: "transform 0.2s" }}/>
+            </HoverBtn>
+          )}
+          <Collapsible expanded={showFullNav && graphExp}>
+            <div style={{ marginLeft: 18, marginTop: 8, borderLeft: `1px solid rgba(168,168,168,0.25)` }}>
+              {([
+                { name: "Skills graph",  icon: <Star size={14} strokeWidth={0.9}/> },
+                { name: "People graph",  icon: <Share2 size={14} strokeWidth={0.9}/> },
+                { name: "Project graph", icon: <GitFork size={14} strokeWidth={0.9}/> },
+              ] as const).map(item => (
+                <HoverBtn key={item.name} onClick={() => setActive(item.name, ["Talent graph", item.name])}
+                  style={{ ...navItemStyle(activeItem === item.name), paddingTop: 6, paddingBottom: 6, paddingRight: 8, paddingLeft: 16 }}>
+                  <span style={{ display: "flex", width: 16, flexShrink: 0, justifyContent: "center" }}>{item.icon}</span>{item.name}
+                </HoverBtn>
+              ))}
+            </div>
+          </Collapsible>
         </div>
 
-        {/* Talent Graph — primary nav item */}
-        <div style={{ marginTop: 4 }}>
-          <HoverBtn onClick={() => setActive("Talent graph", ["Talent graph"])}
-            style={{ ...navItemStyle(activeItem === "Talent graph"), justifyContent: showFullNav ? "flex-start" : "center" }}>
-            <Share2 size={16} strokeWidth={0.9}/>{showFullNav && "Talent graph"}
-          </HoverBtn>
-        </div>
-
-        {/* Project Graph — primary nav item */}
-        <div style={{ marginTop: 4 }}>
-          <HoverBtn onClick={() => setActive("Project graph", ["Project graph"])}
-            style={{ ...navItemStyle(activeItem === "Project graph"), justifyContent: showFullNav ? "flex-start" : "center" }}>
-            <GitFork size={16} strokeWidth={0.9}/>{showFullNav && "Project graph"}
-          </HoverBtn>
-        </div>
-
-        <div style={{ marginTop: 8 }}>
+        <div style={{ marginTop: 24 }}>
           {!showFullNav ? (
             <HoverBtn style={{ ...navItemStyle(false), justifyContent: "center" }}>
               <span style={{ color: t.secondaryFg }}><Database size={16} strokeWidth={0.9}/></span>
@@ -5118,11 +5127,12 @@ type TGNode = { id: number, name: string, initials: string, role: string, dept: 
 type TGLink = { source: number | TGNode, target: number | TGNode, strength: number }
 
 function TalentGraphView({ people, roles, departments }: any) {
-  const nodeDefs = useMemo(() => people.map((p: any, i: number) => {
-    const parts = p.name.trim().split(/\s+/)
-    const initials = (parts[0][0] + (parts[parts.length - 1]?.[0] ?? "")).toUpperCase()
-    return { id: i, name: p.name, initials, role: roles[p.roleId]?.name ?? "", dept: departments[p.departmentId]?.name ?? "" }
-  }), [people, roles, departments])
+  const [view, setView] = useState<"departments" | "people" | "person">("departments")
+  const [selDeptIdx, setSelDeptIdx] = useState<number | null>(null)
+  const [detailIdx, setDetailIdx] = useState<number | null>(null)
+  const [hovered, setHovered] = useState<string | null>(null)
+  const [hoveredAt, setHoveredAt] = useState(0)
+  const [transitionStart, setTransitionStart] = useState(0)
 
   const edgeDefs = useMemo(() => {
     const result: { source: number, target: number, strength: number }[] = []
@@ -5139,367 +5149,512 @@ function TalentGraphView({ people, roles, departments }: any) {
     return result
   }, [people])
 
-  const d3NodesRef = useRef<TGNode[]>([])
-  const d3LinksRef = useRef<TGLink[]>([])
-  const simRef = useRef<any>(null)
-  const frameRef = useRef(0)
-  const [renderTick, setRenderTick] = useState(0)
-  const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [dims, setDims] = useState({ w: 680, h: 480 })
-  const dragRef = useRef<{ nodeId: number, startX: number, startY: number, moved: boolean } | null>(null)
-  const [zoom, setZoom] = useState(1)
-  const [search, setSearch] = useState("")
-  const [selected, setSelected] = useState<number | null>(null)
+  const [dims, setDims] = useState({ w: 800, h: 600 })
+  const nodesRef = useRef<SGNode[]>([])
+  const linksRef = useRef<SGLink[]>([])
+  const simRef = useRef<any>(null)
+  const rafRef = useRef<number | null>(null)
+  const [, setTick] = useState(0)
 
-  // Measure container
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect
-      setDims({ w: width, h: height })
-    })
+    const ro = new ResizeObserver(([e]) => setDims({ w: e.contentRect.width, h: e.contentRect.height }))
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
 
-  // Build + run d3-force simulation synchronously, then freeze
   useEffect(() => {
     const { w, h } = dims
-    // Seed in a circle so repulsion forces have non-zero distances to work from
-    const r0 = Math.min(w, h) * 0.32
-    const d3Nodes: TGNode[] = nodeDefs.map((n, i) => ({
-      ...n,
-      x: w / 2 + Math.cos((i / nodeDefs.length) * Math.PI * 2) * r0,
-      y: h / 2 + Math.sin((i / nodeDefs.length) * Math.PI * 2) * r0,
-    }))
-    const d3Links: TGLink[] = edgeDefs.map(e => ({ ...e }))
+    if (w < 10 || h < 10) return
+    simRef.current?.stop()
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
 
-    const sim = forceSimulation<TGNode>(d3Nodes)
-      .force("link", forceLink<TGNode, TGLink>(d3Links).id(d => d.id).distance(100).strength(d => (d as any).strength * 0.05))
-      .force("charge", forceManyBody().strength(-320))
-      .force("center", forceCenter(w / 2, h / 2).strength(0.8))
-      .force("collide", forceCollide(36))
-      .stop()
+    let nodes: SGNode[] = []
+    let links: SGLink[] = []
 
-    // Run to completion synchronously — no animation on mount
-    sim.tick(500)
+    if (view === "departments") {
+      const counts = departments.map((_: any, di: number) => people.filter((p: any) => p.departmentId === di).length)
+      const maxCount = Math.max(...counts, 1)
+      nodes = departments.map((dept: any, i: number) => {
+        const angle = (i / departments.length) * Math.PI * 2 - Math.PI / 2
+        const r0 = Math.min(w, h) * 0.06
+        const r = 28 + (counts[i] / maxCount) * 30
+        return { id: `dept-${i}`, type: "category" as const, label: dept.name, sub: `${counts[i]} people`, r, x: w / 2 + Math.cos(angle) * r0, y: h / 2 + Math.sin(angle) * r0 }
+      })
+    } else if (view === "people" && selDeptIdx !== null) {
+      const deptPeople = people.map((p: any, i: number) => ({ ...p, idx: i })).filter((p: any) => p.departmentId === selDeptIdx)
+      const dept = departments[selDeptIdx]
+      const centerNode: SGNode = { id: `dept-${selDeptIdx}`, type: "category", label: dept.name, sub: `${deptPeople.length} people`, r: 44, x: w / 2, y: h / 2 }
+      const personNodes: SGNode[] = deptPeople.map((p: any, i: number) => {
+        const initials = p.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+        const angle = (i / Math.max(deptPeople.length, 1)) * Math.PI * 2
+        const r0 = Math.min(w, h) * 0.3
+        return { id: `person-${p.idx}`, type: "person" as const, label: initials, sub: roles[p.roleId]?.name ?? "", r: 22, x: w / 2 + Math.cos(angle) * r0, y: h / 2 + Math.sin(angle) * r0 }
+      })
+      nodes = [centerNode, ...personNodes]
+      links = personNodes.map(n => ({ source: `dept-${selDeptIdx}`, target: n.id }))
+    }
 
-    d3NodesRef.current = d3Nodes
-    d3LinksRef.current = d3Links
+    nodesRef.current = nodes
+    linksRef.current = links
+    setTransitionStart(Date.now())
+
+    const isCategory = view === "departments"
+    if (!isCategory) nodes.forEach(n => { n.x = w / 2 + (Math.random() - 0.5) * 40; n.y = h / 2 + (Math.random() - 0.5) * 40 })
+
+    const sim = forceSimulation<SGNode>(nodes)
+      .force("link", forceLink<SGNode, SGLink>(links).id((d: any) => d.id)
+        .distance((d: any) => { const s = d.source as SGNode, tg = d.target as SGNode; return s.r + tg.r + (isCategory ? 4 : 28) })
+        .strength(isCategory ? 0.3 : 0.9))
+      .force("charge", forceManyBody().strength(isCategory ? -80 : -350))
+      .force("center", forceCenter(w / 2, h / 2).strength(isCategory ? 1.5 : 0.4))
+      .force("collide", forceCollide<SGNode>((d) => d.r + (isCategory ? 1 : 12)))
+
     simRef.current = sim
-    cancelAnimationFrame(frameRef.current)
-    frameRef.current = 0
-    setRenderTick(c => c + 1)
-
-    return () => { sim.stop(); cancelAnimationFrame(frameRef.current); frameRef.current = 0 }
-  }, [nodeDefs, edgeDefs, dims])
-
-  // RAF loop — only runs during drag
-  function startDragLoop() {
-    if (frameRef.current) return
-    const sim = simRef.current
-    if (!sim) return
-    function loop() {
-      setRenderTick(c => c + 1)
-      if (sim.alpha() > sim.alphaMin()) {
-        frameRef.current = requestAnimationFrame(loop)
-      } else {
-        sim.stop()
-        frameRef.current = 0
-        setRenderTick(c => c + 1)
-      }
-    }
-    frameRef.current = requestAnimationFrame(loop)
-  }
-
-  function onNodeMouseDown(e: React.MouseEvent, nodeId: number) {
-    e.stopPropagation()
-    dragRef.current = { nodeId, startX: e.clientX, startY: e.clientY, moved: false }
-  }
-  function onSvgMouseMove(e: React.MouseEvent<SVGSVGElement>) {
-    if (!dragRef.current) return
-    const { nodeId } = dragRef.current
-    const dx = e.clientX - dragRef.current.startX, dy = e.clientY - dragRef.current.startY
-    if (!dragRef.current.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
-      dragRef.current.moved = true
-      // Fix this node's position and reheat simulation
-      const n = d3NodesRef.current[nodeId]
-      if (n) { n.fx = n.x; n.fy = n.y }
-      simRef.current?.alphaTarget(0.3).restart()
-      startDragLoop()
-    }
-    if (!dragRef.current.moved) return
-    const rect = svgRef.current!.getBoundingClientRect()
-    const n = d3NodesRef.current[nodeId]
-    if (n) { n.fx = (e.clientX - rect.left) / zoom; n.fy = (e.clientY - rect.top) / zoom }
-    setRenderTick(c => c + 1)
-  }
-  function onNodeMouseUp(nodeId: number) {
-    if (!dragRef.current) return
-    if (!dragRef.current.moved) {
-      setSelected(s => s === nodeId ? null : nodeId)
+    if (isCategory) {
+      sim.stop().tick(500)
+      setTick(k => k + 1)  // force immediate render with settled positions
+      sim.alphaTarget(0.35).alphaDecay(0.0008).velocityDecay(0.3).restart()
     } else {
-      // Release fix — let node settle
-      const n = d3NodesRef.current[nodeId]
-      if (n) { n.fx = null; n.fy = null }
-      simRef.current?.alphaTarget(0)
+      sim.alpha(1).alphaTarget(0.01).alphaDecay(0.018).restart()
     }
-    dragRef.current = null
-  }
-  function onSvgMouseUp() {
-    if (!dragRef.current) return
-    const n = d3NodesRef.current[dragRef.current.nodeId]
-    if (n) { n.fx = null; n.fy = null }
-    simRef.current?.alphaTarget(0)
-    dragRef.current = null
-  }
 
-  const [agentInput, setAgentInput] = useState("")
-  const [agentFilter, setAgentFilter] = useState<{ response: string, matchIds: Set<number> } | null>(null)
-  const agentInputRef = useRef<HTMLInputElement>(null)
+    function loop() { setTick(k => k + 1); rafRef.current = requestAnimationFrame(loop) }
+    rafRef.current = requestAnimationFrame(loop)
+    return () => { sim.stop(); if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null } }
+  }, [view, selDeptIdx, dims.w, dims.h, people.length])
 
-  function runQuery(raw: string) {
-    const q = raw.toLowerCase().trim()
-    if (!q) return
+  const nodes = nodesRef.current
+  const links = linksRef.current
 
-    // Helper: build match set from predicate
-    const match = (pred: (p: any, i: number) => boolean) =>
-      new Set<number>(people.map((_: any, i: number) => i).filter((i: number) => pred(people[i], i)))
-
-    // 1. Client names
-    for (const client of TALENT_CLIENTS) {
-      if (q.includes(client.toLowerCase())) {
-        const ids = match((_: any, i: number) => [0,1,2].map(o => TALENT_CLIENTS[(i + o * 7) % 6]).includes(client))
-        setAgentFilter({ matchIds: ids, response: `${ids.size} people who have worked with ${client}` })
-        return
-      }
-    }
-    // 2. Roles
-    for (const [ri, role] of roles.entries()) {
-      if (q.includes(role.name.toLowerCase())) {
-        const ids = match((p: any) => p.roleId === ri)
-        setAgentFilter({ matchIds: ids, response: `${ids.size} ${role.name}${ids.size !== 1 ? "s" : ""}` })
-        return
-      }
-    }
-    // 3. Departments
-    for (const [di, dept] of departments.entries()) {
-      if (q.includes(dept.name.toLowerCase())) {
-        const ids = match((p: any) => p.departmentId === di)
-        setAgentFilter({ matchIds: ids, response: `${ids.size} people in ${dept.name}` })
-        return
-      }
-    }
-    // 4. Delivery teams
-    const teamNames = ["acquisition", "retention", "core", "creative studio"]
-    for (const [ti, teamName] of teamNames.entries()) {
-      if (q.includes(teamName)) {
-        const ids = match((p: any) => (p.deliveryTeamIds ?? []).includes(ti))
-        setAgentFilter({ matchIds: ids, response: `${ids.size} people on the ${teamName.charAt(0).toUpperCase() + teamName.slice(1)} team` })
-        return
-      }
-    }
-    // 5. Groups
-    const groupNames = ["leadership", "ai working group", "hiring committee"]
-    for (const [gi, groupName] of groupNames.entries()) {
-      if (q.includes(groupName)) {
-        const ids = match((p: any) => (p.groupIds ?? []).includes(gi))
-        setAgentFilter({ matchIds: ids, response: `${ids.size} people in ${groupName.charAt(0).toUpperCase() + groupName.slice(1)}` })
-        return
-      }
-    }
-    // 6. Offices
-    const officeKeywords = ["new york", "london", "sydney", "beaverton", "hilversum", "shanghai", "melbourne"]
-    for (const kw of officeKeywords) {
-      if (q.includes(kw)) {
-        const ids = match((p: any) => p.office.toLowerCase().includes(kw))
-        setAgentFilter({ matchIds: ids, response: `${ids.size} people based in ${kw.split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}` })
-        return
-      }
-    }
-    // 7. Person name — show their network
-    for (const [pi, person] of people.entries()) {
-      const first = person.name.split(" ")[0].toLowerCase()
-      if (q.includes(first) || q.includes(person.name.toLowerCase())) {
-        const nbrs = new Set(edgeDefs.filter((e: any) => e.source === pi || e.target === pi).map((e: any) => e.source === pi ? e.target : e.source))
-        const ids = new Set([pi, ...nbrs])
-        setAgentFilter({ matchIds: ids, response: `${person.name.split(" ")[0]} and ${nbrs.size} connections` })
-        return
-      }
-    }
-    // No match
-    setAgentFilter({ matchIds: new Set(people.map((_: any, i: number) => i)), response: `Showing all ${people.length} people` })
-  }
-
-  const searchLower = search.toLowerCase()
-  const strongBonds = edgeDefs.filter(e => e.strength >= 6).length
-  const avgStr = edgeDefs.length > 0 ? (edgeDefs.reduce((s, e) => s + e.strength, 0) / edgeDefs.length).toFixed(1) : "0"
-
-  // Neighbour set for selection highlighting
-  const neighbourIds = useMemo(() => {
-    if (selected === null) return new Set<number>()
-    return new Set(edgeDefs.filter(e => e.source === selected || e.target === selected).map(e => e.source === selected ? e.target : e.source))
-  }, [selected, edgeDefs])
-
-  const selPerson = selected !== null ? (() => {
-    const n = d3NodesRef.current[selected] ?? nodeDefs[selected]
-    const skills = TALENT_SKILLS_MAP[n?.role ?? ""] ?? ["Creative", "Strategy"]
-    const cl = [0, 1, 2].map(o => TALENT_CLIENTS[(selected + o * 7) % 6])
-    const cats = [0, 1].map(o => TALENT_CATS[(selected + o * 5) % 6])
-    const workedWith = [...neighbourIds].slice(0, 5).map(id => people[id]?.name.split(" ")[0]).filter(Boolean)
-    return { name: n?.name, role: n?.role, dept: n?.dept, skills, clients: cl, categories: cats, workedWith }
-  })() : null
-
-  const GTag = ({ label }: { label: string }) => (
-    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: t.fgAlpha10, color: t.fg, fontFamily: "var(--font-sans), sans-serif", whiteSpace: "nowrap" as const }}>{label}</span>
-  )
-
-  const hasSelection = selected !== null
-  const agentActive = agentFilter !== null
-
-  return (
-    <div style={{ flex: 1, display: "flex", overflow: "hidden", background: t.bg }}>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, overflow: "hidden", padding: "24px 0 24px 28px" }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: t.fg, margin: "0 0 4px", fontFamily: "var(--font-sans), sans-serif" }}>Talent Visualization</h2>
-        <p style={{ fontSize: 13, color: t.mutedFg, margin: "0 0 16px", fontFamily: "var(--font-sans), sans-serif" }}>Click nodes for details, drag to rearrange.</p>
-        <div ref={containerRef} style={{ flex: 1, position: "relative" as const, overflow: "hidden", minHeight: 0 }}>
-          {/* Toolbar */}
-          <div style={{ position: "absolute" as const, top: 12, left: 12, right: 12, display: "flex", alignItems: "center", gap: 8, zIndex: 10 }}>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search: 'fashion, ux' or 'nike'"
-              style={{ flex: "0 0 230px", height: 24, borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.fg, fontSize: 13, padding: "0 10px", fontFamily: "var(--font-sans), sans-serif", outline: "none" }} />
-            <button style={{ height: 24, padding: "0 10px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.mutedFg, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-sans), sans-serif" }}>
-              <Settings2 size={13} strokeWidth={0.9} /> Weights <ChevronDown size={12} strokeWidth={0.9} />
-            </button>
-            <div style={{ flex: 1 }} />
-            {[{ label: "+", action: () => setZoom(z => Math.min(2, +(z + 0.15).toFixed(2))) },
-              { label: "−", action: () => setZoom(z => Math.max(0.4, +(z - 0.15).toFixed(2))) },
-              { label: <RefreshCw size={13} strokeWidth={0.9} />, action: () => setZoom(1) }].map(({ label, action }, i) => (
-              <button key={i} onClick={action}
-                style={{ width: 24, height: 24, borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.mutedFg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontFamily: "var(--font-sans), sans-serif" }}>
-                {label}
-              </button>
-            ))}
-          </div>
-          {/* SVG fills container via absolute positioning */}
-          <svg ref={svgRef} style={{ position: "absolute" as const, inset: 0, width: "100%", height: "100%", display: "block" }}
-            onMouseMove={onSvgMouseMove} onMouseUp={onSvgMouseUp} onMouseLeave={onSvgMouseUp}>
-            <g transform={`translate(${dims.w / 2 * (1 - zoom)},${dims.h / 2 * (1 - zoom)}) scale(${zoom})`}>
-              {/* Deselect background */}
-              <rect x={-9999} y={-9999} width={99999} height={99999} fill="transparent" onClick={() => setSelected(null)} />
-              {/* Edges — d3-force mutates source/target to node objects, read positions directly */}
-              {d3LinksRef.current.map((e, i) => {
-                const a = e.source as TGNode
-                const b = e.target as TGNode
-                if (a.x == null || b.x == null) return null
-                const srcId = a.id, tgtId = b.id
-                const agentVisible = !agentActive || (agentFilter!.matchIds.has(srcId) && agentFilter!.matchIds.has(tgtId))
-                const isConnected = hasSelection && (srcId === selected || tgtId === selected)
-                const edgeOpacity = !agentVisible ? 0.03 : hasSelection ? (isConnected ? 0.85 : 0.06) : (edgeDefs[i]?.strength >= 6 ? 0.55 : 0.25)
-                return <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-                  stroke={isConnected ? t.fg : t.border}
-                  strokeDasharray={isConnected ? undefined : "4 3"}
-                  strokeWidth={isConnected ? 2 : edgeDefs[i]?.strength >= 6 ? 1.5 : 1}
-                  opacity={edgeOpacity}
-                  style={{ pointerEvents: "none" as const }} />
-              })}
-              {/* Nodes */}
-              {d3NodesRef.current.map((n) => {
-                if (n.x == null) return null
-                const searchMatch = !searchLower || n.name.toLowerCase().includes(searchLower) || n.role.toLowerCase().includes(searchLower)
-                const isSel = selected === n.id
-                const isNeighbour = neighbourIds.has(n.id)
-                const agentMatch = !agentActive || agentFilter!.matchIds.has(n.id)
-                const dimmed = !agentMatch || (agentMatch && hasSelection && !isSel && !isNeighbour) || (!agentActive && !!searchLower && !searchMatch)
-                return (
-                  <g key={n.id} style={{ cursor: "pointer" }} opacity={dimmed ? 0.15 : 1}
-                    onMouseDown={ev => { ev.stopPropagation(); onNodeMouseDown(ev, n.id) }}
-                    onMouseUp={ev => { ev.stopPropagation(); onNodeMouseUp(n.id) }}
-                    onClick={ev => ev.stopPropagation()}>
-                    {isSel && <circle cx={n.x} cy={n.y} r={27} fill="none" stroke={t.fg} strokeWidth={2} opacity={0.3} />}
-                    <circle cx={n.x} cy={n.y} r={22} fill={t.fg} />
-                    <text x={n.x} y={n.y} textAnchor="middle" dominantBaseline="central"
-                      fill={t.bg} fontSize={11} fontWeight={600}
-                      style={{ userSelect: "none" as const, pointerEvents: "none" as const, fontFamily: "var(--font-sans), sans-serif" }}>
-                      {n.initials}
-                    </text>
-                    <text x={n.x} y={n.y + 32} textAnchor="middle" fill={t.fg} fontSize={11}
-                      style={{ userSelect: "none" as const, pointerEvents: "none" as const, fontFamily: "var(--font-sans), sans-serif" }}>
-                      {n.name.split(" ")[0]}
-                    </text>
-                  </g>
-                )
-              })}
-            </g>
-          </svg>
-          {/* Agent input */}
-          <div style={{ position: "absolute" as const, bottom: 16, left: 16, right: 16, zIndex: 10 }}>
-            {agentFilter && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 100, background: t.fg, color: t.bg, fontSize: 12, fontFamily: "var(--font-sans), sans-serif", fontWeight: 450 }}>
-                  <Share2 size={11} strokeWidth={2} />
-                  {agentFilter.response}
-                  <button onClick={() => { setAgentFilter(null); setAgentInput("") }}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: t.bg, opacity: 0.6, padding: 0, display: "flex", alignItems: "center", marginLeft: 2 }}>
-                    <X size={12} strokeWidth={2} />
-                  </button>
-                </div>
-              </div>
-            )}
-            <form onSubmit={ev => { ev.preventDefault(); runQuery(agentInput); setAgentInput("") }}
-              style={{ display: "flex", alignItems: "center", gap: 8, background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: "8px 12px", boxShadow: `0 2px 12px rgba(0,0,0,0.12)` }}>
-              <input ref={agentInputRef} value={agentInput} onChange={e => setAgentInput(e.target.value)}
-                placeholder="Ask about connections… e.g. 'who worked on Nike' or 'show leadership'"
-                style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 13, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }} />
-              <button type="submit" disabled={!agentInput.trim()}
-                style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: agentInput.trim() ? t.fg : t.fgAlpha10, color: agentInput.trim() ? t.bg : t.mutedFg, cursor: agentInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>
-                <ArrowUp size={13} strokeWidth={2} />
-              </button>
-            </form>
-          </div>
-          {/* Footer stats */}
-          <div style={{ position: "absolute" as const, bottom: 88, right: 16, display: "flex", gap: 12 }}>
-            <span style={{ fontSize: 12, color: t.mutedFg, display: "flex", alignItems: "center", gap: 4, fontFamily: "var(--font-sans), sans-serif" }}>
-              <Users size={12} strokeWidth={0.9} /> {agentActive ? `${agentFilter!.matchIds.size}/` : ""}{people.length} People
-            </span>
-            <span style={{ fontSize: 12, color: t.mutedFg, display: "flex", alignItems: "center", gap: 4, fontFamily: "var(--font-sans), sans-serif" }}>
-              <Share2 size={12} strokeWidth={0.9} /> {edgeDefs.length} Connections
-            </span>
-          </div>
-        </div>
-      </div>
-      {/* Right sidebar */}
-      <div style={{ width: 288, flexShrink: 0, overflowY: "auto" as const, padding: "24px 24px 24px 16px", display: "flex", flexDirection: "column" as const, gap: 12 }}>
-        <div style={{ border: `1px solid ${t.border}`, borderRadius: 10, padding: "16px 18px", background: t.card }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: t.fg, margin: "0 0 14px", fontFamily: "var(--font-sans), sans-serif" }}>Network Stats</h3>
-          {([["Total People", people.length], ["Connections", edgeDefs.length], ["Avg Strength", `${avgStr}/10`], ["Strong Bonds", strongBonds]] as [string, any][]).map(([label, val]) => (
-            <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${t.fgAlpha06}` }}>
+  // Sidebar content
+  function renderSidebar() {
+    if (view === "departments") {
+      const totalPeople = people.length
+      return (
+        <>
+          <div style={{ ...s.caseTitle, marginBottom: 12 }}>Overview</div>
+          {[["Departments", departments.length], ["Total People", totalPeople]].map(([label, val]) => (
+            <div key={label as string} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{label}</span>
               <span style={{ fontSize: 13, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{val}</span>
             </div>
           ))}
-        </div>
-        <div style={{ border: `1px solid ${t.border}`, borderRadius: 10, padding: "16px 18px", background: t.card }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: t.fg, margin: "0 0 12px", fontFamily: "var(--font-sans), sans-serif" }}>Selected Person</h3>
-          {selPerson ? (
-            <>
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{selPerson.name}</div>
-                <div style={{ fontSize: 12, color: t.mutedFg, marginTop: 2, fontFamily: "var(--font-sans), sans-serif" }}>{selPerson.role}</div>
-                <div style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{selPerson.dept}</div>
-              </div>
-              {([["Skills", selPerson.skills], ["Clients", selPerson.clients], ["Categories", selPerson.categories], ["Worked With", selPerson.workedWith]] as [string, string[]][]).map(([label, items]) => (
-                <div key={label} style={{ marginBottom: 10 }}>
-                  <div style={{ ...s.caseTitleCompact, marginBottom: 5 }}>{label}</div>
-                  <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4 }}>{items.map((item: string) => <GTag key={item} label={item} />)}</div>
+          <div style={{ borderTop: `1px solid ${t.border}`, margin: "16px 0" }}/>
+          <div style={{ ...s.caseTitle, marginBottom: 12 }}>Headcount</div>
+          {departments.map((dept: any, di: number) => {
+            const count = people.filter((p: any) => p.departmentId === di).length
+            return (
+              <div key={dept.name} style={{ marginBottom: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                  <span style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{dept.name}</span>
+                  <span style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{count}</span>
                 </div>
-              ))}
-            </>
-          ) : (
-            <p style={{ fontSize: 12, color: t.mutedFg, margin: 0, fontFamily: "var(--font-sans), sans-serif" }}>Click a node to view details</p>
-          )}
+                <div style={{ height: 3, borderRadius: 2, background: t.border }}>
+                  <div style={{ height: 3, borderRadius: 2, background: t.fg, opacity: 0.5, width: totalPeople > 0 ? `${Math.round((count / totalPeople) * 100)}%` : "0%" }}/>
+                </div>
+              </div>
+            )
+          })}
+        </>
+      )
+    }
+    if (view === "people" && selDeptIdx !== null) {
+      const deptPeople = people.map((p: any, i: number) => ({ ...p, idx: i })).filter((p: any) => p.departmentId === selDeptIdx)
+      return (
+        <>
+          <div style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 4, fontFamily: "var(--font-sans), sans-serif" }}>{departments[selDeptIdx]?.name}</div>
+          <div style={{ ...s.caseTitle, marginBottom: 12 }}>{deptPeople.length} People — click to explore</div>
+          {deptPeople.map((p: any) => {
+            const initials = p.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+            return (
+              <div key={p.idx} onClick={() => { setDetailIdx(p.idx); setView("person") }}
+                style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: "5px 8px", borderRadius: 6, cursor: "pointer", background: "transparent", transition: "background 0.15s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = t.fgAlpha10)}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                <div style={{ width: 26, height: 26, borderRadius: "50%", background: t.fgAlpha10, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{initials}</div>
+                <div>
+                  <div style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{p.name}</div>
+                  <div style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{roles[p.roleId]?.name ?? ""}</div>
+                </div>
+              </div>
+            )
+          })}
+        </>
+      )
+    }
+    return null
+  }
+
+  return (
+    <div style={{ display: "flex", flex: 1, flexDirection: "column", height: "100%", overflow: "hidden", background: t.bg }}>
+      <SectionHeader label="People graph"/>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
+        <div ref={containerRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+          {/* Back button + hint */}
+          <div style={{ position: "absolute", top: 16, left: 16, zIndex: 10, display: "flex", alignItems: "center", gap: 8 }}>
+            {view === "people" && (
+              <button onClick={() => { setView("departments"); setSelDeptIdx(null) }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.card, color: t.fg, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-sans), sans-serif" }}>
+                <ChevronLeft size={14} strokeWidth={0.9}/> All departments
+              </button>
+            )}
+            <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>
+              {view === "departments" && "Click a department to explore its people"}
+              {view === "people" && `${people.filter((p: any) => p.departmentId === selDeptIdx).length} people — click to explore`}
+            </span>
+          </div>
+
+          <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+            <defs>
+              <style>{`
+                @keyframes tg-float-0 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(6px,-9px)} 66%{transform:translate(-5px,7px)} }
+                @keyframes tg-float-1 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(-8px,6px)} 66%{transform:translate(7px,-5px)} }
+                @keyframes tg-float-2 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(5px,8px)} 66%{transform:translate(-6px,-6px)} }
+                @keyframes tg-float-3 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(-7px,-5px)} 66%{transform:translate(8px,4px)} }
+                @keyframes tg-float-4 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(9px,4px)} 66%{transform:translate(-4px,-8px)} }
+                @keyframes tg-float-5 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(-6px,9px)} 66%{transform:translate(5px,-4px)} }
+              `}</style>
+              <filter id="tgv-glow">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <rect x={-9999} y={-9999} width={99999} height={99999} fill="transparent"/>
+
+            {links.map((lk, i) => {
+              const src = lk.source as SGNode, tg = lk.target as SGNode
+              if (!src.x || !tg.x) return null
+              const isHov = hovered === tg.id || hovered === src.id
+              return <line key={i} x1={src.x} y1={src.y} x2={tg.x} y2={tg.y}
+                stroke={t.fg} strokeWidth={isHov ? 2 : 1} opacity={isHov ? 0.5 : 0.2}
+                style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}/>
+            })}
+
+            {nodes.map((n, ni) => {
+              const isHov = hovered === n.id
+              const isCenterNode = view === "people" && n.id === `dept-${selDeptIdx}`
+              const fillOpacity = isCenterNode ? 0.18 : isHov ? 0.14 : 0.06
+              const strokeOpacity = isCenterNode ? 1 : isHov ? 0.9 : 0.5
+              const cursor = n.type === "category" ? "pointer" : n.type === "person" ? "pointer" : "default"
+              const elapsed = (Date.now() - transitionStart) / 1000
+              const delay = isCenterNode ? 0 : ni * 0.04
+              const fadeIn = view === "departments" ? 1 : Math.min(1, Math.max(0, (elapsed - delay) / 0.3))
+
+              return (
+                <g key={n.id} transform={`translate(${n.x ?? 0},${n.y ?? 0})`}
+                  style={{ cursor, opacity: fadeIn }}
+                  onMouseEnter={() => { setHovered(n.id); setHoveredAt(Date.now()) }}
+                  onMouseLeave={() => setHovered(null)}
+                  onClick={() => {
+                    if (n.type === "category") {
+                      const deptIdx = parseInt(n.id.replace("dept-", ""))
+                      setSelDeptIdx(deptIdx); setView("people")
+                    } else if (n.type === "person") {
+                      const personIdx = parseInt(n.id.replace("person-", ""))
+                      setDetailIdx(personIdx); setView("person")
+                    }
+                  }}>
+                  <g style={view === "departments" ? {
+                    animation: `tg-float-${ni % 6} ${4.5 + ni * 0.7}s ease-in-out infinite`,
+                    animationDelay: `${-ni * 0.9}s`,
+                  } : {}}>
+                    {isCenterNode && <circle cx={0} cy={0} r={n.r + 8} fill="none" stroke={t.fg} strokeWidth={0.5} opacity={0.2}/>}
+                    <circle cx={0} cy={0} r={n.r}
+                      fill={t.fg} fillOpacity={fillOpacity}
+                      stroke={t.fg} strokeOpacity={strokeOpacity} strokeWidth={0.9}
+                      filter={isCenterNode || isHov ? "url(#tgv-glow)" : undefined}
+                      style={{ transition: "fill-opacity 0.2s, stroke-opacity 0.2s" }}/>
+                    {n.type === "person" ? (
+                      <text x={0} y={5} textAnchor="middle" fill={t.fg} fillOpacity={0.9} fontSize={11} fontWeight={600} fontFamily="var(--font-sans), sans-serif">{n.label}</text>
+                    ) : (
+                      <>
+                        <text x={0} y={n.sub ? -4 : 5} textAnchor="middle" fill={t.fg} fillOpacity={isHov || isCenterNode ? 1 : 0.75} fontSize={n.r > 32 ? 13 : 11} fontWeight={600} fontFamily="var(--font-sans), sans-serif">{n.label}</text>
+                        {n.sub && <text x={0} y={12} textAnchor="middle" fill={t.fg} fillOpacity={0.4} fontSize={10} fontFamily="var(--font-sans), sans-serif">{n.sub}</text>}
+                      </>
+                    )}
+                  </g>
+                </g>
+              )
+            })}
+
+            {/* Department hover: show first names of people */}
+            {view === "departments" && hovered && (() => {
+              const hovNode = nodes.find(n => n.id === hovered)
+              if (!hovNode || !hovNode.id.startsWith("dept-")) return null
+              const deptIdx = parseInt(hovNode.id.replace("dept-", ""))
+              const deptPeople = people.filter((p: any) => p.departmentId === deptIdx).slice(0, 5)
+              const elapsed = (Date.now() - hoveredAt) / 1000
+              return deptPeople.map((p: any, i: number) => {
+                const angle = (i / deptPeople.length) * Math.PI * 2 - Math.PI / 2
+                const dist = hovNode.r + 52 + i * 4
+                const delay = i * 0.06
+                const progress = Math.min(1, Math.max(0, (elapsed - delay) / 0.25))
+                const eased = 1 - Math.pow(1 - progress, 3)
+                const cx2 = hovNode.x + Math.cos(angle) * dist * eased
+                const cy2 = hovNode.y + Math.sin(angle) * dist * eased
+                const firstName = p.name.split(" ")[0]
+                return (
+                  <g key={p.name} opacity={eased} style={{ pointerEvents: "none" }}>
+                    <line x1={hovNode.x} y1={hovNode.y} x2={cx2} y2={cy2} stroke={t.fg} strokeWidth={0.5} opacity={0.2 * eased}/>
+                    <rect x={cx2 - 28} y={cy2 - 10} width={56} height={20} rx={10} fill={t.fg} fillOpacity={0.07} stroke={t.fg} strokeOpacity={0.25} strokeWidth={0.9}/>
+                    <text x={cx2} y={cy2 + 5} textAnchor="middle" fill={t.fg} fillOpacity={0.7 * eased} fontSize={10} fontFamily="var(--font-sans), sans-serif">{firstName}</text>
+                  </g>
+                )
+              })
+            })()}
+          </svg>
         </div>
+
+        <div style={{ width: 260, borderLeft: `1px solid ${t.border}`, padding: 16, overflowY: "auto", flexShrink: 0 }}>
+          {renderSidebar()}
+        </div>
+
+        {view === "person" && detailIdx !== null && (
+          <div style={{ position: "absolute", inset: 0, background: t.bg, zIndex: 10, display: "flex" }}>
+            <TalentPersonDetail
+              personIdx={detailIdx}
+              people={people}
+              roles={roles}
+              departments={departments}
+              edgeDefs={edgeDefs}
+              onBack={() => { setView("people"); setDetailIdx(null) }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, onBack }: any) {
+  const person = people[personIdx]
+  const roleName = roles[person.roleId]?.name ?? ""
+  const roleData = ROLE_SKILLS_EXTENDED[roleName] ?? { category: "", skills: [] }
+  const deptName = departments[person.departmentId]?.name ?? ""
+  const initials = person.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+
+  const connectionIds: number[] = edgeDefs
+    .filter((e: any) => e.source === personIdx || e.target === personIdx)
+    .map((e: any) => e.source === personIdx ? e.target : e.source)
+  const connections = connectionIds.slice(0, 8).map((id: number) => ({
+    id,
+    name: people[id]?.name ?? "",
+    initials: (people[id]?.name ?? "").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
+    role: roles[people[id]?.roleId]?.name ?? "",
+  }))
+
+  // Deterministic client assignment (same algorithm as SkillsGraphView)
+  const allClients = EXPERIENCE_INDUSTRIES.flatMap(ind => ind.clients)
+  let seed = person.name.split("").reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0)
+  const clientCount = 2 + (seed % 3)
+  const clientIndices = new Set<number>()
+  let s2 = seed
+  while (clientIndices.size < clientCount) {
+    s2 = (s2 * 1103515245 + 12345) & 0x7fffffff
+    clientIndices.add(s2 % allClients.length)
+  }
+  const personClients = Array.from(clientIndices).map(i => allClients[i])
+  const clientsByIndustry = EXPERIENCE_INDUSTRIES
+    .map(ind => ({ industry: ind.name, clients: ind.clients.filter((c: string) => personClients.includes(c)) }))
+    .filter(g => g.clients.length > 0)
+
+  // Force graph
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dims, setDims] = useState({ w: 600, h: 500 })
+  const nodesRef = useRef<SGNode[]>([])
+  const linksRef = useRef<SGLink[]>([])
+  const simRef = useRef<any>(null)
+  const rafRef = useRef<number | null>(null)
+  const [, setTick] = useState(0)
+  const [hovered, setHovered] = useState<string | null>(null)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([e]) => setDims({ w: e.contentRect.width, h: e.contentRect.height }))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const { w, h } = dims
+    if (w < 10 || h < 10) return
+    simRef.current?.stop()
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+
+    const centerNode: SGNode = { id: person.name, type: "person", label: initials, sub: roleName, r: 38, x: w / 2, y: h / 2 }
+
+    const skillNodes: SGNode[] = roleData.skills.map((skill: string, i: number) => {
+      const angle = (i / roleData.skills.length) * Math.PI * 2 - Math.PI / 2
+      const r0 = Math.min(w, h) * 0.24
+      return { id: `skill-${skill}`, type: "skill" as const, label: skill, sub: "", r: 20, x: w / 2 + Math.cos(angle) * r0, y: h / 2 + Math.sin(angle) * r0 }
+    })
+
+    const connectionNodes: SGNode[] = connections.map((c: any, i: number) => {
+      const angle = (i / Math.max(connections.length, 1)) * Math.PI * 2 + Math.PI / 5
+      const r0 = Math.min(w, h) * 0.34
+      return { id: `conn-${c.id}`, type: "person" as const, label: c.initials, sub: c.role, r: 22, x: w / 2 + Math.cos(angle) * r0, y: h / 2 + Math.sin(angle) * r0 }
+    })
+
+    const nodes = [centerNode, ...skillNodes, ...connectionNodes]
+    const links: SGLink[] = [
+      ...skillNodes.map(n => ({ source: person.name, target: n.id })),
+      ...connectionNodes.map(n => ({ source: person.name, target: n.id })),
+    ]
+
+    nodesRef.current = nodes
+    linksRef.current = links
+
+    nodes.forEach(n => {
+      if (n.id !== person.name) { n.x = w / 2 + (Math.random() - 0.5) * 40; n.y = h / 2 + (Math.random() - 0.5) * 40 }
+    })
+
+    const sim = forceSimulation<SGNode>(nodes)
+      .force("link", forceLink<SGNode, SGLink>(links).id((d: any) => d.id)
+        .distance((d: any) => (d.target as SGNode).id?.startsWith("skill-") ? 120 : 170)
+        .strength(0.85))
+      .force("charge", forceManyBody().strength(-300))
+      .force("center", forceCenter(w / 2, h / 2).strength(0.3))
+      .force("collide", forceCollide<SGNode>((d) => d.r + 16))
+
+    simRef.current = sim
+    sim.alpha(1).alphaTarget(0.01).alphaDecay(0.018).restart()
+
+    function loop() { setTick(k => k + 1); rafRef.current = requestAnimationFrame(loop) }
+    rafRef.current = requestAnimationFrame(loop)
+
+    return () => { sim.stop(); if (rafRef.current) cancelAnimationFrame(rafRef.current) }
+  }, [person.name, dims.w, dims.h])
+
+  const nodes = nodesRef.current
+  const links = linksRef.current
+
+  return (
+    <div style={{ display: "flex", flex: 1, height: "100%", overflow: "hidden", background: t.bg }}>
+      {/* Graph */}
+      <div ref={containerRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: 16, left: 16, zIndex: 10, display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={onBack}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.card, color: t.fg, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-sans), sans-serif" }}>
+            <ChevronLeft size={14} strokeWidth={0.9}/> All people
+          </button>
+          <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>
+            {roleData.skills.length} skills · {connections.length} worked with
+          </span>
+        </div>
+
+        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <defs>
+            <filter id="tg-glow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          {links.map((lk, i) => {
+            const src = lk.source as SGNode, tgt = lk.target as SGNode
+            if (!src.x || !tgt.x) return null
+            const isSkillLink = (tgt.id as string)?.startsWith("skill-")
+            return <line key={i} x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
+              stroke={t.fg} strokeWidth={isSkillLink ? 1 : 1.5}
+              strokeDasharray={isSkillLink ? undefined : "4 3"}
+              opacity={isSkillLink ? 0.2 : 0.14}/>
+          })}
+
+          {nodes.map((n) => {
+            const isCenter = n.id === person.name
+            const isSkill = (n.id as string).startsWith("skill-")
+            const isHov = hovered === n.id
+            return (
+              <g key={n.id} transform={`translate(${n.x ?? 0},${n.y ?? 0})`}
+                onMouseEnter={() => setHovered(n.id)} onMouseLeave={() => setHovered(null)}>
+                {isCenter && <circle cx={0} cy={0} r={n.r + 10} fill="none" stroke={t.fg} strokeWidth={0.5} opacity={0.15}/>}
+                <circle cx={0} cy={0} r={n.r}
+                  fill={t.fg} fillOpacity={isCenter ? 0.14 : isHov ? 0.12 : 0.06}
+                  stroke={t.fg} strokeOpacity={isCenter ? 1 : isHov ? 0.85 : 0.4} strokeWidth={0.9}
+                  filter={isCenter || isHov ? "url(#tg-glow)" : undefined}
+                  style={{ transition: "fill-opacity 0.2s, stroke-opacity 0.2s" }}/>
+                {isSkill ? (
+                  <text x={0} y={5} textAnchor="middle" fill={t.fg} fillOpacity={isHov ? 1 : 0.7} fontSize={10} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.label}</text>
+                ) : isCenter ? (
+                  <>
+                    <text x={0} y={-5} textAnchor="middle" fill={t.fg} fillOpacity={0.9} fontSize={14} fontWeight={600} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.label}</text>
+                    <text x={0} y={13} textAnchor="middle" fill={t.fg} fillOpacity={0.45} fontSize={10} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{roleName.split(" ")[0]}</text>
+                  </>
+                ) : (
+                  <>
+                    <text x={0} y={-3} textAnchor="middle" fill={t.fg} fillOpacity={0.85} fontSize={11} fontWeight={600} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.label}</text>
+                    <text x={0} y={11} textAnchor="middle" fill={t.fg} fillOpacity={0.38} fontSize={9} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.sub.split(" ")[0]}</text>
+                  </>
+                )}
+              </g>
+            )
+          })}
+        </svg>
+
+        <div style={{ position: "absolute", bottom: 20, left: 20, display: "flex", gap: 16 }}>
+          {([["Skills", false], ["Worked with", true]] as [string, boolean][]).map(([label, dashed]) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <svg width={20} height={10}><line x1={0} y1={5} x2={20} y2={5} stroke={t.fg} strokeWidth={1} strokeDasharray={dashed ? "4 3" : undefined} opacity={0.4}/></svg>
+              <span style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Sidebar */}
+      <div style={{ width: 280, borderLeft: `1px solid ${t.border}`, padding: 20, overflowY: "auto" as const, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, paddingBottom: 20, borderBottom: `1px solid ${t.border}` }}>
+          <div style={{ width: 44, height: 44, borderRadius: "50%", background: t.fgAlpha10, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{initials}</div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{person.name}</div>
+            <div style={{ fontSize: 12, color: t.mutedFg, marginTop: 2, fontFamily: "var(--font-sans), sans-serif" }}>{roleName}</div>
+            <div style={{ fontSize: 11, color: t.mutedFg, marginTop: 2, fontFamily: "var(--font-sans), sans-serif" }}>{deptName}{person.office ? ` · ${person.office}` : ""}</div>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ ...s.caseTitle, marginBottom: 8 }}>Skills</div>
+          <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4 }}>
+            {roleData.skills.map((skill: string) => (
+              <span key={skill} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 99, border: `1px solid ${t.border}`, color: t.fg, background: t.fgAlpha10, fontFamily: "var(--font-sans), sans-serif" }}>{skill}</span>
+            ))}
+          </div>
+        </div>
+
+        {clientsByIndustry.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ ...s.caseTitle, marginBottom: 8 }}>Experience</div>
+            {clientsByIndustry.map(g => (
+              <div key={g.industry} style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 11, color: t.mutedFg, marginBottom: 5, fontFamily: "var(--font-sans), sans-serif" }}>{g.industry}</div>
+                <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4 }}>
+                  {g.clients.map((c: string) => (
+                    <span key={c} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 99, border: `1px solid ${t.border}`, color: t.fg, background: t.fgAlpha10, fontFamily: "var(--font-sans), sans-serif" }}>{c}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {connections.length > 0 && (
+          <div>
+            <div style={{ ...s.caseTitle, marginBottom: 8 }}>Worked with ({connections.length})</div>
+            {connections.map((c: any) => (
+              <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: "5px 0" }}>
+                <div style={{ width: 26, height: 26, borderRadius: "50%", background: t.fgAlpha10, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{c.initials}</div>
+                <div>
+                  <div style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{c.name}</div>
+                  <div style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{c.role}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -6914,7 +7069,7 @@ export default function App() {
     if (activeItem === "Rate cards") return <RateCards roles={roles} clients={clientsFull} onClientsChange={setClientsFull} filterClient={rateCardFilter} onClearFilter={() => setRateCardFilter(null)} onNavigateToClients={(names: string[]) => { setClientsFilter(names); setActiveItem("Clients") }} projects={projects} onNavigateToProjects={(clientName: string, rateCardName: string) => { setProjectsClientFilter(null); setProjectsRateCardFilter({ clientName, rateCardName }); setActiveItem("Projects"); setBreadcrumb(["Data studio", "Projects"]) }} version={version}/>
     if (activeItem === "Brands") return <BusinessUnits roles={roles} onProjectsClick={(unitName: any) => { setFilteredBusinessUnit(unitName); setActiveItem("Projects"); }} onEmployeesClick={(unitName: any) => { setFilteredBusinessUnitForPeople(unitName); setActiveItem("People"); }}/>
     if (activeItem === "Activity log") return <ActivityLog/>
-    if (activeItem === "Talent graph") return <TalentGraphView people={people} roles={roles} departments={departments}/>
+    if (activeItem === "People graph") return <TalentGraphView people={people} roles={roles} departments={departments}/>
     if (activeItem === "Project graph") return <ProjectGraphView projects={projects} roles={roles} people={people} clientsFull={clientsFull}/>
     if (activeItem === "Skills graph") return <SkillsGraphView people={people} roles={roles}/>
     if (activeItem === "Float Agent") return <FloatAgentView projects={projects} clientsFull={clientsFull} people={people} onSaveDashboard={cards => { setSavedDashboardCards(cards); setActiveItem("Saved Dashboard"); setBreadcrumb(["Float Agent", "Saved Dashboard"]) }}/>
