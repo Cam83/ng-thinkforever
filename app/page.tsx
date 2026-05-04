@@ -100,7 +100,13 @@ const floatDarkTheme = {
 
 let t = blackTheme
 
-const getStyles = (theme: any) => ({
+const getStyles = (theme: any) => {
+  const isLight = theme === lightTheme
+  const gradBg = isLight
+    ? `linear-gradient(${theme.bg}, ${theme.bg}) padding-box, linear-gradient(180deg, #EDEBF0 0%, #b0beca 100%) border-box`
+    : "transparent"
+  const gradBorder = isLight ? "1px solid transparent" : `1px solid ${theme.border}`
+  return {
   /** Small section / panel labels — title case in content, never forced uppercase */
   caseTitle: { fontSize: 11, fontWeight: 600, color: theme.mutedFg, letterSpacing: "0.08em", fontFamily: "var(--font-sans), sans-serif" },
   caseTitleCompact: { fontSize: 11, fontWeight: 600, color: theme.mutedFg, letterSpacing: "0.05em", fontFamily: "var(--font-sans), sans-serif" },
@@ -108,12 +114,14 @@ const getStyles = (theme: any) => ({
   sidebar: { width: 260, borderTop: "none", borderBottom: "none", borderLeft: "none", borderRight: `1px solid ${theme.sidebarBorder}`, background: theme.sidebar, display: "flex", flexDirection: "column" as const, height: "100vh", flexShrink: 0 },
   main: { flex: 1, display: "flex", flexDirection: "column" as const, background: theme.bg, overflow: "hidden", minWidth: 0 },
   iconBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: theme.secondaryFg, cursor: "pointer" },
+  secIconBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: gradBorder, background: gradBg, color: theme.secondaryFg, cursor: "pointer" },
   primaryBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: theme.primaryBtnBg, color: theme.bg, cursor: "pointer" },
   pillBtn: (active: any) => ({ display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 12px", borderRadius: 20, border: `1px solid ${active ? theme.fgAlpha30 : theme.border}`, background: active ? theme.accent : theme.bg, color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 450 : 400 }),
-  outlineBtn: { display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 10px 0 8px", borderRadius: 8, border: `1px solid ${theme.border}`, background: "transparent", color: theme.secondaryFg, cursor: "pointer", fontSize: 12 },
+  outlineBtn: { display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 10px 0 8px", borderRadius: 8, border: gradBorder, background: gradBg, color: theme.secondaryFg, cursor: "pointer", fontSize: 12 },
   dropdown: { position: "absolute" as const, top: "100%", left: 0, marginTop: 4, background: theme.popover, border: `1px solid ${theme.border}`, borderRadius: 8, padding: 4, boxShadow: `0 4px 16px ${theme.shadowDark}`, zIndex: 200, minWidth: 180 },
   dropdownItem: (active: any) => ({ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "6px 10px", borderRadius: 5, border: "none", background: "transparent", color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 450 : 400, textAlign: "left" as const }),
-})
+  }
+}
 
 let s = getStyles(t)
 
@@ -1977,7 +1985,7 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
             )}
             {(version !== "single" || !!filteredBusinessUnit) && <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>}
             {[["all","View all"],["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
-              <RadiusTab key={v} active={view === v} onClick={() => { setView(v); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={v} active={view === v} onClick={() => { setView(v); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: view === v ? t.fg : "none" }}/>{l}
               </RadiusTab>
             ))}
@@ -2553,7 +2561,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg }}>{projects.length} Projects</h1>
-          <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+          <HoverBtn style={s.secIconBtn}>
             <Layers size={13} strokeWidth={0.9}/>
           </HoverBtn>
           <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
@@ -2565,10 +2573,10 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 24px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <HoverBtn onClick={() => setMonthOffset(o => o - 1)} style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+          <HoverBtn onClick={() => setMonthOffset(o => o - 1)} style={s.secIconBtn}>
             <ChevronLeft size={14} strokeWidth={0.9}/>
           </HoverBtn>
-          <HoverBtn onClick={() => setMonthOffset(o => o + 1)} style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+          <HoverBtn onClick={() => setMonthOffset(o => o + 1)} style={s.secIconBtn}>
             <ChevronRight size={14} strokeWidth={0.9}/>
           </HoverBtn>
         </div>
@@ -2579,7 +2587,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
         </HoverBtn>
         <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
         {[["all","View all"],["recognised","Revenue recognition"]].map(([v,l]) => (
-          <RadiusTab key={v} active={tableView === v} onClick={() => setTableView(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+          <RadiusTab key={v} active={tableView === v} onClick={() => setTableView(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
             <Circle size={10} strokeWidth={0.9} style={{ fill: tableView === v ? t.fg : "none" }}/>{l}
           </RadiusTab>
         ))}
@@ -3447,12 +3455,12 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Dashboard</h1>
-          <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+          <HoverBtn style={s.secIconBtn}>
             <Layers size={13} strokeWidth={0.9}/>
           </HoverBtn>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {([["people", "People operations"], ["finance", "Project finance"]] as const).map(([v, l]) => (
-              <RadiusTab key={v} active={activeTab === v} onClick={() => setActiveTab(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={v} active={activeTab === v} onClick={() => setActiveTab(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: activeTab === v ? t.fg : "none" }}/>{l}
               </RadiusTab>
             ))}
@@ -3474,10 +3482,10 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 24px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <HoverBtn onClick={() => setDateOffset(o => o - 1)} style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+          <HoverBtn onClick={() => setDateOffset(o => o - 1)} style={s.secIconBtn}>
             <ChevronLeft size={14} strokeWidth={0.9}/>
           </HoverBtn>
-          <HoverBtn onClick={() => setDateOffset(o => o + 1)} style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+          <HoverBtn onClick={() => setDateOffset(o => o + 1)} style={s.secIconBtn}>
             <ChevronRight size={14} strokeWidth={0.9}/>
           </HoverBtn>
         </div>
@@ -3867,21 +3875,21 @@ function ScheduleView({ breadcrumb }: any) {
       {/* ── Top toolbar ─────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 24px 12px", flexShrink: 0 }}>
         <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Schedule</h1>
-        <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+        <HoverBtn style={s.secIconBtn}>
           <Layers size={13} strokeWidth={0.9}/>
         </HoverBtn>
         <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
         <div style={{ flex: 1 }}/>
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}><ChevronLeft size={14} strokeWidth={0.9}/></HoverBtn>
-          <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}><ChevronRight size={14} strokeWidth={0.9}/></HoverBtn>
+          <HoverBtn style={s.secIconBtn}><ChevronLeft size={14} strokeWidth={0.9}/></HoverBtn>
+          <HoverBtn style={s.secIconBtn}><ChevronRight size={14} strokeWidth={0.9}/></HoverBtn>
         </div>
         <HoverBtn style={s.outlineBtn}>Today</HoverBtn>
         <HoverBtn style={{ ...s.outlineBtn, gap: 4 }}>
           <CalendarClock size={16} strokeWidth={0.9}/>Quarters<ChevronDown size={11} strokeWidth={0.9}/>
         </HoverBtn>
-        <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}><MoreVertical size={13} strokeWidth={0.9}/></HoverBtn>
-        <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}><Share2 size={13} strokeWidth={0.9}/></HoverBtn>
+        <HoverBtn style={s.secIconBtn}><MoreVertical size={13} strokeWidth={0.9}/></HoverBtn>
+        <HoverBtn style={s.secIconBtn}><Share2 size={13} strokeWidth={0.9}/></HoverBtn>
         <button style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}><Plus size={15} strokeWidth={0.9}/></button>
       </div>
 
@@ -3893,8 +3901,8 @@ function ScheduleView({ breadcrumb }: any) {
 
           {/* Left: people panel controls */}
           <div style={{ position: "sticky", left: 0, zIndex: 25, width: PEOPLE_W, flexShrink: 0, background: t.bg, borderRight: `1px solid ${t.border}`, display: "flex", alignItems: "center", gap: 5, padding: "0 10px", height: 56 }}>
-            <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 8, width: 28, height: 28 }}><UserPlus size={13} strokeWidth={0.9}/></HoverBtn>
-            <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 8, width: 28, height: 28 }}><ArrowUp size={11} strokeWidth={0.9} style={{ rotate: "180deg" }}/></HoverBtn>
+            <HoverBtn style={{ ...s.secIconBtn, borderRadius: 8, width: 28, height: 28 }}><UserPlus size={13} strokeWidth={0.9}/></HoverBtn>
+            <HoverBtn style={{ ...s.secIconBtn, borderRadius: 8, width: 28, height: 28 }}><ArrowUp size={11} strokeWidth={0.9} style={{ rotate: "180deg" }}/></HoverBtn>
             <div style={{ flex: 1 }}/>
             <HoverBtn style={{ display: "flex", alignItems: "center", gap: 5, height: 28, padding: "0 10px", borderRadius: 20, border: `1px solid ${t.border}`, background: "transparent", color: t.fg, cursor: "pointer", fontSize: 12, fontWeight: 450, whiteSpace: "nowrap" }}>
               This week <ChevronDown size={11} strokeWidth={0.9}/>
@@ -4030,12 +4038,12 @@ function ReportHeader() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Report</h1>
-          <HoverBtn style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+          <HoverBtn style={s.secIconBtn}>
             <Layers size={13} strokeWidth={0.9}/>
           </HoverBtn>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {([["people", "62 People"], ["projects", "129 Projects"]] as const).map(([v, l]) => (
-              <RadiusTab key={v} active={activeTab === v} onClick={() => setActiveTab(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={v} active={activeTab === v} onClick={() => setActiveTab(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: activeTab === v ? t.fg : "none" }}/>{l}
               </RadiusTab>
             ))}
@@ -4060,10 +4068,10 @@ function ReportHeader() {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 24px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <HoverBtn onClick={() => setDateOffset(o => o - 1)} style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+          <HoverBtn onClick={() => setDateOffset(o => o - 1)} style={s.secIconBtn}>
             <ChevronLeft size={14} strokeWidth={0.9}/>
           </HoverBtn>
-          <HoverBtn onClick={() => setDateOffset(o => o + 1)} style={{ ...s.iconBtn, border: `1px solid ${t.border}`, borderRadius: 6 }}>
+          <HoverBtn onClick={() => setDateOffset(o => o + 1)} style={s.secIconBtn}>
             <ChevronRight size={14} strokeWidth={0.9}/>
           </HoverBtn>
         </div>
@@ -6100,13 +6108,13 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
         <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
         <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
         {[["skills","Skills"],["experience","Experience"]].map(([v,l]) => (
-          <RadiusTab key={v} active={graphMode === v} onClick={() => { setGraphMode(v); setView("categories"); setSelCat(null); setSelSkill(null); setSelPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+          <RadiusTab key={v} active={graphMode === v} onClick={() => { setGraphMode(v); setView("categories"); setSelCat(null); setSelSkill(null); setSelPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
             <Circle size={10} strokeWidth={0.9} style={{ fill: graphMode === v ? t.fg : "none" }}/>{l}
           </RadiusTab>
         ))}
         <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
         {[["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
-          <RadiusTab key={v} active={peopleFilter === v} onClick={() => { setPeopleFilter(v) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+          <RadiusTab key={v} active={peopleFilter === v} onClick={() => { setPeopleFilter(v) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
             <Circle size={10} strokeWidth={0.9} style={{ fill: peopleFilter === v ? t.fg : "none" }}/>{l}
           </RadiusTab>
         ))}
@@ -6374,18 +6382,18 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
         <div style={{ display: "flex", alignItems: "center", padding: "0 24px 4px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {[["offices","Offices"],["departments","Departments"],["tags","Tags"]].map(([v,l]) => (
-              <RadiusTab key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: tab === v ? t.fg : "none" }}/>{l}
               </RadiusTab>
             ))}
             <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 6px" }}/>
             {[["delivery-teams","Delivery teams"],["groups","Groups"]].map(([v,l]) => (
-              <RadiusTab key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: tab === v ? t.fg : "none" }}/>{l}
               </RadiusTab>
             ))}
             {customGroupTypes.map(cg => (
-              <RadiusTab key={cg.id} active={tab === cg.id} onClick={() => { setTab(cg.id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border}>
+              <RadiusTab key={cg.id} active={tab === cg.id} onClick={() => { setTab(cg.id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: tab === cg.id ? t.fg : "none" }}/>{cg.name}
               </RadiusTab>
             ))}
