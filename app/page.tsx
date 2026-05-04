@@ -3498,7 +3498,7 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
         <FilterChip category="Project stage" operator="is any of" value="On track, +2" onClear={() => {}}/>
         <FilterChip category="People type" operator="is any of" value="Active, +4" onClear={() => {}}/>
         <FilterChip category="Time off" operator="is any of" value="Active, +1" onClear={() => {}}/>
-        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: `1px solid ${t.border}`, background: "transparent", color: t.secondaryFg, cursor: "pointer", fontSize: 12 }}>
+        <HoverBtn style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4 }}>
           <Plus size={11} strokeWidth={0.9}/>Filter
         </HoverBtn>
       </div>
@@ -4083,7 +4083,7 @@ function ReportHeader() {
         <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
         <FilterChip category="Person type" operator="is" value="Active, Archived, Contractor +3" onClear={() => {}}/>
         <FilterChip category="Project status" operator="is" value="Draft, Tentative" onClear={() => {}}/>
-        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: `1px solid ${t.border}`, background: "transparent", color: t.secondaryFg, cursor: "pointer", fontSize: 12 }}>
+        <HoverBtn style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4 }}>
           <Plus size={11} strokeWidth={0.9}/>Filter
         </HoverBtn>
       </div>
