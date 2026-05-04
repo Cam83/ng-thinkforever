@@ -115,6 +115,8 @@ const getStyles = (theme: any) => {
   main: { flex: 1, display: "flex", flexDirection: "column" as const, background: theme.bg, overflow: "hidden", minWidth: 0 },
   iconBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: theme.secondaryFg, cursor: "pointer" },
   secIconBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: gradBorder, background: gradBg, color: theme.secondaryFg, cursor: "pointer" },
+  gradBorder,
+  gradBg,
   primaryBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: theme.primaryBtnBg, color: theme.bg, cursor: "pointer" },
   pillBtn: (active: any) => ({ display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 12px", borderRadius: 20, border: `1px solid ${active ? theme.fgAlpha30 : theme.border}`, background: active ? theme.accent : theme.bg, color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 450 : 400 }),
   outlineBtn: { display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 10px 0 8px", borderRadius: 8, border: gradBorder, background: gradBg, color: theme.secondaryFg, cursor: "pointer", fontSize: 12 },
@@ -2497,7 +2499,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
           <span onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setPanel(active ? null : { type: "analyse", idx })}
-              style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 6, border: `1px solid ${active ? t.fgAlpha20 : t.border}`, background: active ? t.fgAlpha06 : "transparent", color: active ? t.fg : t.secondaryFg, cursor: "pointer", fontSize: 11, fontWeight: 450, fontFamily: "inherit" }}>
+              style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 6, border: active ? `1px solid ${t.fgAlpha20}` : s.gradBorder, background: active ? t.fgAlpha06 : s.gradBg, color: active ? t.fg : t.secondaryFg, cursor: "pointer", fontSize: 11, fontWeight: 450, fontFamily: "inherit" }}>
               <Sparkles size={11} strokeWidth={0.9}/>
               Analyse
             </button>
@@ -2783,7 +2785,7 @@ function ProjectCompleteDropdown({ value, onChange }: any) {
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
         <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
-          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
+          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:s.gradBorder, background:s.gradBg, cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
           {display}
           <ChevronDown size={10} strokeWidth={0.9}/>
         </HoverBtn>
@@ -2869,7 +2871,7 @@ function PlanAccuracyDropdown({ value, onChange }: any) {
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
         <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
-          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
+          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:s.gradBorder, background:s.gradBg, cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
           {display}
           <ChevronDown size={10} strokeWidth={0.9}/>
         </HoverBtn>
@@ -2906,7 +2908,7 @@ function StageDropdown({ value, onChange }: any) {
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
         <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
-          style={{ display:"flex", alignItems:"center", gap:6, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
+          style={{ display:"flex", alignItems:"center", gap:6, height:24, padding:"0 8px", borderRadius:6, border:s.gradBorder, background:s.gradBg, cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
           <StageIcon type={current.iconType} color={current.color}/>
           {current.label}
           <ChevronDown size={10} strokeWidth={0.9} color={t.mutedFg}/>
