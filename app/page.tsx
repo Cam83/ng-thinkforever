@@ -2769,19 +2769,14 @@ const HEALTH_OPTIONS = [
 const PLAN_ACCURACY_OPTIONS = [0,10,20,30,40,50,60,70,80,90,100]
 
 function AnalyseBtn({ active, onClick }: { active: boolean; onClick: () => void }) {
-  const [hov, setHov] = useState(false)
-  const hovBg = t === lightTheme
-    ? `linear-gradient(${t.fgAlpha06}, ${t.fgAlpha06}) padding-box, linear-gradient(180deg, #EDEBF0 0%, #b0beca 100%) border-box`
-    : t.fgAlpha06
   return (
-    <button
+    <HoverBtn
       onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 6, border: active ? `1px solid ${t.fgAlpha20}` : s.gradBorder, background: active ? t.fgAlpha06 : hov ? hovBg : s.gradBg, color: active ? t.fg : t.secondaryFg, cursor: "pointer", fontSize: 11, fontWeight: 450, fontFamily: "inherit" }}>
+      accentColor={t.fgAlpha06}
+      style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", fontSize: 11, fontWeight: 450, cursor: "pointer", border: active ? `1px solid ${t.fgAlpha20}` : s.gradBorder, background: active ? t.fgAlpha06 : s.gradBg, color: active ? t.fg : t.secondaryFg }}>
       <Sparkles size={11} strokeWidth={0.9}/>
       Analyse
-    </button>
+    </HoverBtn>
   )
 }
 
