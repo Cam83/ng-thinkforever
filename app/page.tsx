@@ -3820,17 +3820,20 @@ function ProjectFinanceDashboard() {
   const boldTxt: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: t.fg, lineHeight: "16px", whiteSpace: "nowrap" as const }
 
   const I = {
-    revFill:    "https://www.figma.com/api/mcp/asset/2991e494-278e-4d26-ae59-2d5944f063e9",
-    revArea:    "https://www.figma.com/api/mcp/asset/90446fbe-86a4-494d-a6b3-21afbd12e708",
-    revExtra:   "https://www.figma.com/api/mcp/asset/8102bd80-3ded-43bb-a7fe-c644b597e2c6",
-    costLine:   "https://www.figma.com/api/mcp/asset/08ccec2e-89f5-4d9d-8693-2bcd7ef605bc",
-    bandTop:    "https://www.figma.com/api/mcp/asset/3ea17b3b-af40-41e8-b350-79fdcffa9478",
-    bandMid:    "https://www.figma.com/api/mcp/asset/142f9612-08ab-4f2f-8353-a36a15e2ab14",
-    costFill:   "https://www.figma.com/api/mcp/asset/29aef9f1-6e8a-4521-97fe-b0e37ebe65ca",
-    sep1: "https://www.figma.com/api/mcp/asset/1345dd3f-2a52-4ce9-ba34-dc4d63fd8dde",
-    sep2: "https://www.figma.com/api/mcp/asset/e0fec677-613f-48b2-a4b1-0fb234b338d6",
-    sep3: "https://www.figma.com/api/mcp/asset/4d3fddac-a0a9-4b52-aaa5-79a58e91d4a0",
-    sep4: "https://www.figma.com/api/mcp/asset/6a22e7ee-9f0b-4fdc-ab3b-24703c18a779",
+    // Revenue vs. costs chart — fresh Figma asset URLs (node 3120-3508)
+    // Z-order: revFill (bottom) → revArea → revExtra → costLine → bandTop → bandMid → costFill (top)
+    revFill:  "https://www.figma.com/api/mcp/asset/01449a5a-73f3-46f5-8fec-cfcdf52a7d98", // Vector3769: fill area, top=74.5, h=233.5, full width
+    revArea:  "https://www.figma.com/api/mcp/asset/419d91dd-3737-4e3c-a86f-cd0c0a679f6f", // Vector3708: main area shape, top=19, h=211, extends wide
+    revExtra: "https://www.figma.com/api/mcp/asset/e0ef0d95-7e35-477d-ba54-2730c20c4495", // Vector6: accent, top=121, h=94, extends wide
+    costLine: "https://www.figma.com/api/mcp/asset/4114d3b7-032f-4bc7-926a-86ab072c40d7", // Vector3709: cost line left 20%, top=0, h=306, w=158
+    bandTop:  "https://www.figma.com/api/mcp/asset/acb455fa-52cb-426b-a37f-edecc479f0c0", // Vector3766: revenue line band, top=74.5, h=55
+    bandMid:  "https://www.figma.com/api/mcp/asset/97ec408b-710e-46bd-8785-21d9ebe929e4", // Vector3767: cost line band, top=202, h=55
+    costFill: "https://www.figma.com/api/mcp/asset/bd75ed17-dff0-43d2-84cb-58ed1b5fac4a", // Vector3770: cost fill, top=202, h=103
+    // Legend breakdown separators
+    sep1: "https://www.figma.com/api/mcp/asset/53736c15-a24c-4ac2-8bd0-1b2c1442219e", // Line184
+    sep2: "https://www.figma.com/api/mcp/asset/37940dc5-410c-4632-a29f-1e67268f762d", // Line186
+    sep3: "https://www.figma.com/api/mcp/asset/135b359f-1eba-4626-8cf2-05daf2c3def4", // Line188
+    sep4: "https://www.figma.com/api/mcp/asset/e32ad86d-a32e-457a-a346-3f4ee273d752", // Line189
   }
 
   function LegRow({ indicator, label, value }: { indicator: React.ReactNode; label: string; value: string }) {
@@ -3920,25 +3923,27 @@ function ProjectFinanceDashboard() {
         <div style={{ display: "flex", paddingLeft: 15, paddingRight: 15, paddingBottom: 15 }}>
           {/* Chart column */}
           <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", height: 325 }}>
-              {/* Y-axis labels */}
+            <div style={{ display: "flex", height: 335 }}>
+              {/* Y-axis labels — centered at Figma grid positions (% of 335px) */}
               <div style={{ position: "relative", width: 48, flexShrink: 0 }}>
-                {([["3%","$32K"],["27%","$24k"],["51%","$16k"],["75%","$8k"],["99%","$0k"]] as const).map(([top, lbl]) => (
+                {([["4.8%","$32K"],["26.3%","$24k"],["47.8%","$16k"],["69%","$8k"],["91.2%","$0k"]] as const).map(([top, lbl]) => (
                   <span key={lbl} style={{ position: "absolute", top, right: 6, fontSize: 12, color: t.secondaryFg, lineHeight: "16px", transform: "translateY(-50%)", whiteSpace: "nowrap" as const }}>{lbl}</span>
                 ))}
               </div>
               {/* Chart canvas */}
               <div style={{ flex: 1, position: "relative", overflow: "hidden", borderLeft: `1px solid ${t.border}` }}>
-                {[3, 27, 51, 75, 99].map(pct => (
+                {/* Grid lines at Figma y positions (y=16,88,160,231,305.5 / 335) */}
+                {[4.8, 26.3, 47.8, 69.0, 91.2].map(pct => (
                   <div key={pct} style={{ position: "absolute", top: `${pct}%`, left: 0, right: 0, height: 1, background: t.border, opacity: 0.45 }}/>
                 ))}
-                <img src={I.revArea}  alt="" style={{ position: "absolute", left: 0, top: "6.2%",  width: "100%", height: "69%" }}/>
-                <img src={I.revFill}  alt="" style={{ position: "absolute", left: 0, top: "24.3%", width: "100%", height: "76.3%", opacity: 0.8 }}/>
-                <img src={I.revExtra} alt="" style={{ position: "absolute", left: 0, top: "39.5%", width: "100%", height: "30.7%" }}/>
-                <img src={I.bandTop}  alt="" style={{ position: "absolute", left: 0, top: "24.3%", width: "100%", height: "18%" }}/>
-                <img src={I.bandMid}  alt="" style={{ position: "absolute", left: 0, top: "66%",   width: "100%", height: "18%" }}/>
-                <img src={I.costFill} alt="" style={{ position: "absolute", left: 0, top: "66%",   width: "100%", height: "33.7%" }}/>
+                {/* Images in Figma z-order (bottom → top) */}
+                <img src={I.revFill}  alt="" style={{ position: "absolute", left: 0, top: "22.2%", width: "100%", height: "69.7%" }}/>
+                <img src={I.revArea}  alt="" style={{ position: "absolute", left: 0, top: "5.7%",  width: "100%", height: "63%" }}/>
+                <img src={I.revExtra} alt="" style={{ position: "absolute", left: 0, top: "36.1%", width: "100%", height: "28.1%" }}/>
                 <img src={I.costLine} alt="" style={{ position: "absolute", left: 0, top: 0,        width: "20%",  height: "100%" }}/>
+                <img src={I.bandTop}  alt="" style={{ position: "absolute", left: 0, top: "22.2%", width: "100%", height: "16.4%" }}/>
+                <img src={I.bandMid}  alt="" style={{ position: "absolute", left: 0, top: "60.3%", width: "100%", height: "16.4%" }}/>
+                <img src={I.costFill} alt="" style={{ position: "absolute", left: 0, top: "60.3%", width: "100%", height: "30.7%" }}/>
               </div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", paddingLeft: 48, paddingTop: 8, fontSize: 12, color: t.secondaryFg }}>
@@ -3947,7 +3952,7 @@ function ProjectFinanceDashboard() {
           </div>
 
           {/* Divider */}
-          <div style={{ width: 1, background: t.border, opacity: 0.4, height: 325, flexShrink: 0, alignSelf: "flex-start" }}/>
+          <div style={{ width: 1, background: t.border, opacity: 0.4, height: 335, flexShrink: 0, alignSelf: "flex-start" }}/>
 
           {/* Legend */}
           <div style={{ flex: "0 0 28%", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
