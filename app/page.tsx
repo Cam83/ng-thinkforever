@@ -3895,7 +3895,7 @@ function ProjectFinanceDashboard() {
       <div style={{ display: "flex", gap: 8 }}>
         {([
           { label: "Delivery revenue",   value: "$1,000,000", sub: null,         unit: null, arr: "▼", pct: "1%",  pc: "#bd4b00", note: "Fixed fee & T&M" },
-          { label: "Delivery costs",     value: "$300,000",   sub: null,         unit: null, arr: "▼", pct: "1",   pc: t.secondaryFg, note: "Cost of time & project expenses" },
+          { label: "Delivery costs",     value: "$320,000",   sub: null,         unit: null, arr: "▼", pct: "1",   pc: t.secondaryFg, note: "Cost of time & project expenses" },
           { label: "Delivery margin",    value: "70%",        sub: "$7,000,000", unit: null, arr: "→", pct: "0%",  pc: t.mutedFg, note: "After all delivery costs" },
           { label: "Effective bill rate",value: "$150",       sub: null,         unit: "/hr",arr: "▼", pct: "1%",  pc: "#bd4b00", note: "Across 8,000h" },
           { label: "Average bill rate",  value: "$150",       sub: null,         unit: "/hr",arr: "▼", pct: "1%",  pc: "#bd4b00", note: "Across 6,250h" },
@@ -3965,7 +3965,7 @@ function ProjectFinanceDashboard() {
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <LegRow indicator={<Dot color="#344765"/>} label="Delivery costs" value="$300,000"/>
+              <LegRow indicator={<Dot color="#344765"/>} label="Delivery costs" value="$320,000"/>
               <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
                 <BreakRow label="On track"  value="$8,000" sepSrc={I.sep4}/>
                 <BreakRow label="Off track" value="$8,000" sepSrc={I.sep2}/>
