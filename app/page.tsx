@@ -115,6 +115,8 @@ const getStyles = (theme: any) => {
   main: { flex: 1, display: "flex", flexDirection: "column" as const, background: theme.bg, overflow: "hidden", minWidth: 0 },
   iconBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: theme.secondaryFg, cursor: "pointer" },
   secIconBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: gradBorder, background: gradBg, color: theme.secondaryFg, cursor: "pointer" },
+  gradBorder,
+  gradBg,
   primaryBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: theme.primaryBtnBg, color: theme.bg, cursor: "pointer" },
   pillBtn: (active: any) => ({ display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 12px", borderRadius: 20, border: `1px solid ${active ? theme.fgAlpha30 : theme.border}`, background: active ? theme.accent : theme.bg, color: active ? theme.fg : theme.secondaryFg, cursor: "pointer", fontSize: 12, fontWeight: active ? 450 : 400 }),
   outlineBtn: { display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 10px 0 8px", borderRadius: 8, border: gradBorder, background: gradBg, color: theme.secondaryFg, cursor: "pointer", fontSize: 12 },
@@ -2495,12 +2497,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
         const active = panel?.type === "analyse" && panel.idx === idx
         return (
           <span onClick={e => e.stopPropagation()}>
-            <button
-              onClick={() => setPanel(active ? null : { type: "analyse", idx })}
-              style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 6, border: `1px solid ${active ? t.fgAlpha20 : t.border}`, background: active ? t.fgAlpha06 : "transparent", color: active ? t.fg : t.secondaryFg, cursor: "pointer", fontSize: 11, fontWeight: 450, fontFamily: "inherit" }}>
-              <Sparkles size={11} strokeWidth={0.9}/>
-              Analyse
-            </button>
+            <AnalyseBtn active={active} onClick={() => setPanel(active ? null : { type: "analyse", idx })}/>
           </span>
         )
       }},
@@ -2771,6 +2768,18 @@ const HEALTH_OPTIONS = [
 
 const PLAN_ACCURACY_OPTIONS = [0,10,20,30,40,50,60,70,80,90,100]
 
+function AnalyseBtn({ active, onClick }: { active: boolean; onClick: () => void }) {
+  return (
+    <HoverBtn
+      onClick={onClick}
+      accentColor={t.fgAlpha06}
+      style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", fontSize: 11, fontWeight: 450, cursor: "pointer", border: active ? `1px solid ${t.fgAlpha20}` : s.gradBorder, background: active ? t.fgAlpha06 : s.gradBg, color: active ? t.fg : t.secondaryFg }}>
+      <Sparkles size={11} strokeWidth={0.9}/>
+      Analyse
+    </HoverBtn>
+  )
+}
+
 function ProjectCompleteDropdown({ value, onChange }: any) {
   const [open, setOpen] = useState(false)
   const [inputVal, setInputVal] = useState("")
@@ -2783,7 +2792,7 @@ function ProjectCompleteDropdown({ value, onChange }: any) {
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
         <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
-          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
+          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:s.gradBorder, background:s.gradBg, cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
           {display}
           <ChevronDown size={10} strokeWidth={0.9}/>
         </HoverBtn>
@@ -2869,7 +2878,7 @@ function PlanAccuracyDropdown({ value, onChange }: any) {
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
         <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
-          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
+          style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 8px", borderRadius:6, border:s.gradBorder, background:s.gradBg, cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
           {display}
           <ChevronDown size={10} strokeWidth={0.9}/>
         </HoverBtn>
@@ -2906,7 +2915,7 @@ function StageDropdown({ value, onChange }: any) {
     <DropdownWrapper open={open} setOpen={setOpen}
       trigger={
         <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
-          style={{ display:"flex", alignItems:"center", gap:6, height:24, padding:"0 8px", borderRadius:6, border:`1px solid ${t.border}`, background:"transparent", cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
+          style={{ display:"flex", alignItems:"center", gap:6, height:24, padding:"0 8px", borderRadius:6, border:s.gradBorder, background:s.gradBg, cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
           <StageIcon type={current.iconType} color={current.color}/>
           {current.label}
           <ChevronDown size={10} strokeWidth={0.9} color={t.mutedFg}/>
@@ -3803,33 +3812,254 @@ function PeopleOpsDashboard() {
   )
 }
 
+function ProjectFinanceDashboard() {
+  const card: React.CSSProperties = { background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: "hidden", position: "relative" }
+  const sep: React.CSSProperties = { flex: 1, minWidth: 4, height: 0, borderBottom: `1.5px dotted ${t.border}` }
+  const secTxt: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: t.secondaryFg, lineHeight: "16px", whiteSpace: "nowrap" as const }
+  const mutTxt: React.CSSProperties = { fontSize: 12, color: t.mutedFg, lineHeight: "16px", whiteSpace: "nowrap" as const }
+  const boldTxt: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: t.fg, lineHeight: "16px", whiteSpace: "nowrap" as const }
+
+  const I = {
+    // Revenue vs. costs chart — fresh Figma asset URLs (node 3120-3508)
+    // Z-order: revFill (bottom) → revArea → revExtra → costLine → bandTop → bandMid → costFill (top)
+    revFill:  "https://www.figma.com/api/mcp/asset/01449a5a-73f3-46f5-8fec-cfcdf52a7d98", // Vector3769: fill area, top=74.5, h=233.5, full width
+    revArea:  "https://www.figma.com/api/mcp/asset/419d91dd-3737-4e3c-a86f-cd0c0a679f6f", // Vector3708: main area shape, top=19, h=211, extends wide
+    revExtra: "https://www.figma.com/api/mcp/asset/e0ef0d95-7e35-477d-ba54-2730c20c4495", // Vector6: accent, top=121, h=94, extends wide
+    costLine: "https://www.figma.com/api/mcp/asset/4114d3b7-032f-4bc7-926a-86ab072c40d7", // Vector3709: cost line left 20%, top=0, h=306, w=158
+    bandTop:  "https://www.figma.com/api/mcp/asset/acb455fa-52cb-426b-a37f-edecc479f0c0", // Vector3766: revenue line band, top=74.5, h=55
+    bandMid:  "https://www.figma.com/api/mcp/asset/97ec408b-710e-46bd-8785-21d9ebe929e4", // Vector3767: cost line band, top=202, h=55
+    costFill: "https://www.figma.com/api/mcp/asset/bd75ed17-dff0-43d2-84cb-58ed1b5fac4a", // Vector3770: cost fill, top=202, h=103
+    // Legend breakdown separators
+    sep1: "https://www.figma.com/api/mcp/asset/53736c15-a24c-4ac2-8bd0-1b2c1442219e", // Line184
+    sep2: "https://www.figma.com/api/mcp/asset/37940dc5-410c-4632-a29f-1e67268f762d", // Line186
+    sep3: "https://www.figma.com/api/mcp/asset/135b359f-1eba-4626-8cf2-05daf2c3def4", // Line188
+    sep4: "https://www.figma.com/api/mcp/asset/e32ad86d-a32e-457a-a346-3f4ee273d752", // Line189
+  }
+
+  function LegRow({ indicator, label, value }: { indicator: React.ReactNode; label: string; value: string }) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 20, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>{indicator}<span style={secTxt}>{label}</span></div>
+        <span style={boldTxt}>{value}</span>
+      </div>
+    )
+  }
+  function BreakRow({ label, value, sepSrc }: { label: string; value: string; sepSrc?: string }) {
+    return (
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, paddingTop: 4, paddingBottom: 4 }}>
+        <span style={{ ...mutTxt, flexShrink: 0 }}>{label}</span>
+        {sepSrc
+          ? <div style={{ flex: "1 0 0", minWidth: 1, height: 0, position: "relative", marginBottom: 2 }}>
+              <img alt="" src={sepSrc} style={{ position: "absolute", top: -1, left: 0, right: 0, display: "block", width: "100%", height: 2, maxWidth: "none" as const, objectFit: "fill" as const }}/>
+            </div>
+          : <div style={sep}/>
+        }
+        <span style={{ ...mutTxt, flexShrink: 0 }}>{value}</span>
+      </div>
+    )
+  }
+  function Dot({ color }: { color: string }) {
+    return <div style={{ width: 10, height: 10, borderRadius: 5, background: color, flexShrink: 0 }}/>
+  }
+  function DonutRow({ color, label, value, trend, tc }: { color: string; label: string; value: string; trend?: string; tc?: string }) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 4, height: 24, paddingTop: 4, paddingBottom: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }}/>
+          <span style={{ fontSize: 13, color: t.fg, whiteSpace: "nowrap" }}>{label}</span>
+        </div>
+        <div style={sep}/>
+        <span style={{ fontSize: 12, color: t.fg, whiteSpace: "nowrap", textAlign: "right" as const }}>{value}</span>
+        {trend && (
+          <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+            <span style={{ fontSize: 9, color: tc ?? t.mutedFg, lineHeight: "1" }}>▲</span>
+            <span style={{ fontSize: 11, color: tc ?? t.mutedFg }}>{trend}</span>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const barData = [
+    { name: "Employees",    billable: 52000, nonBillable: 40000 },
+    { name: "Contractors",  billable: 33000, nonBillable: 17000 },
+    { name: "Unassigned",   billable: 9000,  nonBillable: 7000  },
+    { name: "Placeholders", billable: 800,   nonBillable: 400   },
+    { name: "Expenses",     billable: 56000, nonBillable: 43000 },
+  ]
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: 16, background: t.bg, display: "flex", flexDirection: "column", gap: 16 }}>
+
+      {/* KPI Row */}
+      <div style={{ display: "flex", gap: 8 }}>
+        {([
+          { label: "Delivery revenue",   value: "$1,000,000", sub: null,         unit: null, arr: "▼", pct: "1%",  pc: "#bd4b00", note: "Fixed fee & T&M" },
+          { label: "Delivery costs",     value: "$300,000",   sub: null,         unit: null, arr: "▼", pct: "1",   pc: t.secondaryFg, note: "Cost of time & project expenses" },
+          { label: "Delivery margin",    value: "70%",        sub: "$7,000,000", unit: null, arr: "→", pct: "0%",  pc: t.mutedFg, note: "After all delivery costs" },
+          { label: "Effective bill rate",value: "$150",       sub: null,         unit: "/hr",arr: "▼", pct: "1%",  pc: "#bd4b00", note: "Across 8,000h" },
+          { label: "Average bill rate",  value: "$150",       sub: null,         unit: "/hr",arr: "▼", pct: "1%",  pc: "#bd4b00", note: "Across 6,250h" },
+        ] as const).map(k => (
+          <div key={k.label} style={{ ...card, flex: 1, padding: 16, display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: t.secondaryFg, lineHeight: "16px" }}>{k.label}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", whiteSpace: "nowrap" }}>
+                {k.value}{k.unit && <span style={{ fontSize: 14, fontWeight: 500, fontFamily: "inherit" }}>{k.unit}</span>}
+              </span>
+              {k.sub && <span style={{ fontSize: 12, fontWeight: 500, color: t.secondaryFg }}>{k.sub}</span>}
+              <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                <span style={{ fontSize: 10, color: k.pc, lineHeight: "1" }}>{k.arr}</span>
+                <span style={{ fontSize: 11, color: k.pc }}>{k.pct}</span>
+              </div>
+            </div>
+            <span style={{ fontSize: 12, color: t.mutedFg, lineHeight: "16px" }}>{k.note}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Revenue vs. costs */}
+      <div style={{ ...card, flexShrink: 0 }}>
+        <div style={{ padding: "15px 15px 12px", fontSize: 13, fontWeight: 500, color: t.fg }}>Revenue vs. costs</div>
+        <div style={{ display: "flex", paddingLeft: 15, paddingRight: 15, paddingBottom: 15 }}>
+          {/* Chart column */}
+          <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", height: 335 }}>
+              {/* Y-axis labels — centered at Figma grid positions (% of 335px) */}
+              <div style={{ position: "relative", width: 48, flexShrink: 0 }}>
+                {([["4.8%","$32K"],["26.3%","$24k"],["47.8%","$16k"],["69%","$8k"],["91.2%","$0k"]] as const).map(([top, lbl]) => (
+                  <span key={lbl} style={{ position: "absolute", top, right: 6, fontSize: 12, color: t.secondaryFg, lineHeight: "16px", transform: "translateY(-50%)", whiteSpace: "nowrap" as const }}>{lbl}</span>
+                ))}
+              </div>
+              {/* Chart canvas */}
+              <div style={{ flex: 1, position: "relative", overflow: "hidden", borderLeft: `1px solid ${t.border}` }}>
+                {/* Grid lines at Figma y positions (y=16,88,160,231,305.5 / 335) */}
+                {[4.8, 26.3, 47.8, 69.0, 91.2].map(pct => (
+                  <div key={pct} style={{ position: "absolute", top: `${pct}%`, left: 0, right: 0, height: 1, background: t.border, opacity: 0.45 }}/>
+                ))}
+                {/* Images in Figma z-order (bottom → top) */}
+                <img src={I.revFill}  alt="" style={{ position: "absolute", left: 0, top: "22.2%", width: "100%", height: "69.7%" }}/>
+                <img src={I.revArea}  alt="" style={{ position: "absolute", left: 0, top: "5.7%",  width: "100%", height: "63%" }}/>
+                <img src={I.revExtra} alt="" style={{ position: "absolute", left: 0, top: "36.1%", width: "100%", height: "28.1%" }}/>
+                <img src={I.costLine} alt="" style={{ position: "absolute", left: 0, top: 0,        width: "20%",  height: "100%" }}/>
+                <img src={I.bandTop}  alt="" style={{ position: "absolute", left: 0, top: "22.2%", width: "100%", height: "16.4%" }}/>
+                <img src={I.bandMid}  alt="" style={{ position: "absolute", left: 0, top: "60.3%", width: "100%", height: "16.4%" }}/>
+                <img src={I.costFill} alt="" style={{ position: "absolute", left: 0, top: "60.3%", width: "100%", height: "30.7%" }}/>
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", paddingLeft: 48, paddingTop: 8, fontSize: 12, color: t.secondaryFg }}>
+              {["1 Dec","8 Dec","15 Dec","22 Dec","29 Dec"].map(d => <span key={d}>{d}</span>)}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ width: 1, background: t.border, opacity: 0.4, height: 335, flexShrink: 0, alignSelf: "flex-start" }}/>
+
+          {/* Legend */}
+          <div style={{ flex: "0 0 28%", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <LegRow indicator={<Dot color="#2e5fe8"/>} label="Delivery revenue" value="$1,000,000"/>
+              <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
+                <BreakRow label="On track"  value="$8,000" sepSrc={I.sep1}/>
+                <BreakRow label="Off track" value="$8,000" sepSrc={I.sep2}/>
+                <BreakRow label="Completed" value="$8,000" sepSrc={I.sep3}/>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <LegRow indicator={<Dot color="#344765"/>} label="Delivery costs" value="$74,000"/>
+              <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
+                <BreakRow label="On track"  value="$8,000" sepSrc={I.sep4}/>
+                <BreakRow label="Off track" value="$8,000" sepSrc={I.sep2}/>
+                <BreakRow label="Completed" value="$8,000" sepSrc={I.sep3}/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom row */}
+      <div style={{ display: "flex", gap: 16 }}>
+        {/* Revenue donut */}
+        <div style={{ ...card, flex: 1, height: 512 }}>
+          <p style={{ position: "absolute", top: 15, left: 15, margin: 0, fontSize: 13, fontWeight: 500, color: t.fg }}>Revenue</p>
+          <div style={{ position: "absolute", left: "50%", top: "calc(50% - 77px)", transform: "translate(-50%, -50%)", width: 238, height: 238 }}>
+            <PieChart width={238} height={238}>
+              <Pie data={[{v:33},{v:25},{v:18},{v:14},{v:10}]} dataKey="v" cx={119} cy={119} innerRadius={93} outerRadius={110} startAngle={90} endAngle={-270} stroke={t.card} strokeWidth={2}>
+                <Cell fill="#173074"/><Cell fill="#254cba"/><Cell fill="#2e5fe8"/><Cell fill="#1a90dc"/><Cell fill="#6ad2ff"/>
+              </Pie>
+            </PieChart>
+            <p style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", margin: 0, fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, whiteSpace: "nowrap" }}>$1,000,000</p>
+          </div>
+          <div style={{ position: "absolute", left: "50%", top: "calc(50% + 115px)", transform: "translate(-50%, -50%)", width: "calc(100% - 30px)", display: "flex", flexDirection: "column", gap: 6 }}>
+            {([
+              { color: "#173074", label: "Client 1",   value: "$8,000", trend: "3%",  tc: "#0b752e" },
+              { color: "#254cba", label: "Client 2",   value: "$8,000", trend: "— %", tc: t.mutedFg },
+              { color: "#2e5fe8", label: "Client 3",   value: "$8,000", trend: "3%",  tc: "#0b752e" },
+              { color: "#1a90dc", label: "Client 4",   value: "$8,000", trend: "3%",  tc: "#0b752e" },
+              { color: "#6ad2ff", label: "Client 5",   value: "$8,000", trend: "3%",  tc: "#0b752e" },
+              { color: "#cee7fe", label: "+4 clients", value: "$8,000", trend: "3%",  tc: "#0b752e" },
+            ] as const).map(r => <DonutRow key={r.label} color={r.color} label={r.label} value={r.value} trend={r.trend} tc={r.tc}/>)}
+          </div>
+        </div>
+
+        {/* Delivery costs bar chart */}
+        <div style={{ ...card, flex: 1, height: 512, padding: 16, display: "flex", flexDirection: "column" }}>
+          <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 500, color: t.fg }}>Delivery costs</p>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData} barCategoryGap="35%" barGap={2} margin={{ top: 8, right: 8, bottom: 48, left: 24 }}>
+                <CartesianGrid vertical={false} stroke={t.border} strokeOpacity={0.5}/>
+                <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: t.secondaryFg }} tickMargin={6}/>
+                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: t.secondaryFg }} tickFormatter={(v: number) => `$${v/1000}k`} domain={[0, 60000]} ticks={[0, 20000, 40000, 60000]}/>
+                <Bar dataKey="billable"    fill="#344765" radius={[4,4,0,0]}/>
+                <Bar dataKey="nonBillable" fill="#cfd8e5" radius={[4,4,0,0]}/>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ display: "flex", gap: 48, paddingTop: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ fontSize: 16, fontWeight: 500, fontFamily: "var(--font-lexend), sans-serif", color: t.fg }}>$75,000</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <span style={{ fontSize: 9, color: t.secondaryFg, lineHeight: "1" }}>▲</span>
+                  <span style={{ fontSize: 11, color: t.secondaryFg }}>3%</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 10, height: 10, borderRadius: 5, background: "#344765", flexShrink: 0 }}/>
+                <span style={secTxt}>Billable</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ fontSize: 16, fontWeight: 500, fontFamily: "var(--font-lexend), sans-serif", color: t.fg }}>$25,000</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <span style={{ fontSize: 9, color: "#bd4b00", lineHeight: "1" }}>▼</span>
+                  <span style={{ fontSize: 11, color: "#bd4b00" }}>9%</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 10, height: 10, borderRadius: 5, background: "#cfd8e5", flexShrink: 0 }}/>
+                <span style={secTxt}>Nonbillable</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  )
+}
+
 function DashboardView({ breadcrumb }: any) {
   const [activeTab, setActiveTab] = useState<"finance"|"people">("people")
   return (
     <div style={{ display: "flex", flex: 1, flexDirection: "column", background: t.bg, minHeight: 0 }}>
       <DashboardHeader activeTab={activeTab} setActiveTab={setActiveTab}/>
-      {activeTab === "people" ? <PeopleOpsDashboard/> : (
-        <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center", background: t.bg }}>
-          <svg width="467" height="284" viewBox="0 0 467 284" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <g clipPath="url(#db-clip)"><GridBg/>
-              <path d="M294.167 190.52V199.214L266.389 213.103V204.409L286.097 194.562L294.167 190.52Z" stroke={t.fgAlpha70} strokeWidth="0.694444" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M266.388 204.409V213.103L173.917 159.714V118.437L199.611 156.853L207.361 149.103L220.152 136.298L242.68 169.492L266.388 204.409Z" stroke={t.fgAlpha70} strokeWidth="0.694444" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M273.625 110.715L256.084 119.478L248.514 123.27L245.847 124.603L245.806 124.534L245.264 123.742L237.778 112.548L225.973 94.8951L220.153 86.1866L247.931 72.2978L273.625 110.715Z" stroke={t.fgAlpha70} strokeWidth="0.694444" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M294.167 122.576L267.292 136.006L266.389 136.465L251.722 127.992L245.847 124.603L248.514 123.27L256.084 119.478L273.625 110.715L294.167 122.576Z" stroke={t.fgAlpha70} strokeWidth="0.694444" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M216.292 90.1589L207.833 98.8672L201.944 104.923L201.694 105.187L194.472 112.617L192.166 109.312L173.917 83.0757L201.694 69.1867L216.292 90.1589Z" stroke={t.fgAlpha70} strokeWidth="0.694444" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M266.388 136.465V189.52L259.319 179.09L231.819 138.534L227.722 132.506L223.305 125.992L218.097 118.312L213.792 122.631L201.694 134.77L197.68 138.798L181.375 114.714L173.917 103.7V83.0756L192.166 109.312L194.472 112.617L201.694 105.187L201.944 104.923L207.833 98.8672L216.292 90.1588L220.152 86.1866L225.972 94.8951L237.778 112.548L245.264 123.742L245.805 124.534L245.847 124.603L251.722 127.992L266.388 136.465Z" stroke={t.fgAlpha70} strokeWidth="0.694444" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M294.167 122.576V175.631L286.625 179.409L272.278 186.576L266.389 189.52V136.465L267.292 136.006L294.167 122.576Z" stroke={t.fgAlpha70} strokeWidth="0.694444" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M294.167 190.52L286.097 194.562L266.389 204.409L242.681 169.492L220.153 136.298L222.236 135.256L227.723 132.506L231.82 138.534L259.32 179.09L266.389 189.52L272.278 186.576L286.625 179.409L294.167 190.52Z" stroke={t.fgAlpha70} strokeWidth="0.694444" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M223.305 125.992L217.86 128.714L201.694 136.798L197.68 138.798L201.694 134.77L213.791 122.631L218.096 118.312L223.305 125.992Z" stroke={t.fgAlpha70} strokeWidth="0.694444" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M222.236 135.256L220.152 136.298L207.361 149.103L199.611 156.853L173.917 118.437L181.375 114.714L197.68 138.798L201.694 136.798L217.861 128.714L222.236 135.256Z" stroke={t.fgAlpha70} strokeWidth="0.694444" strokeLinecap="round" strokeLinejoin="round"/>
-            </g>
-            <defs><clipPath id="db-clip"><rect width="467" height="284" fill="white"/></clipPath></defs>
-          </svg>
-        </div>
-      )}
+      {activeTab === "people" ? <PeopleOpsDashboard/> : <ProjectFinanceDashboard/>}
     </div>
   )
 }
+
 
 const SCHED_PEOPLE = [
   { name: "Jake Peralta",    initials: "JP", role: "CD Nike",          team: "Engin",          util: 102, tags: ["H tag", "Red team save"], extra: 2,  color: "#2d6a4f", hasPhoto: false },
