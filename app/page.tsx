@@ -12,7 +12,7 @@ import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-tabl
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
 import { HoverBtn as CamHoverBtn, RadiusTab } from "@cam-ui/components"
 function HoverBtn(props: any) { return <CamHoverBtn accentColor={t.accent} {...props} /> }
-import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide } from "d3-force"
+import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, forceX, forceY } from "d3-force"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tag } from "@/components/ui/tag"
 import { SettingsPage } from "@/app/settings-page"
@@ -35,6 +35,10 @@ const getGlobalStyles = (theme: any) => `
   @keyframes colDivider {
     0%, 100% { border-left-color: ${theme.fgAlpha06}; }
     50%       { border-left-color: ${theme.fgAlpha10}; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 `
 
@@ -108,9 +112,9 @@ const getStyles = (theme: any) => {
   const gradBorder = isLight ? "1px solid transparent" : `1px solid ${theme.border}`
   return {
   /** Small section / panel labels — title case in content, never forced uppercase */
-  caseTitle: { fontSize: 11, fontWeight: 600, color: theme.mutedFg, letterSpacing: "0.08em", fontFamily: "var(--font-sans), sans-serif" },
-  caseTitleCompact: { fontSize: 11, fontWeight: 600, color: theme.mutedFg, letterSpacing: "0.05em", fontFamily: "var(--font-sans), sans-serif" },
-  caseTitleXs: { fontSize: 10, fontWeight: 600, color: theme.mutedFg, letterSpacing: "0.5px" },
+  caseTitle: { fontSize: 11, fontWeight: 450, color: theme.mutedFg, fontFamily: "var(--font-sans), sans-serif" },
+  caseTitleCompact: { fontSize: 11, fontWeight: 450, color: theme.mutedFg, fontFamily: "var(--font-sans), sans-serif" },
+  caseTitleXs: { fontSize: 10, fontWeight: 450, color: theme.mutedFg },
   sidebar: { width: 260, borderTop: "none", borderBottom: "none", borderLeft: "none", borderRight: `1px solid ${theme.sidebarBorder}`, background: theme.sidebar, display: "flex", flexDirection: "column" as const, height: "100vh", flexShrink: 0 },
   main: { flex: 1, display: "flex", flexDirection: "column" as const, background: theme.bg, overflow: "hidden", minWidth: 0 },
   iconBtn: { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: theme.secondaryFg, cursor: "pointer" },
@@ -2311,7 +2315,7 @@ function SmartAnalysePanel({ project, onClose }: any) {
   const analysis = buildSmartAnalysis(project)
   const riskColor = analysis.score >= 55 ? "#ef4444" : analysis.score >= 25 ? "#f59e0b" : "#22c55e"
   const riskLabel = analysis.score >= 55 ? "High risk" : analysis.score >= 25 ? "At risk" : "On track"
-  const sectionHeadingStyle = { fontSize: 11, fontWeight: 450, color: t.mutedFg, marginBottom: 10, letterSpacing: "0em" }
+  const sectionHeadingStyle = { fontSize: 11, fontWeight: 450, color: t.mutedFg, marginBottom: 10 }
 
   return (
     <div style={{ width: 380, flexShrink: 0, borderLeft: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
@@ -2319,7 +2323,7 @@ function SmartAnalysePanel({ project, onClose }: any) {
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
             <Sparkles size={12} strokeWidth={0.9} color={t.mutedFg}/>
-            <span style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, letterSpacing: "0.05em" }}>Smart Analysis</span>
+            <span style={{ fontSize: 11, fontWeight: 450, color: t.mutedFg }}>Smart Analysis</span>
           </div>
           <div style={{ fontSize: 14, fontWeight: 600, color: t.fg, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{project.name}</div>
         </div>
@@ -2630,7 +2634,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
             <div key={i} style={{ flex: 1, padding: "16px 20px", borderRadius: 10, border: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", gap: 6 }}>
               <p style={{ fontSize: 11, color: t.mutedFg, fontWeight: 450 }}>{card.label}</p>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <span style={{ fontSize: 20, fontWeight: 450, color: t.fg, letterSpacing: "-0.5px", lineHeight: 1 }}>{card.value}</span>
+                <span style={{ fontSize: 20, fontWeight: 450, color: t.fg, lineHeight: 1 }}>{card.value}</span>
                 <span style={{ fontSize: 12, color: t.secondaryFg }}>{card.badge}</span>
               </div>
               <p style={{ fontSize: 11, color: t.mutedFg }}>{card.desc}</p>
@@ -2855,7 +2859,7 @@ function ActivityHistoryBtn({ history }: { history: { date: string; user: string
       </button>
       {hov && typeof document !== "undefined" && createPortal(
         <div style={{ position: "fixed", top: pos.top, left: pos.left, transform: "translateX(-50%)", background: t.popover, border: `1px solid ${t.border}`, borderRadius: 8, padding: "8px 10px", boxShadow: `0 4px 16px ${t.shadowDark}`, zIndex: 9999, minWidth: 240, pointerEvents: "none" }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: t.mutedFg, marginBottom: 6, letterSpacing: "0.05em" }}>Activity</div>
+          <div style={{ fontSize: 11, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>Activity</div>
           {history.length === 0
             ? <div style={{ fontSize: 12, color: t.secondaryFg }}>No history yet</div>
             : <div style={{ display: "flex", flexDirection: "column" }}>
@@ -5413,7 +5417,7 @@ function TalentGraphView({ people, roles, departments }: any) {
         </div>
 
         {view === "person" && detailIdx !== null && (
-          <div style={{ position: "absolute", inset: 0, background: t.bg, zIndex: 10, display: "flex" }}>
+          <div style={{ position: "absolute", inset: 0, background: t.bg, zIndex: 10, display: "flex", animation: "fadeIn 0.35s ease" }}>
             <TalentPersonDetail
               personIdx={detailIdx}
               people={people}
@@ -5445,6 +5449,19 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
     initials: (people[id]?.name ?? "").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
     role: roles[people[id]?.roleId]?.name ?? "",
   }))
+
+  // Deterministic skill levels 1–5 and worked-with counts 1–8
+  const skillLevels: Record<string, number> = {}
+  roleData.skills.forEach((skill: string) => {
+    let h = person.name.split("").reduce((a: number, c: string) => (a * 31 + c.charCodeAt(0)) & 0x7fffffff, 0)
+    h = skill.split("").reduce((a: number, c: string) => (a * 31 + c.charCodeAt(0)) & 0x7fffffff, h)
+    skillLevels[skill] = 1 + (h % 5)
+  })
+  const connCounts: Record<number, number> = {}
+  connections.forEach((c: any) => {
+    const h = (person.name + c.id).split("").reduce((a: number, ch: string) => (a * 31 + ch.charCodeAt(0)) & 0x7fffffff, 0)
+    connCounts[c.id] = 1 + (h % 8)
+  })
 
   // Deterministic client assignment (same algorithm as SkillsGraphView)
   const allClients = EXPERIENCE_INDUSTRIES.flatMap(ind => ind.clients)
@@ -5485,18 +5502,18 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
     simRef.current?.stop()
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
 
-    const centerNode: SGNode = { id: person.name, type: "person", label: initials, sub: roleName, r: 38, x: w / 2, y: h / 2 }
+    const centerNode: SGNode = { id: person.name, type: "person", label: initials, sub: roleName, r: 38, x: w / 2, y: h / 2, fx: w / 2, fy: h / 2 }
 
-    const skillNodes: SGNode[] = roleData.skills.map((skill: string, i: number) => {
-      const angle = (i / roleData.skills.length) * Math.PI * 2 - Math.PI / 2
-      const r0 = Math.min(w, h) * 0.24
-      return { id: `skill-${skill}`, type: "skill" as const, label: skill, sub: "", r: 20, x: w / 2 + Math.cos(angle) * r0, y: h / 2 + Math.sin(angle) * r0 }
+    const skillNodes: SGNode[] = roleData.skills.map((skill: string) => {
+      const level = skillLevels[skill]
+      const r = 12 + (level - 1) * 3.2
+      return { id: `skill-${skill}`, type: "skill" as const, label: skill, sub: String(level), r, x: w * 0.3 + (Math.random() - 0.5) * 80, y: h / 2 + (Math.random() - 0.5) * 120 }
     })
 
-    const connectionNodes: SGNode[] = connections.map((c: any, i: number) => {
-      const angle = (i / Math.max(connections.length, 1)) * Math.PI * 2 + Math.PI / 5
-      const r0 = Math.min(w, h) * 0.34
-      return { id: `conn-${c.id}`, type: "person" as const, label: c.initials, sub: c.role, r: 22, x: w / 2 + Math.cos(angle) * r0, y: h / 2 + Math.sin(angle) * r0 }
+    const connectionNodes: SGNode[] = connections.map((c: any) => {
+      const count = connCounts[c.id]
+      const r = 14 + (count - 1) * 2
+      return { id: `conn-${c.id}`, type: "person" as const, label: c.initials, sub: c.role, r, x: w * 0.7 + (Math.random() - 0.5) * 80, y: h / 2 + (Math.random() - 0.5) * 120 }
     })
 
     const nodes = [centerNode, ...skillNodes, ...connectionNodes]
@@ -5508,20 +5525,22 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
     nodesRef.current = nodes
     linksRef.current = links
 
-    nodes.forEach(n => {
-      if (n.id !== person.name) { n.x = w / 2 + (Math.random() - 0.5) * 40; n.y = h / 2 + (Math.random() - 0.5) * 40 }
-    })
-
     const sim = forceSimulation<SGNode>(nodes)
       .force("link", forceLink<SGNode, SGLink>(links).id((d: any) => d.id)
-        .distance((d: any) => (d.target as SGNode).id?.startsWith("skill-") ? 120 : 170)
-        .strength(0.85))
-      .force("charge", forceManyBody().strength(-300))
-      .force("center", forceCenter(w / 2, h / 2).strength(0.3))
-      .force("collide", forceCollide<SGNode>((d) => d.r + 16))
+        .distance((d: any) => { const tgt = d.target as SGNode; return 38 + tgt.r + 55 })
+        .strength(0.5))
+      .force("charge", forceManyBody().strength(-160))
+      .force("x", forceX<SGNode>((d) => {
+        if (d.id === person.name) return w / 2
+        return (d.id as string).startsWith("skill-") ? w * 0.27 : w * 0.73
+      }).strength(0.38))
+      .force("y", forceY<SGNode>(h / 2).strength(0.1))
+      .force("collide", forceCollide<SGNode>((d) => d.r + 10))
 
     simRef.current = sim
-    sim.alpha(1).alphaTarget(0.01).alphaDecay(0.018).restart()
+    sim.stop().tick(800)
+    setTick(k => k + 1)
+    sim.alpha(0.08).alphaTarget(0.04).alphaDecay(0.001).velocityDecay(0.6).restart()
 
     function loop() { setTick(k => k + 1); rafRef.current = requestAnimationFrame(loop) }
     rafRef.current = requestAnimationFrame(loop)
@@ -5554,55 +5573,48 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
             </filter>
           </defs>
 
+          {/* Column labels */}
+          <text x="14%" y={32} textAnchor="middle" fill={t.fg} fillOpacity={0.28} fontSize={12} fontFamily="var(--font-sans), sans-serif">skills</text>
+          <text x="86%" y={32} textAnchor="middle" fill={t.fg} fillOpacity={0.28} fontSize={12} fontFamily="var(--font-sans), sans-serif">worked with</text>
+
           {links.map((lk, i) => {
             const src = lk.source as SGNode, tgt = lk.target as SGNode
             if (!src.x || !tgt.x) return null
-            const isSkillLink = (tgt.id as string)?.startsWith("skill-")
             return <line key={i} x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
-              stroke={t.fg} strokeWidth={isSkillLink ? 1 : 1.5}
-              strokeDasharray={isSkillLink ? undefined : "4 3"}
-              opacity={isSkillLink ? 0.2 : 0.14}/>
+              stroke={t.fg} strokeWidth={0.8} opacity={0.18}/>
           })}
 
           {nodes.map((n) => {
             const isCenter = n.id === person.name
             const isSkill = (n.id as string).startsWith("skill-")
             const isHov = hovered === n.id
+            const fontSize = isCenter ? 13 : isSkill ? Math.max(8, Math.min(10, n.r - 4)) : Math.max(9, Math.min(11, n.r - 6))
             return (
               <g key={n.id} transform={`translate(${n.x ?? 0},${n.y ?? 0})`}
                 onMouseEnter={() => setHovered(n.id)} onMouseLeave={() => setHovered(null)}>
-                {isCenter && <circle cx={0} cy={0} r={n.r + 10} fill="none" stroke={t.fg} strokeWidth={0.5} opacity={0.15}/>}
+                {isCenter && <circle cx={0} cy={0} r={n.r + 10} fill="none" stroke={t.fg} strokeWidth={0.5} opacity={0.12}/>}
                 <circle cx={0} cy={0} r={n.r}
-                  fill={t.fg} fillOpacity={isCenter ? 0.14 : isHov ? 0.12 : 0.06}
-                  stroke={t.fg} strokeOpacity={isCenter ? 1 : isHov ? 0.85 : 0.4} strokeWidth={0.9}
+                  fill={t.fg} fillOpacity={isCenter ? 0.12 : isHov ? 0.11 : 0.055}
+                  stroke={t.fg} strokeOpacity={isCenter ? 0.9 : isHov ? 0.8 : 0.32} strokeWidth={0.8}
                   filter={isCenter || isHov ? "url(#tg-glow)" : undefined}
                   style={{ transition: "fill-opacity 0.2s, stroke-opacity 0.2s" }}/>
                 {isSkill ? (
-                  <text x={0} y={5} textAnchor="middle" fill={t.fg} fillOpacity={isHov ? 1 : 0.7} fontSize={10} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.label}</text>
+                  <text x={0} y={fontSize / 2 - 1} textAnchor="middle" fill={t.fg} fillOpacity={isHov ? 0.9 : 0.6} fontSize={fontSize} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.label}</text>
                 ) : isCenter ? (
                   <>
-                    <text x={0} y={-5} textAnchor="middle" fill={t.fg} fillOpacity={0.9} fontSize={14} fontWeight={600} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.label}</text>
-                    <text x={0} y={13} textAnchor="middle" fill={t.fg} fillOpacity={0.45} fontSize={10} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{roleName.split(" ")[0]}</text>
+                    <text x={0} y={-4} textAnchor="middle" fill={t.fg} fillOpacity={0.9} fontSize={14} fontWeight={600} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.label}</text>
+                    <text x={0} y={12} textAnchor="middle" fill={t.fg} fillOpacity={0.4} fontSize={10} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{roleName.split(" ")[0]}</text>
                   </>
                 ) : (
                   <>
-                    <text x={0} y={-3} textAnchor="middle" fill={t.fg} fillOpacity={0.85} fontSize={11} fontWeight={600} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.label}</text>
-                    <text x={0} y={11} textAnchor="middle" fill={t.fg} fillOpacity={0.38} fontSize={9} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.sub.split(" ")[0]}</text>
+                    <text x={0} y={fontSize / 2 - 3} textAnchor="middle" fill={t.fg} fillOpacity={0.85} fontSize={fontSize} fontWeight={600} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.label}</text>
+                    <text x={0} y={fontSize / 2 + 9} textAnchor="middle" fill={t.fg} fillOpacity={0.35} fontSize={8} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.sub.split(" ")[0]}</text>
                   </>
                 )}
               </g>
             )
           })}
         </svg>
-
-        <div style={{ position: "absolute", bottom: 20, left: 20, display: "flex", gap: 16 }}>
-          {([["Skills", false], ["Worked with", true]] as [string, boolean][]).map(([label, dashed]) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <svg width={20} height={10}><line x1={0} y1={5} x2={20} y2={5} stroke={t.fg} strokeWidth={1} strokeDasharray={dashed ? "4 3" : undefined} opacity={0.4}/></svg>
-              <span style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{label}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Sidebar */}
@@ -6910,7 +6922,7 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
             { label: "Departments", value: officeDeptCount(selectedOffice) },
             { label: "Groups", value: officeGroupCount(selectedOffice) },
           ]}/>
-          <div style={{ fontSize: 11, fontWeight: 450, color: t.mutedFg, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 10 }}>Access</div>
+          <div style={{ fontSize: 11, fontWeight: 450, color: t.mutedFg, marginBottom: 10 }}>Access</div>
           <div style={{ fontSize: 12, color: t.mutedFg, marginBottom: 10 }}>View and request resources:</div>
           <ul style={{ margin: "0 0 14px", paddingLeft: 18 }}>
             <li style={{ fontSize: 12, color: t.fg, marginBottom: 4 }}><strong>Resource planners</strong> in <strong>Sydney</strong> and <strong>New York</strong></li>

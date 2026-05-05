@@ -45,6 +45,7 @@ pnpm lint      # run ESLint
 - The app is a single-page client component (`"use client"`) — no server components in `page.tsx`
 - shadcn/ui components live in `components/ui/` and use Tailwind + CSS variables
 - Never use `textTransform: "uppercase"` — all UI text should be written in natural case
+- Never use `letterSpacing` in any type style — no tracking on any text, anywhere
 
 ## Component Sync Rule
 
