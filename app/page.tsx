@@ -3518,8 +3518,8 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
         </HoverBtn>
         <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
         <FilterChip category="Project stage" operator="is any of" value="On track, +2" onClear={() => {}}/>
-        <FilterChip category="People type" operator="is any of" value="Active, +4" onClear={() => {}}/>
-        <FilterChip category="Time off" operator="is any of" value="Active, +1" onClear={() => {}}/>
+        {activeTab === "people" && <FilterChip category="People type" operator="is any of" value="Active, +4" onClear={() => {}}/>}
+        {activeTab === "people" && <FilterChip category="Time off" operator="is any of" value="Active, +1" onClear={() => {}}/>}
         <HoverBtn style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4 }}>
           <Plus size={11} strokeWidth={0.9}/>Filter
         </HoverBtn>
@@ -4267,15 +4267,13 @@ function FilterChip({ category, operator, value, onClear }: any) {
   )
 }
 
-function ReportHeader() {
-  const [dateOffset, setDateOffset] = useState(0)
+function ReportHeader({ dateOffset, setDateOffset, reportEntity, setReportEntity, peopleCount, projectsCount }: { dateOffset: number; setDateOffset: (fn: (o: number) => number) => void; reportEntity: "people" | "projects"; setReportEntity: (v: "people" | "projects") => void; peopleCount: number; projectsCount: number }) {
   const now = new Date()
   const base = new Date(now.getFullYear(), now.getMonth() + dateOffset, 1)
   const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate()
   const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString("default", { month: "short" })} ${d.getFullYear()}`
   const rangeStr = `${fmt(base)} – ${fmt(new Date(base.getFullYear(), base.getMonth(), lastDay))}`
   const monthLabel = dateOffset === 0 ? "This month" : dateOffset === -1 ? "Last month" : dateOffset === 1 ? "Next month" : base.toLocaleString("default", { month: "long", year: "numeric" })
-  const [activeTab, setActiveTab] = useState<"people"|"projects">("people")
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
@@ -4284,13 +4282,11 @@ function ReportHeader() {
           <HoverBtn style={s.secIconBtn}>
             <Layers size={13} strokeWidth={0.9}/>
           </HoverBtn>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {([["people", "62 People"], ["projects", "129 Projects"]] as const).map(([v, l]) => (
-              <RadiusTab key={v} active={activeTab === v} onClick={() => setActiveTab(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-                <Circle size={10} strokeWidth={0.9} style={{ fill: activeTab === v ? t.fg : "none" }}/>{l}
-              </RadiusTab>
-            ))}
-          </div>
+          {([["people", `${peopleCount} People`], ["projects", `${projectsCount} Projects`]] as const).map(([v, l]) => (
+            <RadiusTab key={v} active={reportEntity === v} onClick={() => setReportEntity(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+              <Circle size={10} strokeWidth={0.9} style={{ fill: reportEntity === v ? t.fg : "none" }}/>{l}
+            </RadiusTab>
+          ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <HoverBtn style={{ ...s.outlineBtn, gap: 4, padding: "0 8px 0 10px" }}>
@@ -4334,44 +4330,214 @@ function ReportHeader() {
   )
 }
 
-function ReportView({ breadcrumb }: any) {
+const REPORT_PHASE_POOL = ["Build", "Context Building", "Discovery", "Outcomes / Decision", "Product Requirements", "Technical Design", "Design", "Development", "Testing", "Deployment", "Handoff", "Planning", "Research", "Prototype", "Review"]
+
+function ReportView({ breadcrumb, people, roles, departments, projects }: any) {
+  const [dateOffset, setDateOffset] = useState(0)
+  const [subTab, setSubTab] = useState("people")
+  const [reportEntity, setReportEntity] = useState<"people" | "projects">("people")
+  const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set())
+  const [projTab, setProjTab] = useState("projects")
+
+  const reportRows = useMemo(() => people.map((person: any) => {
+    const dept = departments[person.departmentId]?.name ?? "No Department"
+    const h = person.name.split("").reduce((a: number, c: string) => (a * 31 + c.charCodeAt(0)) & 0x7fffffff, 0)
+    const capacity = person.roleId != null ? 160 + (h % 4) * 8 : 0
+    const h2 = (h * 1103515245 + 12345) & 0x7fffffff
+    const schedType = h2 % 10
+    let scheduled = 0
+    if (schedType === 0) scheduled = Math.round(capacity * (1.8 + (h2 % 40) * 0.005) / 4) * 4
+    else if (schedType <= 2) scheduled = Math.round(capacity * (0.5 + (h2 % 50) * 0.008) / 4) * 4
+    else if (schedType === 3) scheduled = Math.round((8 + h2 % 112) / 8) * 8
+    const diff = scheduled
+    return { name: person.name, dept, capacity, scheduled, logged: 0, diff }
+  }), [people, departments])
+
+  const maxDiff = useMemo(() => Math.max(...reportRows.map((r: any) => r.diff), 400), [reportRows])
+
+  const columns = useMemo(() => [
+    {
+      id: "person", header: "Person", size: 220,
+      cell: ({ row }: any) => (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <ChevronRight size={12} strokeWidth={0.9} style={{ color: t.mutedFg, flexShrink: 0, opacity: 0.45 }}/>
+          <span style={{ fontSize: 13, color: t.fg }}>{row.original.name}</span>
+        </div>
+      ),
+    },
+    {
+      id: "dept", header: "Department", size: 160,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.dept}</span>,
+    },
+    {
+      id: "capacity", header: "Capacity", size: 110,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.capacity > 0 ? `${row.original.capacity}h` : "0h"}</span>,
+    },
+    {
+      id: "scheduled", header: "Scheduled", size: 110,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.scheduled > 0 ? `${row.original.scheduled}h` : "0h"}</span>,
+    },
+    {
+      id: "logged", header: "Logged", size: 110,
+      cell: () => <span style={{ fontSize: 13, color: t.fg }}>0h</span>,
+    },
+    {
+      id: "difference", header: "Difference", size: 200,
+      cell: ({ row }: any) => {
+        const { diff, capacity } = row.original
+        const isOver = capacity > 0 && diff > capacity
+        const barPct = diff > 0 ? Math.min(diff / maxDiff, 1) : 0
+        const barColor = isOver ? "#f97066" : diff > 0 ? "#2DD4BF" : "transparent"
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
+            <span style={{ fontSize: 13, color: t.fg, minWidth: 52, textAlign: "right", flexShrink: 0 }}>
+              {diff > 0 ? `${diff}h` : "0h"}
+            </span>
+            <div style={{ flex: 1, position: "relative", height: 5, borderRadius: 3, background: t.fgAlpha06 }}>
+              <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${barPct * 100}%`, background: barColor, borderRadius: 3 }}/>
+            </div>
+            <div style={{ width: 1, height: 14, background: t.border, flexShrink: 0 }}/>
+          </div>
+        )
+      },
+    },
+  ], [maxDiff])
+
+  const projectReportData = useMemo(() => (projects || []).map((p: any) => {
+    const h = p.name.split("").reduce((a: number, c: string) => (a * 31 + c.charCodeAt(0)) & 0x7fffffff, 0)
+    const futureSched = Math.round((6 + h % 44) * 0.8 * 10) / 10
+    const projCost = Math.round(futureSched * 80)
+    const schedPct = 20 + (h % 75)
+    const phaseCount = 3 + (h % 4)
+    const phases: any[] = []
+    let remaining = futureSched
+    for (let j = 0; j < phaseCount; j++) {
+      const ph = (h * (j + 7) * 1103515245 + 12345) & 0x7fffffff
+      const phaseIdx = (h + j * 7) % REPORT_PHASE_POOL.length
+      const isLast = j === phaseCount - 1
+      const phHours = isLast ? Math.round(remaining * 10) / 10 : Math.round((ph % 100) / 100 * remaining * 0.45 * 10) / 10
+      if (!isLast) remaining -= phHours
+      phases.push({ name: REPORT_PHASE_POOL[phaseIdx], futureSched: phHours, projCost: Math.round(phHours * 80) })
+    }
+    return { ...p, futureSched, projCost, schedPct, phases, clientName: CLIENTS_FULL[p.clientId]?.name ?? "—" }
+  }), [projects])
+
+  const flatProjectRows = useMemo(() => {
+    const rows: any[] = []
+    projectReportData.forEach((proj: any, i: number) => {
+      rows.push({ ...proj, _type: "project", _idx: i })
+      if (expandedProjects.has(i)) {
+        proj.phases.forEach((phase: any) => {
+          rows.push({ ...phase, _type: "phase", _projIdx: i })
+        })
+      }
+    })
+    return rows
+  }, [projectReportData, expandedProjects])
+
+  const projectColumns = useMemo(() => [
+    {
+      id: "project", header: "Project", size: 240,
+      cell: ({ row }: any) => {
+        if (row.original._type === "phase") return <span style={{ paddingLeft: 20, fontSize: 13, color: t.fg }}>{row.original.name}</span>
+        const isExp = expandedProjects.has(row.original._idx)
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {isExp ? <ChevronDown size={12} strokeWidth={0.9} style={{ color: t.mutedFg, flexShrink: 0 }}/> : <ChevronRight size={12} strokeWidth={0.9} style={{ color: t.mutedFg, flexShrink: 0, opacity: 0.45 }}/>}
+            <span style={{ fontSize: 13, color: t.fg }}>{row.original.name}</span>
+          </div>
+        )
+      },
+    },
+    {
+      id: "code", header: "Project code", size: 110,
+      cell: ({ row }: any) => row.original._type === "phase" ? null : <span style={{ fontSize: 13, color: t.mutedFg }}>{row.original.code ?? "—"}</span>,
+    },
+    {
+      id: "client", header: "Client", size: 150,
+      cell: ({ row }: any) => row.original._type === "phase" ? null : <span style={{ fontSize: 13, color: t.fg }}>{row.original.clientName}</span>,
+    },
+    {
+      id: "stage", header: "Stage", size: 70,
+      cell: ({ row }: any) => {
+        if (row.original._type === "phase") return null
+        const stg = STAGE_OPTIONS.find((o: any) => o.value === row.original.stage) ?? STAGE_OPTIONS[0]
+        return <StageIcon type={stg.iconType} color={stg.color}/>
+      },
+    },
+    {
+      id: "owner", header: "Owner", size: 60,
+      cell: ({ row }: any) => {
+        if (row.original._type === "phase") return null
+        const owner = people[row.original.ownerId]
+        if (!owner) return null
+        return <div style={{ width: 22, height: 22, borderRadius: "50%", background: t.muted, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: t.fg, flexShrink: 0 }}>{owner.name.charAt(0)}</div>
+      },
+    },
+    {
+      id: "budget", header: "Budget", size: 110,
+      cell: ({ row }: any) => row.original._type === "phase" ? null : <span style={{ fontSize: 13, color: t.fg }}>{row.original.budget ? `$${row.original.budget.toLocaleString()}` : "—"}</span>,
+    },
+    {
+      id: "schedPct", header: "Sched. %", size: 90,
+      cell: ({ row }: any) => row.original._type === "phase" ? null : <span style={{ fontSize: 13, color: t.fg }}>{row.original.schedPct}%</span>,
+    },
+    {
+      id: "futureSched", header: "Future scheduled", size: 140,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.futureSched > 0 ? `${row.original.futureSched}h` : "0h"}</span>,
+    },
+    {
+      id: "pastLogged", header: "Past logged", size: 110,
+      cell: () => <span style={{ fontSize: 13, color: t.fg }}>0h</span>,
+    },
+    {
+      id: "billableExp", header: "Billable expenses", size: 140,
+      cell: () => <span style={{ fontSize: 13, color: t.fg }}>USD 0</span>,
+    },
+    {
+      id: "projCost", header: "Projected cost", size: 130,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.projCost > 0 ? `USD ${row.original.projCost.toLocaleString()}` : "USD 0"}</span>,
+    },
+  ], [expandedProjects, people])
+
+  const SUBTABS = [
+    { id: "people",       label: "People",       count: people.length },
+    { id: "roles",        label: "Roles",        count: roles.length },
+    { id: "departments",  label: "Departments",  count: departments.length },
+    { id: "projects",     label: "Projects",     count: projects?.length ?? 0 },
+    { id: "tasks",        label: "Tasks",        count: 1 },
+    { id: "timeoff",      label: "Time off",     count: 2 },
+    { id: "timetracking", label: "Time tracking", count: null },
+  ]
+
   return (
-    <div style={{ display: "flex", flex: 1, flexDirection: "column", background: t.bg }}>
-      <ReportHeader/>
-      <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center", background: t.bg }}>
-      <svg width="467" height="284" viewBox="0 0 467 284" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <g clipPath="url(#rp-clip)"><GridBg/>
-          <path d="M202.91 163.395V179.72L183.96 168.77V152.458L202.91 163.395Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M202.91 136.207V157.957L189.01 149.932L183.96 147.02V125.257L202.91 136.207Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M202.91 92.695V130.77L189.01 122.732L183.96 119.82V81.7575L202.91 92.695Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M217.448 144.595L217.21 144.72L212.398 147.12V153.22L208.96 154.933L202.91 157.958V136.208L208.96 133.183L212.398 131.47V141.683L217.448 144.595Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M231.347 158.07V196.133L212.397 185.195V147.12L218.047 150.382L223.097 153.308L227.91 156.083L231.347 158.07Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M240.835 147.882V153.333L237.397 155.045L231.347 158.07L227.91 156.083L223.097 153.308L218.047 150.382L212.397 147.12L217.21 144.72L217.447 144.595L223.097 147.858L231.347 152.62L237.397 149.595L240.835 147.882Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M240.835 185.295L245.885 188.207L240.835 190.732V191.395L231.348 196.133V158.07L237.398 155.045L240.835 153.332V158.095L245.885 161.007L240.835 163.532V185.295Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M284.785 189.17V200.058L259.785 212.558V201.67L284.785 189.17Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M259.784 201.67V212.558L240.835 201.608V190.732L241.447 191.082L259.784 201.67Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M284.784 189.17L259.784 201.67L241.447 191.083L240.835 190.733L245.885 188.208L246.497 188.558L259.784 196.233L269.635 191.308L279.735 186.258L284.784 189.17Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M284.785 161.982V183.732L279.735 186.257L269.635 191.308L259.785 196.233V174.482L265.835 171.457L284.785 161.982Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M259.784 174.483V196.233L246.497 188.558L245.885 188.207L240.835 185.295V163.532L256.347 172.495L259.784 174.483Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M284.784 161.983L265.835 171.458L259.784 174.483L256.347 172.495L240.835 163.533L245.885 161.007L256.347 167.058L259.784 169.045L265.835 166.02L279.735 159.07L284.784 161.983Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M284.785 113.032V156.545L279.735 159.07L265.835 166.02L259.785 169.045V125.532L265.835 122.508L284.785 113.032Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M284.784 113.032L265.835 122.508L259.784 125.532L256.347 123.545L251.535 120.77L246.497 117.858L240.835 114.595L245.647 112.183L250.697 109.67L256.347 106.845L265.835 102.095L284.784 113.032Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M256.348 96.6202V106.845L250.698 109.67L245.648 112.183L240.835 114.595V120.695L237.398 122.407L231.348 125.433V109.12L241.21 104.183L256.348 96.6202Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M212.398 98.17V114.482L217.448 117.395L217.198 117.52L212.398 119.92V126.032L208.96 127.745L202.91 130.77V92.695L208.96 89.67L227.91 80.195V90.42L212.398 98.17Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M227.91 80.195L208.96 89.67L202.91 92.695L183.96 81.7575L208.96 69.2575L227.91 80.195Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M212.397 126.032V131.47L208.96 133.182L202.91 136.207L183.96 125.257L189.01 122.732L202.91 130.77L208.96 127.745L212.397 126.032Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M231.347 109.12V125.432L223.11 120.67L217.447 117.395L212.397 114.482V98.1699L227.91 107.132L231.347 109.12Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M256.347 96.6199L241.21 104.182L231.347 109.12L227.91 107.132L212.397 98.1699L227.91 90.4197L237.397 85.6699L256.347 96.6199Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M259.784 125.532V169.045L256.347 167.058L245.885 161.007L240.835 158.095V114.595L246.497 117.858L251.535 120.77L256.347 123.545L259.784 125.532Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M231.347 130.87V152.62L223.097 147.857L217.447 144.595L212.397 141.682V119.92L218.06 123.195L223.11 126.107L227.91 128.882L231.347 130.87Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M240.835 120.695V126.132L237.397 127.845L231.347 130.87L227.91 128.882L223.11 126.107L218.06 123.195L212.397 119.92L217.197 117.52L217.447 117.395L223.11 120.67L231.347 125.432L237.397 122.407L240.835 120.695Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M240.835 126.132V147.882L237.398 149.595L231.348 152.62V130.87L237.398 127.845L240.835 126.132Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M212.398 158.657V174.983L202.91 179.72V163.395L212.398 158.657Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M212.397 153.22V158.657L202.91 163.395L183.96 152.458L189.01 149.933L202.91 157.958L208.96 154.933L212.397 153.22Z" stroke={t.fgAlpha70} strokeWidth="0.625" strokeLinecap="round" strokeLinejoin="round"/>
-        </g>
-        <defs><clipPath id="rp-clip"><rect width="467" height="284" fill="white"/></clipPath></defs>
-      </svg>
+    <div style={{ display: "flex", flex: 1, flexDirection: "column", background: t.bg, overflow: "hidden" }}>
+      <ReportHeader dateOffset={dateOffset} setDateOffset={setDateOffset} reportEntity={reportEntity} setReportEntity={setReportEntity} peopleCount={people.length} projectsCount={projects?.length ?? 0}/>
+      <div style={{ display: "flex", alignItems: "center", padding: "6px 24px 8px" }}>
+        {reportEntity === "projects" ? (
+          <Tabs active={projTab} onChange={setProjTab} tabs={[
+            { value: "projects", label: `Projects ${projectReportData.length}` },
+            { value: "clients",  label: `Clients ${new Set(projectReportData.map((p: any) => p.clientId)).size}` },
+            { value: "expenses", label: "Expenses" },
+          ]}/>
+        ) : (
+          <Tabs active={subTab} onChange={setSubTab} tabs={SUBTABS.map(tab => ({ value: tab.id, label: tab.count != null ? `${tab.count} ${tab.label}` : tab.label }))}/>
+        )}
       </div>
+      {reportEntity === "projects" ? (
+        <DataTable
+          key="report-projects"
+          columns={projectColumns}
+          data={flatProjectRows}
+          onRowClick={(row: any) => {
+            if (row._type === "project") setExpandedProjects(prev => { const n = new Set(prev); n.has(row._idx) ? n.delete(row._idx) : n.add(row._idx); return n })
+          }}
+          isRowSelected={(row: any) => row._type === "phase"}
+          paddingX={24}
+        />
+      ) : (
+        <DataTable key="report-people" columns={columns} data={subTab === "people" ? reportRows : []} paddingX={24}/>
+      )}
     </div>
   )
 }
@@ -7088,7 +7254,7 @@ export default function App() {
     if (activeItem === "Saved Dashboard") return <SavedDashboardView cards={savedDashboardCards} projects={projects} clientsFull={clientsFull} people={people}/>
     if (activeItem === "Settings") return <SettingsPage key={settingsOfficeTarget ?? "__org__"} t={t} s={s} locations={LOCATIONS_INIT} officeTarget={settingsOfficeTarget} onBack={() => { setActiveItem("Dashboard"); setBreadcrumb(["Global", "Dashboard"]); setSettingsOfficeTarget(null) }}/>
     if (activeItem === "Dashboard") return <DashboardView breadcrumb={breadcrumb}/>
-    if (activeItem === "Report") return <ReportView breadcrumb={breadcrumb}/>
+    if (activeItem === "Report") return <ReportView breadcrumb={breadcrumb} people={people} roles={roles} departments={departments} projects={projects}/>
     if (activeItem === "Schedule") return <ScheduleView breadcrumb={breadcrumb}/>
     if (activeItem === "Project plan") return <ProjectPlanView breadcrumb={breadcrumb}/>
     if (activeItem === "My time") return <MyTimeView breadcrumb={breadcrumb}/>
