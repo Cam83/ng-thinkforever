@@ -11,6 +11,12 @@ import {
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
 import { HoverBtn as CamHoverBtn, RadiusTab } from "@cam-ui/components"
+function ClientOnly({ children, width, height }: { children: React.ReactNode; width?: number; height?: number }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return <div style={{ width, height }}/>
+  return <>{children}</>
+}
 function HoverBtn(props: any) { return <CamHoverBtn accentColor={t.accent} {...props} /> }
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, forceX, forceY } from "d3-force"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -459,9 +465,11 @@ function Collapsible({ expanded, children }: any) {
   )
 }
 
-function NikeLogo({ themeMode }: any) {
+function NikeLogo() {
   return (
-    <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/002_nike-logos-swoosh-white-0nPbb6zNJMvApD16nQ1CvQL4h5mmIp.png" alt="Nike" style={{ height: 24, width: "auto", filter: themeMode === "light" ? "brightness(0)" : "none" }} />
+    <svg height="20" viewBox="0 0 872 1572" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style={{ display: "block", flexShrink: 0 }}>
+      <path d="M15 0H235.5L871.5 1571.5H643L465 1106H0V927H392.5L15 0Z"/>
+    </svg>
   )
 }
 
@@ -500,46 +508,46 @@ const INITIAL_PEOPLE = [
   { name: "Jake Peralta", roleId: 0, departmentId: 0, office: "New York", deliveryTeamIds: [0], groupIds: [0, 2] },
   { name: "Amy Santiago", roleId: 1, departmentId: 0, office: "New York", deliveryTeamIds: [1], groupIds: [0] },
   { name: "Rosa Diaz", roleId: 2, departmentId: 1, office: "Melbourne", deliveryTeamIds: [2], groupIds: [1] },
-  { name: "Terry Jeffords", roleId: 3, departmentId: 2, office: "Sydney", deliveryTeamIds: [0], groupIds: [0, 1] },
+  { name: "Terry Jeffords", roleId: 3, departmentId: 2, office: "Berlin", deliveryTeamIds: [0], groupIds: [0, 1] },
   { name: "Charles Boyle", roleId: 1, departmentId: 0, office: "New York", deliveryTeamIds: [1], groupIds: [] },
   { name: "Michael Hitchcock", roleId: 0, departmentId: 1, office: "London", deliveryTeamIds: [3], groupIds: [2] },
   { name: "Norm Scully", roleId: 2, departmentId: 2, office: "New York", deliveryTeamIds: [3], groupIds: [] },
-  { name: "Rachel Green", roleId: 0, departmentId: 0, office: "Sydney", deliveryTeamIds: [2], groupIds: [1, 2] },
+  { name: "Rachel Green", roleId: 0, departmentId: 0, office: "Berlin", deliveryTeamIds: [2], groupIds: [1, 2] },
   { name: "Monica Geller", roleId: 1, departmentId: 1, office: "London", deliveryTeamIds: [0], groupIds: [0] },
   { name: "Phoebe Buffay", roleId: 2, departmentId: 2, office: "New York", deliveryTeamIds: [], groupIds: [1] },
   { name: "Joey Tribbiani", roleId: 3, departmentId: 0, office: "Melbourne", deliveryTeamIds: [1], groupIds: [] },
-  { name: "Chandler Bing", roleId: 0, departmentId: 1, office: "Sydney", deliveryTeamIds: [2], groupIds: [0, 1] },
+  { name: "Chandler Bing", roleId: 0, departmentId: 1, office: "Berlin", deliveryTeamIds: [2], groupIds: [0, 1] },
   { name: "Ross Geller", roleId: 1, departmentId: 2, office: "London", deliveryTeamIds: [3], groupIds: [2] },
   { name: "Gunther", roleId: 2, departmentId: 1, office: "New York", deliveryTeamIds: [], groupIds: [0] },
   { name: "Janice Litman", roleId: 3, departmentId: 2, office: "New York", deliveryTeamIds: [1], groupIds: [1, 2] },
   // Parks and Recreation
-  { name: "Leslie Knope", roleId: 7, departmentId: 3, office: "Beaverton HQ", deliveryTeamIds: [0], groupIds: [0] },
-  { name: "Ben Wyatt", roleId: 3, departmentId: 2, office: "Beaverton HQ", deliveryTeamIds: [0, 2], groupIds: [0, 1] },
-  { name: "Ann Perkins", roleId: 8, departmentId: 0, office: "Hilversum", deliveryTeamIds: [1], groupIds: [2] },
-  { name: "Chris Traeger", roleId: 7, departmentId: 2, office: "Beaverton HQ", deliveryTeamIds: [0], groupIds: [0] },
+  { name: "Leslie Knope", roleId: 7, departmentId: 3, office: "Los Angeles", deliveryTeamIds: [0], groupIds: [0] },
+  { name: "Ben Wyatt", roleId: 3, departmentId: 2, office: "Los Angeles", deliveryTeamIds: [0, 2], groupIds: [0, 1] },
+  { name: "Ann Perkins", roleId: 8, departmentId: 0, office: "Toronto", deliveryTeamIds: [1], groupIds: [2] },
+  { name: "Chris Traeger", roleId: 7, departmentId: 2, office: "Los Angeles", deliveryTeamIds: [0], groupIds: [0] },
   { name: "Tom Haverford", roleId: 10, departmentId: 3, office: "New York", deliveryTeamIds: [3], groupIds: [1] },
-  { name: "April Ludgate", roleId: 3, departmentId: 2, office: "Beaverton HQ", deliveryTeamIds: [2], groupIds: [] },
+  { name: "April Ludgate", roleId: 3, departmentId: 2, office: "Los Angeles", deliveryTeamIds: [2], groupIds: [] },
   { name: "Andy Dwyer", roleId: 9, departmentId: 0, office: "London", deliveryTeamIds: [3], groupIds: [2] },
-  { name: "Ron Swanson", roleId: 7, departmentId: 2, office: "Beaverton HQ", deliveryTeamIds: [], groupIds: [0] },
-  { name: "Jerry Gergich", roleId: 11, departmentId: 3, office: "Beaverton HQ", deliveryTeamIds: [1], groupIds: [] },
-  { name: "Donna Meagle", roleId: 6, departmentId: 3, office: "Beaverton HQ", deliveryTeamIds: [0], groupIds: [0, 2] },
-  { name: "Craig Middlebrooks", roleId: 3, departmentId: 2, office: "Hilversum", deliveryTeamIds: [2], groupIds: [2] },
+  { name: "Ron Swanson", roleId: 7, departmentId: 2, office: "Los Angeles", deliveryTeamIds: [], groupIds: [0] },
+  { name: "Jerry Gergich", roleId: 11, departmentId: 3, office: "Los Angeles", deliveryTeamIds: [1], groupIds: [] },
+  { name: "Donna Meagle", roleId: 6, departmentId: 3, office: "Los Angeles", deliveryTeamIds: [0], groupIds: [0, 2] },
+  { name: "Craig Middlebrooks", roleId: 3, departmentId: 2, office: "Toronto", deliveryTeamIds: [2], groupIds: [2] },
   { name: "Mark Brendanawicz", roleId: 4, departmentId: 0, office: "Shanghai", deliveryTeamIds: [3], groupIds: [] },
   { name: "Dave Sanderson", roleId: 5, departmentId: 3, office: "New York", deliveryTeamIds: [1], groupIds: [1] },
   { name: "Jennifer Barkley", roleId: 6, departmentId: 3, office: "New York", deliveryTeamIds: [0], groupIds: [0] },
-  { name: "Ethel Beavers", roleId: 11, departmentId: 3, office: "Beaverton HQ", deliveryTeamIds: [], groupIds: [] },
+  { name: "Ethel Beavers", roleId: 11, departmentId: 3, office: "Los Angeles", deliveryTeamIds: [], groupIds: [] },
   { name: "Jean-Ralphio Saperstein", roleId: 6, departmentId: 3, office: "New York", deliveryTeamIds: [3], groupIds: [1, 2] },
   { name: "Mona Lisa Saperstein", roleId: 10, departmentId: 3, office: "New York", deliveryTeamIds: [3], groupIds: [1] },
-  { name: "Shauna Malwae-Tweep", roleId: 5, departmentId: 3, office: "Hilversum", deliveryTeamIds: [1], groupIds: [2] },
+  { name: "Shauna Malwae-Tweep", roleId: 5, departmentId: 3, office: "Toronto", deliveryTeamIds: [1], groupIds: [2] },
   { name: "Bobby Newport", roleId: 6, departmentId: 3, office: "Shanghai", deliveryTeamIds: [0], groupIds: [] },
-  { name: "Councilman Jamm", roleId: 3, departmentId: 2, office: "Beaverton HQ", deliveryTeamIds: [2], groupIds: [0] },
+  { name: "Councilman Jamm", roleId: 3, departmentId: 2, office: "Los Angeles", deliveryTeamIds: [2], groupIds: [0] },
   // More Friends
   { name: "Richard Burke", roleId: 7, departmentId: 0, office: "New York", deliveryTeamIds: [], groupIds: [0] },
   { name: "Emily Waltham", roleId: 3, departmentId: 2, office: "London", deliveryTeamIds: [2], groupIds: [] },
   { name: "Carol Willick", roleId: 8, departmentId: 1, office: "New York", deliveryTeamIds: [1], groupIds: [1] },
   { name: "Tag Jones", roleId: 8, departmentId: 0, office: "New York", deliveryTeamIds: [1], groupIds: [2] },
   { name: "Estelle Leonard", roleId: 6, departmentId: 3, office: "New York", deliveryTeamIds: [0], groupIds: [] },
-  { name: "Charlie Wheeler", roleId: 4, departmentId: 0, office: "Sydney", deliveryTeamIds: [3], groupIds: [2] },
+  { name: "Charlie Wheeler", roleId: 4, departmentId: 0, office: "Berlin", deliveryTeamIds: [3], groupIds: [2] },
   { name: "Elizabeth Stevens", roleId: 1, departmentId: 0, office: "New York", deliveryTeamIds: [1], groupIds: [] },
   { name: "Barry Farber", roleId: 6, departmentId: 3, office: "New York", deliveryTeamIds: [0], groupIds: [1] },
   { name: "Paolo", roleId: 9, departmentId: 0, office: "London", deliveryTeamIds: [3], groupIds: [] },
@@ -548,40 +556,138 @@ const INITIAL_PEOPLE = [
   { name: "Doug Judy", roleId: 6, departmentId: 3, office: "New York", deliveryTeamIds: [3], groupIds: [1] },
   { name: "Teddy Wells", roleId: 3, departmentId: 2, office: "New York", deliveryTeamIds: [0], groupIds: [] },
   { name: "Sophia Perez", roleId: 8, departmentId: 0, office: "Shanghai", deliveryTeamIds: [1], groupIds: [2] },
-  { name: "Bill Fontaine", roleId: 2, departmentId: 1, office: "Hilversum", deliveryTeamIds: [2], groupIds: [] },
+  { name: "Bill Fontaine", roleId: 2, departmentId: 1, office: "Toronto", deliveryTeamIds: [2], groupIds: [] },
   { name: "Marcus Henderson", roleId: 2, departmentId: 1, office: "New York", deliveryTeamIds: [2], groupIds: [1] },
   { name: "Debbie Fogle", roleId: 11, departmentId: 3, office: "New York", deliveryTeamIds: [1], groupIds: [2] },
-  { name: "Keith Ferguson", roleId: 0, departmentId: 0, office: "Sydney", deliveryTeamIds: [3], groupIds: [] },
+  { name: "Keith Ferguson", roleId: 0, departmentId: 0, office: "Berlin", deliveryTeamIds: [3], groupIds: [] },
   { name: "Scully Junior", roleId: 0, departmentId: 1, office: "New York", deliveryTeamIds: [3], groupIds: [] },
   { name: "Lohank", roleId: 5, departmentId: 3, office: "Shanghai", deliveryTeamIds: [0], groupIds: [1] },
-  { name: "Vulture Pembroke", roleId: 3, departmentId: 2, office: "Beaverton HQ", deliveryTeamIds: [0], groupIds: [0] },
+  { name: "Vulture Pembroke", roleId: 3, departmentId: 2, office: "Los Angeles", deliveryTeamIds: [0], groupIds: [0] },
   // Mixed — Parks, Friends, B99
-  { name: "Orin", roleId: 9, departmentId: 0, office: "Hilversum", deliveryTeamIds: [3], groupIds: [] },
-  { name: "Kyle", roleId: 0, departmentId: 1, office: "Beaverton HQ", deliveryTeamIds: [2], groupIds: [] },
+  { name: "Orin", roleId: 9, departmentId: 0, office: "Toronto", deliveryTeamIds: [3], groupIds: [] },
+  { name: "Kyle", roleId: 0, departmentId: 1, office: "Los Angeles", deliveryTeamIds: [2], groupIds: [] },
   { name: "Susan Bunch", roleId: 8, departmentId: 1, office: "London", deliveryTeamIds: [1], groupIds: [2] },
   { name: "Mike Hannigan", roleId: 4, departmentId: 0, office: "New York", deliveryTeamIds: [2], groupIds: [0] },
   { name: "Mindy Hunter", roleId: 10, departmentId: 3, office: "New York", deliveryTeamIds: [1], groupIds: [] },
-  { name: "David (Phoebe's guy)", roleId: 2, departmentId: 1, office: "Hilversum", deliveryTeamIds: [2], groupIds: [1] },
-  { name: "Pete Becker", roleId: 4, departmentId: 0, office: "Sydney", deliveryTeamIds: [3], groupIds: [] },
+  { name: "David (Phoebe's guy)", roleId: 2, departmentId: 1, office: "Toronto", deliveryTeamIds: [2], groupIds: [1] },
+  { name: "Pete Becker", roleId: 4, departmentId: 0, office: "Berlin", deliveryTeamIds: [3], groupIds: [] },
   { name: "Sandy Richards", roleId: 5, departmentId: 3, office: "Shanghai", deliveryTeamIds: [0], groupIds: [2] },
-  { name: "Ken Hotate", roleId: 7, departmentId: 2, office: "Beaverton HQ", deliveryTeamIds: [], groupIds: [0] },
+  { name: "Ken Hotate", roleId: 7, departmentId: 2, office: "Los Angeles", deliveryTeamIds: [], groupIds: [0] },
 ]
 const INITIAL_CONTRACTORS = [
   { name: "Raymond Holt", roleId: 3, departmentId: 2, office: "London" },
-  { name: "Madeline Wuntch", roleId: 2, departmentId: 1, office: "Sydney" },
+  { name: "Madeline Wuntch", roleId: 2, departmentId: 1, office: "Berlin" },
   { name: "Kevin Cozner", roleId: 0, departmentId: 0, office: "Melbourne" },
   { name: "Adrian Pimento", roleId: 2, departmentId: 0, office: "New York" },
   { name: "Gina Linetti", roleId: 3, departmentId: 1, office: "Melbourne" },
-  { name: "Nikolaj Boyle", roleId: 0, departmentId: 0, office: "Sydney" },
+  { name: "Nikolaj Boyle", roleId: 0, departmentId: 0, office: "Berlin" },
   { name: "Mike Hannigan", roleId: 2, departmentId: 1, office: "New York" },
   { name: "Darth Vader", roleId: 0, departmentId: 1, office: "London" },
-  { name: "Luke Skywalker", roleId: 1, departmentId: 2, office: "Sydney" },
+  { name: "Luke Skywalker", roleId: 1, departmentId: 2, office: "Berlin" },
   { name: "Han Solo", roleId: 3, departmentId: 1, office: "Melbourne" },
 ]
 const INITIAL_PROJECTS: any[] = []
 
-const INITIAL_CLIENTS_DATA = [{ name: "Agency rack rate" }, { name: "Reebok" }, { name: "Adidas" }]
-const ALL_OFFICES = ["Global", "Beaverton HQ", "Hilversum", "Shanghai", "New York", "London", "Sydney"]
+const OFFICE_DASHBOARD_DATA: Record<string, { emp:number; con:number; ph:number; una:number; gross:number; toh:number; util:number; bill:number; rev:number; costs:number; margin:number; effR:number; avgR:number; toDays:number; toBreak:number[]; topClients:[string,number][] }> = {
+  "Global":      { emp:325, con:52, ph:18, una:7,  gross:52000, toh:2600, util:72, bill:54, rev:4160000, costs:1280000, margin:69, effR:148, avgR:157, toDays:363, toBreak:[148,72,68,26,30,19], topClients:[["Unilever",860000],["Adidas",720000],["Budweiser",590000],["Johnnie Walker",510000],["Mini",445000],["(+9 clients)",1035000]] },
+  "Los Angeles": { emp:62,  con:22, ph:6,  una:3,  gross:11200, toh:480,  util:84, bill:64, rev:1080000, costs:315000,  margin:71, effR:162, avgR:172, toDays:52,  toBreak:[18,12,10,4,5,3],    topClients:[["dosist",290000],["Don Julio",245000],["Corona",220000],["Jimmy Johns",190000],["Carhartt",95000],["(+3 clients)",40000]] },
+  "New York":    { emp:55,  con:8,  ph:3,  una:1,  gross:8800,  toh:528,  util:74, bill:58, rev:810000,  costs:245000,  margin:70, effR:168, avgR:178, toDays:58,  toBreak:[24,10,10,5,6,3],     topClients:[["Budweiser",230000],["Diet Coke",198000],["Unilever",175000],["Carhartt",145000],["Adidas",42000],["(+2 clients)",20000]] },
+  "Toronto":     { emp:38,  con:5,  ph:5,  una:3,  gross:6240,  toh:528,  util:62, bill:46, rev:355000,  costs:132000,  margin:63, effR:135, avgR:143, toDays:66,  toBreak:[28,12,8,3,7,8],      topClients:[["Crown Royal",145000],["Carhartt",105000],["Budweiser",65000],["Don Julio",28000],["Adidas",8000],["(+1 client)",4000]] },
+  "London":      { emp:52,  con:7,  ph:3,  una:1,  gross:8320,  toh:560,  util:74, bill:55, rev:660000,  costs:205000,  margin:69, effR:155, avgR:163, toDays:64,  toBreak:[26,12,10,6,7,3],     topClients:[["Johnnie Walker",205000],["Unilever",185000],["Rimowa",140000],["Israella Kobla",90000],["Adidas",30000],["(+2 clients)",10000]] },
+  "Paris":       { emp:32,  con:4,  ph:2,  una:2,  gross:5120,  toh:640,  util:58, bill:42, rev:275000,  costs:105000,  margin:62, effR:145, avgR:156, toDays:78,  toBreak:[32,10,16,4,8,8],      topClients:[["Rimowa",115000],["Israella Kobla",92000],["Unilever",45000],["Adidas",18000],["dosist",4000],["(+2 clients)",1000]] },
+  "Berlin":      { emp:28,  con:8,  ph:3,  una:2,  gross:4800,  toh:384,  util:79, bill:58, rev:380000,  costs:122000,  margin:68, effR:148, avgR:158, toDays:45,  toBreak:[16,9,10,3,4,3],      topClients:[["Mini",145000],["Adidas",112000],["Rimowa",82000],["Carhartt",28000],["Budweiser",10000],["(+2 clients)",3000]] },
+  "Shanghai":    { emp:48,  con:2,  ph:1,  una:0,  gross:7680,  toh:192,  util:88, bill:68, rev:600000,  costs:156000,  margin:74, effR:118, avgR:128, toDays:24,  toBreak:[10,6,4,1,2,1],       topClients:[["Mini",210000],["Adidas",172000],["Unilever",125000],["Budweiser",68000],["Don Julio",18000],["(+2 clients)",7000]] },
+}
+
+const OFFICE_CHART_FACTORS: Record<string, { demShape: number[]; revShape: number[]; costShape: number[] }> = {
+  "Global":      { demShape:[0.85,1.02,1.12,1.05,0.78], revShape:[0.14,0.19,0.22,0.28,0.17], costShape:[0.18,0.21,0.22,0.22,0.17] },
+  "Los Angeles": { demShape:[0.90,1.05,1.18,1.10,0.72], revShape:[0.12,0.18,0.25,0.30,0.15], costShape:[0.17,0.20,0.24,0.23,0.16] },
+  "New York":    { demShape:[0.82,0.98,1.15,1.08,0.65], revShape:[0.16,0.20,0.22,0.28,0.14], costShape:[0.19,0.21,0.22,0.22,0.16] },
+  "Toronto":     { demShape:[0.78,0.95,1.08,0.98,0.68], revShape:[0.15,0.21,0.24,0.26,0.14], costShape:[0.18,0.21,0.23,0.22,0.16] },
+  "London":      { demShape:[0.88,1.00,1.14,1.06,0.74], revShape:[0.13,0.19,0.23,0.29,0.16], costShape:[0.17,0.21,0.23,0.23,0.16] },
+  "Paris":       { demShape:[0.75,0.88,1.05,0.94,0.60], revShape:[0.16,0.22,0.21,0.27,0.14], costShape:[0.18,0.22,0.21,0.22,0.17] },
+  "Berlin":      { demShape:[0.88,1.04,1.16,1.08,0.76], revShape:[0.14,0.19,0.24,0.28,0.15], costShape:[0.17,0.21,0.24,0.22,0.16] },
+  "Shanghai":    { demShape:[0.92,1.08,1.20,1.12,0.80], revShape:[0.15,0.20,0.25,0.27,0.13], costShape:[0.18,0.21,0.24,0.22,0.15] },
+}
+
+function computeDash(office: string) {
+  const d = OFFICE_DASHBOARD_DATA[office] ?? OFFICE_DASHBOARD_DATA["Global"]
+  const delivery = d.gross - d.toh
+  const capPct = ((delivery / d.gross) * 100).toFixed(1)
+  const utilH = Math.round(delivery * d.util / 100)
+  const billH = Math.round(delivery * d.bill / 100)
+  const nonBillPct = d.util - d.bill
+  const nonBillH = utilH - billH
+  const pending = Math.round(d.toDays * 0.72)
+
+  const totalPpl = d.emp + d.con + d.ph + Math.max(d.una, 0)
+  const empH  = Math.round(delivery * (d.emp / totalPpl) * 0.97)
+  const conH  = Math.round(delivery * (d.con / totalPpl) * 1.05)
+  const phH   = Math.round(delivery * (d.ph  / totalPpl))
+  const unaH  = Math.max(0, delivery - empH - conH - phH)
+
+  const costScale = d.costs / OFFICE_DASHBOARD_DATA["Global"].costs
+  const baseBar = [
+    { name:"Employees",    billable:52000, nonBillable:40000 },
+    { name:"Contractors",  billable:33000, nonBillable:17000 },
+    { name:"Unassigned",   billable:9000,  nonBillable:7000  },
+    { name:"Placeholders", billable:800,   nonBillable:400   },
+    { name:"Expenses",     billable:56000, nonBillable:43000 },
+  ]
+  const barData = baseBar.map(r => ({ name:r.name, billable:Math.round(r.billable*costScale), nonBillable:Math.round(r.nonBillable*costScale) }))
+
+  const billOnT  = Math.round(d.bill * 0.30); const billOffT = Math.round(d.bill * 0.26); const billComp = d.bill - billOnT - billOffT
+  const nBillOnT = Math.round(nonBillPct / 3); const nBillOffT = Math.round(nonBillPct / 3); const nBillComp = nonBillPct - nBillOnT - nBillOffT
+
+  const billOnTH  = Math.round(billH * 0.30); const billOffTH = Math.round(billH * 0.26); const billCompH = billH - billOnTH - billOffTH
+  const nBillOnTH = Math.round(nonBillH / 3); const nBillOffTH = Math.round(nonBillH / 3); const nBillCompH = nonBillH - nBillOnTH - nBillOffTH
+
+  const futTotal = Math.round(delivery * 0.61); const futOT = Math.round(futTotal*0.40); const futOffT = Math.round(futTotal*0.20); const futComp = futTotal - futOT - futOffT
+  const pastTotal = Math.round(delivery * 0.23); const pastOT = Math.round(pastTotal*0.35); const pastOffT = Math.round(pastTotal*0.27); const pastComp = pastTotal - pastOT - pastOffT
+
+  const fmt = (n:number) => n.toLocaleString("en-US")
+  const fmtH = (n:number) => fmt(n)+"h"
+  const fmtUSD = (n:number) => "$"+fmt(n)
+
+  const cf = OFFICE_CHART_FACTORS[office] ?? OFFICE_CHART_FACTORS["Global"]
+  const weekLabels = ["1 Dec","8 Dec","15 Dec","22 Dec","29 Dec"]
+  const weeklyGross = Math.round(d.gross / 4.33)
+  const tohWeights  = [0.12, 0.13, 0.14, 0.28, 0.33]
+  const grossScales = [1.00, 1.02, 1.01, 0.97, 0.93]
+  const demSum  = cf.demShape.reduce((a,b)=>a+b,0)
+  const revSum  = cf.revShape.reduce((a,b)=>a+b,0)
+  const costSum = cf.costShape.reduce((a,b)=>a+b,0)
+  const capacityData = weekLabels.map((week, i) => {
+    const g     = Math.round(weeklyGross * grossScales[i])
+    const toh_w = Math.round(d.toh * tohWeights[i])
+    const del_w = Math.max(g - toh_w, 0)
+    const dem_w = Math.round(futTotal * cf.demShape[i] / demSum)
+    return { week, gross: g, delivery: del_w, demand: dem_w }
+  })
+  const revenueData = weekLabels.map((week, i) => ({
+    week,
+    revenue: Math.round(d.rev    * cf.revShape[i]  / revSum),
+    costs:   Math.round(d.costs  * cf.costShape[i] / costSum),
+  }))
+
+  return {
+    d,
+    delivery, capPct,
+    utilH, billH, nonBillPct, nonBillH,
+    empH, conH, phH, unaH,
+    pending,
+    billOnT, billOffT, billComp, billOnTH, billOffTH, billCompH,
+    nBillOnT, nBillOffT, nBillComp, nBillOnTH, nBillOffTH, nBillCompH,
+    futTotal, futOT, futOffT, futComp,
+    pastTotal, pastOT, pastOffT, pastComp,
+    barData,
+    capacityData, revenueData,
+    fmt, fmtH, fmtUSD,
+  }
+}
+
+const INITIAL_CLIENTS_DATA = [{ name: "Agency rack rate" }, { name: "Adidas" }, { name: "Budweiser" }]
+const ALL_OFFICES = ["Global", "Los Angeles", "New York", "Toronto", "London", "Paris", "Berlin", "Shanghai"]
 function StageIcon({ type, color }: { type: "dashed-circle" | "hex-outline" | "hex-filled"; color: string }) {
   if (type === "dashed-circle") return (
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
@@ -647,24 +753,47 @@ const PERSON_ACTIVITY = {
 }
 
 const CLIENTS_FULL = [
-  { name: "Google", rateCardName: "Base premium rates, 2026", projects: 12, office: "New York", contact: { name: "Sam Park", email: "sam.park@google.com" }, owner: "Jake Peralta", access: "admin", crmUrl: "https://crm.internal/clients/google", rateCards: [
-    { title: "Base premium rates, 2026", currency: "USD", offices: "all", notes: "Agreed at QBR Jan 2026. Includes 10% uplift on all senior roles.", effectiveFrom: "2026-01-01", linkedClients: ["Nike", "LinkedIn"], linkedRoles: [{roleId:0,billRate:160},{roleId:1,billRate:210},{roleId:2,billRate:185},{roleId:3,billRate:220},{roleId:4,billRate:205},{roleId:5,billRate:190}] },
-    { title: "Ecomm rates, 2026", currency: "USD", offices: "all", notes: "Secondary card for ecomm-only engagements.", effectiveFrom: "2026-02-01", linkedClients: ["Patagonia"], linkedRoles: [{roleId:0,billRate:135},{roleId:1,billRate:185},{roleId:2,billRate:165},{roleId:3,billRate:190},{roleId:4,billRate:175},{roleId:5,billRate:155}] },
+  { name: "Adidas", rateCardName: "Standard rates, 2026", projects: 9, office: "Berlin", contact: { name: "Mia Fischer", email: "m.fischer@adidas.com" }, owner: "Jake Peralta", access: "edit", crmUrl: "", rateCards: [
+    { title: "Standard rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:160},{roleId:1,billRate:210},{roleId:2,billRate:185},{roleId:3,billRate:215},{roleId:4,billRate:200},{roleId:5,billRate:180}] },
   ]},
-  { name: "Verizon", rateCardName: "Base ecomm rates, 2026", projects: 6, office: "New York", contact: { name: "Alex Monroe", email: "alex.monroe@verizon.com" }, owner: "Rosa Diaz", access: "edit", crmUrl: "https://crm.internal/clients/verizon", rateCards: [
-    { title: "Base ecomm rates, 2026", currency: "USD", offices: "all", notes: "Standard retainer rates. Reviewed annually each December.", effectiveFrom: "2026-01-15", linkedClients: ["Toyota"], linkedRoles: [{roleId:0,billRate:155},{roleId:1,billRate:200},{roleId:2,billRate:175},{roleId:3,billRate:205},{roleId:4,billRate:190},{roleId:5,billRate:170}] },
+  { name: "Budweiser", rateCardName: "Standard rates, 2026", projects: 5, office: "New York", contact: { name: "Tom Brady", email: "t.brady@anheuser-busch.com" }, owner: "Rosa Diaz", access: "", crmUrl: "", rateCards: [
+    { title: "Standard rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:150},{roleId:1,billRate:195},{roleId:2,billRate:170},{roleId:3,billRate:200},{roleId:4,billRate:185},{roleId:5,billRate:165}] },
   ]},
-  { name: "LinkedIn", rateCardName: "Premium rates, 2026", projects: 8, office: "London", contact: { name: "Priya Nair", email: "priya.nair@linkedin.com" }, owner: "Terry Jeffords", access: "edit", crmUrl: "https://crm.internal/clients/linkedin", rateCards: [
-    { title: "Premium rates, 2026", currency: "USD", offices: "all", notes: "Premium tier agreed following contract renewal in Q4 2025.", effectiveFrom: "2026-01-01", linkedClients: ["Google", "Verizon"], linkedRoles: [{roleId:0,billRate:170},{roleId:1,billRate:215},{roleId:2,billRate:190},{roleId:3,billRate:220},{roleId:4,billRate:205},{roleId:5,billRate:185}] },
+  { name: "Johnnie Walker", rateCardName: "Standard rates, 2026", projects: 4, office: "London", contact: { name: "Lena Scott", email: "l.scott@diageo.com" }, owner: "Terry Jeffords", access: "", crmUrl: "", rateCards: [
+    { title: "Standard rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:155},{roleId:1,billRate:200},{roleId:2,billRate:175},{roleId:3,billRate:205},{roleId:4,billRate:190},{roleId:5,billRate:170}] },
   ]},
-  { name: "Nike", rateCardName: "Standard rates, 2026", projects: 10, office: "Beaverton HQ", contact: { name: "Jordan Kim", email: "j.kim@nike.com" }, owner: "Monica Geller", access: "", crmUrl: "", rateCards: [
-    { title: "Standard rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "", linkedRoles: [{roleId:0,billRate:165},{roleId:1,billRate:220},{roleId:2,billRate:190},{roleId:3,billRate:225},{roleId:4,billRate:210},{roleId:5,billRate:190}] },
+  { name: "Crown Royal", rateCardName: "Standard rates, 2026", projects: 3, office: "Toronto", contact: { name: "James Okafor", email: "j.okafor@diageo.com" }, owner: "Monica Geller", access: "", crmUrl: "", rateCards: [
+    { title: "Standard rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:150},{roleId:1,billRate:195},{roleId:2,billRate:168},{roleId:3,billRate:198},{roleId:4,billRate:183},{roleId:5,billRate:162}] },
   ]},
-  { name: "Toyota", rateCardName: "Standard rates, 2026", projects: 10, office: "Sydney", contact: { name: "Ken Watanabe", email: "k.watanabe@toyota.com" }, owner: "Monica Geller", access: "", crmUrl: "", rateCards: [
-    { title: "Standard rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "", linkedRoles: [{roleId:0,billRate:165},{roleId:1,billRate:220},{roleId:2,billRate:190},{roleId:3,billRate:225},{roleId:4,billRate:210},{roleId:5,billRate:190}] },
+  { name: "Unilever", rateCardName: "Premium rates, 2026", projects: 11, office: "London", contact: { name: "Sophie Tan", email: "s.tan@unilever.com" }, owner: "Jake Peralta", access: "admin", crmUrl: "https://crm.internal/clients/unilever", rateCards: [
+    { title: "Premium rates, 2026", currency: "USD", offices: "all", notes: "Global retainer. Covers all offices.", effectiveFrom: "2026-01-01", linkedClients: ["Adidas"], linkedRoles: [{roleId:0,billRate:165},{roleId:1,billRate:215},{roleId:2,billRate:188},{roleId:3,billRate:218},{roleId:4,billRate:203},{roleId:5,billRate:183}] },
   ]},
-  { name: "Patagonia", rateCardName: "Agency specific, 2026", projects: 6, office: "London", contact: { name: "Claire Moss", email: "claire@patagonia.com" }, owner: "", access: "", crmUrl: "", rateCards: [
-    { title: "Agency specific, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "", linkedRoles: [{roleId:0,billRate:155},{roleId:1,billRate:205},{roleId:2,billRate:175},{roleId:3,billRate:215},{roleId:4,billRate:200},{roleId:5,billRate:180}] },
+  { name: "Diet Coke", rateCardName: "Standard rates, 2026", projects: 4, office: "New York", contact: { name: "Rachel Green", email: "r.green@coca-cola.com" }, owner: "Rosa Diaz", access: "", crmUrl: "", rateCards: [
+    { title: "Standard rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:148},{roleId:1,billRate:192},{roleId:2,billRate:168},{roleId:3,billRate:198},{roleId:4,billRate:182},{roleId:5,billRate:163}] },
+  ]},
+  { name: "Jimmy Johns", rateCardName: "Standard rates, 2026", projects: 3, office: "Los Angeles", contact: { name: "Mike Torres", email: "m.torres@jimmyjohns.com" }, owner: "Terry Jeffords", access: "", crmUrl: "", rateCards: [
+    { title: "Standard rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:140},{roleId:1,billRate:185},{roleId:2,billRate:160},{roleId:3,billRate:190},{roleId:4,billRate:175},{roleId:5,billRate:155}] },
+  ]},
+  { name: "Mini", rateCardName: "Standard rates, 2026", projects: 5, office: "Berlin", contact: { name: "Hans Müller", email: "h.muller@mini.com" }, owner: "Monica Geller", access: "edit", crmUrl: "", rateCards: [
+    { title: "Standard rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:158},{roleId:1,billRate:205},{roleId:2,billRate:178},{roleId:3,billRate:210},{roleId:4,billRate:195},{roleId:5,billRate:175}] },
+  ]},
+  { name: "Rimowa", rateCardName: "Premium rates, 2026", projects: 4, office: "Paris", contact: { name: "Céline Dubois", email: "c.dubois@rimowa.com" }, owner: "Jake Peralta", access: "edit", crmUrl: "", rateCards: [
+    { title: "Premium rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:168},{roleId:1,billRate:218},{roleId:2,billRate:192},{roleId:3,billRate:222},{roleId:4,billRate:207},{roleId:5,billRate:187}] },
+  ]},
+  { name: "Don Julio", rateCardName: "Standard rates, 2026", projects: 3, office: "Los Angeles", contact: { name: "Carlos Reyes", email: "c.reyes@diageo.com" }, owner: "Rosa Diaz", access: "", crmUrl: "", rateCards: [
+    { title: "Standard rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:152},{roleId:1,billRate:198},{roleId:2,billRate:172},{roleId:3,billRate:202},{roleId:4,billRate:187},{roleId:5,billRate:167}] },
+  ]},
+  { name: "Carhartt", rateCardName: "Standard rates, 2026", projects: 4, office: "New York", contact: { name: "Dana Webb", email: "d.webb@carhartt.com" }, owner: "Terry Jeffords", access: "", crmUrl: "", rateCards: [
+    { title: "Standard rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:145},{roleId:1,billRate:190},{roleId:2,billRate:165},{roleId:3,billRate:195},{roleId:4,billRate:180},{roleId:5,billRate:160}] },
+  ]},
+  { name: "Corona", rateCardName: "Standard rates, 2026", projects: 4, office: "Los Angeles", contact: { name: "Ana Flores", email: "a.flores@corona.com" }, owner: "Monica Geller", access: "", crmUrl: "", rateCards: [
+    { title: "Standard rates, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:148},{roleId:1,billRate:193},{roleId:2,billRate:168},{roleId:3,billRate:198},{roleId:4,billRate:183},{roleId:5,billRate:163}] },
+  ]},
+  { name: "dosist", rateCardName: "Agency specific, 2026", projects: 3, office: "Los Angeles", contact: { name: "Avery Chen", email: "a.chen@dosist.com" }, owner: "Jake Peralta", access: "edit", crmUrl: "", rateCards: [
+    { title: "Agency specific, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:155},{roleId:1,billRate:200},{roleId:2,billRate:175},{roleId:3,billRate:205},{roleId:4,billRate:190},{roleId:5,billRate:170}] },
+  ]},
+  { name: "Israella Kobla", rateCardName: "Agency specific, 2026", projects: 2, office: "London", contact: { name: "Israella Kobla", email: "studio@israellakobla.com" }, owner: "Rosa Diaz", access: "edit", crmUrl: "", rateCards: [
+    { title: "Agency specific, 2026", currency: "USD", offices: "all", notes: "", effectiveFrom: "2026-01-01", linkedRoles: [{roleId:0,billRate:150},{roleId:1,billRate:195},{roleId:2,billRate:170},{roleId:3,billRate:200},{roleId:4,billRate:185},{roleId:5,billRate:165}] },
   ]},
 ]
 
@@ -784,7 +913,7 @@ function makeRng(seed: number) {
 function getBusinessUnitProjects() {
   const rng = makeRng(42)
   const stageMap: Record<string, string> = { "Active": "on-track", "In Progress": "on-track", "Planning": "estimating" }
-  const offices = ["Global", "Beaverton HQ", "Hilversum", "Shanghai", "New York", "London", "Sydney"]
+  const offices = ["Global", "Los Angeles", "New York", "Toronto", "London", "Paris", "Berlin", "Shanghai"]
   const allProjects: any[] = []
 
   BUSINESS_UNITS_FULL.forEach((unit, _unitIdx) => {
@@ -867,13 +996,14 @@ const dataHubItems = [
   { name: "Activity log", icon: <Clock size={16} strokeWidth={0.9}/> },
 ]
 const LOCATIONS_INIT = [
-  { name: "Global", icon: <Globe size={16} strokeWidth={0.9}/>, expanded: false, items: globalSidebarItems },
-  { name: "Beaverton HQ", icon: <OfficeIcon/>, expanded: false, items: officeItems },
-  { name: "Hilversum", icon: <OfficeIcon/>, expanded: false, items: officeItems },
-  { name: "Shanghai", icon: <OfficeIcon/>, expanded: false, items: officeItems },
+  { name: "Global", icon: <Globe size={16} strokeWidth={0.9}/>, expanded: true, items: globalSidebarItems },
+  { name: "Los Angeles", icon: <OfficeIcon/>, expanded: false, items: officeItems },
   { name: "New York", icon: <OfficeIcon/>, expanded: false, items: officeItemsMyTime },
+  { name: "Toronto", icon: <OfficeIcon/>, expanded: false, items: officeItems },
   { name: "London", icon: <OfficeIcon/>, expanded: false, items: officeItems },
-  { name: "Sydney", icon: <OfficeIcon/>, expanded: false, items: officeItems },
+  { name: "Paris", icon: <OfficeIcon/>, expanded: false, items: officeItems },
+  { name: "Berlin", icon: <OfficeIcon/>, expanded: false, items: officeItems },
+  { name: "Shanghai", icon: <OfficeIcon/>, expanded: false, items: officeItems },
 ]
 
 // ── Shared UI ──
@@ -1078,7 +1208,7 @@ function AddPersonModal({ roles, departments, onAdd, onClose, type = "employee" 
   const [office, setOffice] = useState("New York")
   const nameRef = useRef<HTMLInputElement>(null)
   useEffect(() => { nameRef.current?.focus() }, [])
-  const officeOpts = ["New York", "London", "Sydney", "Melbourne", "Austin", "Los Angeles", "San Francisco", "Chicago", "Tokyo", "Singapore", "Berlin", "Paris", "Madrid"]
+  const officeOpts = ["New York", "London", "Berlin", "Melbourne", "Austin", "Los Angeles", "San Francisco", "Chicago", "Tokyo", "Singapore", "Berlin", "Paris", "Madrid"]
   function submit() {
     const n = name.trim()
     if (!n) return
@@ -1171,7 +1301,7 @@ function AddProjectModal({ people, clients, onAdd, onClose }: any) {
   const [office, setOffice] = useState("New York")
   const nameRef = useRef<HTMLInputElement>(null)
   useEffect(() => { nameRef.current?.focus() }, [])
-  const officeOpts = ["New York", "London", "Sydney", "Melbourne"]
+  const officeOpts = ["New York", "London", "Berlin", "Melbourne"]
   const inp = { width: "100%", fontSize: 13, color: t.fg, background: t.muted, border: `1px solid ${t.border}`, borderRadius: 6, padding: "8px 12px", outline: "none", fontFamily: "inherit" }
   function submit() {
     const n = name.trim()
@@ -1275,7 +1405,7 @@ function NotificationsPanel({ onClose, floating, navHoverOpen }: { onClose: () =
 }
 
 // ── Sidebar ──
-function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChange, themeMode, onThemeChange, visibleDataHubItems, onVisibleDataHubItemsChange, collapsed, onToggleCollapsed, notificationsOpen, onNotificationsToggle, onHoverChange, onSettingsOffice, hasSavedDashboard, onSavedDashboardClick, showFloatAgent, onFloatAgentToggle }: any) {
+function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBreadcrumbChange, themeMode, onThemeChange, visibleDataHubItems, onVisibleDataHubItemsChange, collapsed, onToggleCollapsed, notificationsOpen, onNotificationsToggle, onHoverChange, onSettingsOffice, hasSavedDashboard, onSavedDashboardClick, showFloatAgent, onFloatAgentToggle }: any) {
   const [locs, setLocs] = useState(LOCATIONS_INIT)
   const [dataHubExp, setDataHubExp] = useState(true)
   const [graphExp, setGraphExp] = useState(true)
@@ -1399,7 +1529,7 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
           <DropdownWrapper open={orgOpen} setOpen={setOrgOpen}
             trigger={
               <HoverBtn onClick={() => setOrgOpen(!orgOpen)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 6px", borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", color: t.fg }}>
-                <NikeLogo themeMode={themeMode}/>
+                <NikeLogo />
                 <ChevronDown size={12} strokeWidth={0.9} color={t.secondaryFg} style={{ transform: orgOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}/>
               </HoverBtn>
             }>
@@ -1511,7 +1641,7 @@ function SidebarNav({ version, activeItem, onActiveItemChange, onBreadcrumbChang
                         onMouseLeave={() => setHoveredNavItem(null)}
                         style={{ borderTop: dragOverKey === `${loc.name}::${item.name}` ? `2px solid ${t.accent}` : "2px solid transparent", opacity: draggingKey === `${loc.name}::${item.name}` ? 0.35 : 1 }}>
                         <HoverBtn onClick={() => setActive(item.name, [loc.name, item.name])}
-                          style={{ ...navItemStyle(activeItem === item.name), paddingTop: 6, paddingBottom: 6, paddingRight: 8, paddingLeft: 32 }}>
+                          style={{ ...navItemStyle(activeItem === item.name && breadcrumb?.[0] === loc.name), paddingTop: 6, paddingBottom: 6, paddingRight: 8, paddingLeft: 32 }}>
                           {item.icon}{item.name}
                           <GripVertical size={10} strokeWidth={0.9} style={{ marginLeft: "auto", opacity: hoveredNavItem === `${loc.name}::${item.name}` ? 0.4 : 0, flexShrink: 0 }}/>
                         </HoverBtn>
@@ -1855,7 +1985,7 @@ function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateTo
   const [tab, setTab] = useState("active")
   const [selectedIdx, setSelectedIdx] = useState<number|null>(null)
   const [showModal, setShowModal] = useState(false)
-  const [selectedOffices, setSelectedOffices] = useState(["Beaverton HQ"])
+  const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
   const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const isAll = selectedOffices.length === ALL_OFFICES.length
@@ -1945,11 +2075,11 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
   const [selectedDept, setSelectedDept] = useState<number|null>(null)
   const [selectedDeliveryTeam, setSelectedDeliveryTeam] = useState<number|null>(null)
   const [selectedGroup, setSelectedGroup] = useState<number|null>(null)
-  const [selectedOffices, setSelectedOffices] = useState(() => filteredOffice ? [filteredOffice] : ["Beaverton HQ"])
+  const [selectedOffices, setSelectedOffices] = useState(() => filteredOffice ? [filteredOffice] : [...ALL_OFFICES])
 
   useEffect(() => {
     if (filteredOffice) setSelectedOffices([filteredOffice])
-    else setSelectedOffices(["Beaverton HQ"])
+    else setSelectedOffices(["Los Angeles"])
   }, [filteredOffice])
 
   useEffect(() => {
@@ -2689,7 +2819,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
 function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, clients, filteredBusinessUnit, onFilterClear, filteredClient, onClientFilterClear, filteredRateCard, onRateCardFilterClear, version }: any) {
   const [tab, setTab] = useState("active")
   const [selectedIdx, setSelectedIdx] = useState<number|null>(null)
-  const [selectedOffices, setSelectedOffices] = useState(["Beaverton HQ"])
+  const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
   const [filteredOwner, setFilteredOwner] = useState<string|null>(null)
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
   const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
@@ -3186,7 +3316,7 @@ function RateCardSheet({ client, clientIdx, rcIdx, roles, onUpdateClients, onClo
 function Clients({ roles, people, clients, onClientsChange, projects, onNavigateToRateCards, filterClients, onClearClientsFilter, onNavigateToProjects, version }: any) {
   const setClients = onClientsChange
   const [tab, setTab] = useState("active")
-  const [selectedOffices, setSelectedOffices] = useState(["Beaverton HQ"])
+  const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
   const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const isAll = selectedOffices.length === ALL_OFFICES.length
@@ -3256,7 +3386,7 @@ function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilte
   const [tab, setTab] = useState("active")
   const [selectedClient, setSelectedClient] = useState<number|null>(null)
   const [selectedRC, setSelectedRC] = useState<number|null>(null)
-  const [selectedOffices, setSelectedOffices] = useState(["Beaverton HQ"])
+  const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set())
   const toggleCol = (id: string) => setHiddenCols(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   function updateClient(idx: any, updated: any) { onClientsChange((prev: any) => prev.map((c: any,i: any) => i===idx ? updated : c)) }
@@ -3528,7 +3658,7 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
   )
 }
 
-function PeopleOpsDashboard() {
+function PeopleOpsDashboard({ office = "Global" }: { office?: string }) {
   const card: React.CSSProperties = { background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: "hidden", position: "relative" }
   const sep: React.CSSProperties = { flex: 1, minWidth: 4, height: 0, borderBottom: `1.5px dotted ${t.border}` }
   const secTxt: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: t.secondaryFg, lineHeight: "16px", whiteSpace: "nowrap" as const }
@@ -3571,6 +3701,8 @@ function PeopleOpsDashboard() {
     lgNonBill:  "https://www.figma.com/api/mcp/asset/ae3a115c-7555-4431-89c0-6c6fe4d7e514",
   }
 
+  const { d, delivery, capPct, utilH, billH, nonBillPct, nonBillH, empH, conH, phH, unaH, pending, billOnT, billOffT, billComp, billOnTH, billOffTH, billCompH, nBillOnT, nBillOffT, nBillComp, nBillOnTH, nBillOffTH, nBillCompH, futTotal, futOT, futOffT, futComp, pastTotal, pastOT, pastOffT, pastComp, capacityData, fmt, fmtH } = computeDash(office)
+
   function LegRow({ indicator, label, value, sub }: { indicator: React.ReactNode; label: string; value: string; sub?: string }) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 20, flexShrink: 0 }}>
@@ -3604,7 +3736,7 @@ function PeopleOpsDashboard() {
       </div>
     )
   }
-  function YAxis({ labels }: { labels: string[] }) {
+  function VertLabels({ labels }: { labels: string[] }) {
     return (
       <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "flex-end", height: 300, paddingBottom: 4, paddingRight: 6, fontSize: 12, color: t.secondaryFg, whiteSpace: "nowrap", flexShrink: 0, width: 50 }}>
         {labels.map(l => <span key={l}>{l}</span>)}
@@ -3647,11 +3779,11 @@ function PeopleOpsDashboard() {
       {/* KPI Row */}
       <div style={{ display: "flex", gap: 8 }}>
         {([
-          { label: "Delivery capacity", value: "98.5%", meta: "29,880", arr: "▲", pct: "10%", note: "After approved time off" },
-          { label: "Time offs",          value: "58 days", meta: "466h",  arr: null, pct: null,  note: "42 additional days requested" },
-          { label: "Utilization",         value: "72%",    meta: null,    arr: "▼", pct: "1%",   note: "21,514h of delivery capacity" },
-          { label: "Billable utilization",value: "54%",    meta: null,    arr: "▼", pct: "1%",   note: "16,135h of delivery capacity" },
-        ] as const).map(k => (
+          { label: "Delivery capacity",   value: `${capPct}%`,    meta: fmt(delivery), arr: "▲" as const, pct: "vs last mo.", note: "After approved time off" },
+          { label: "Time offs",           value: `${d.toDays} days`, meta: fmtH(d.toh), arr: null,          pct: null,          note: `${pending} additional days requested` },
+          { label: "Utilization",         value: `${d.util}%`,    meta: null,          arr: "▼" as const, pct: "1%",          note: `${fmtH(utilH)} of delivery capacity` },
+          { label: "Billable utilization",value: `${d.bill}%`,    meta: null,          arr: "▼" as const, pct: "1%",          note: `${fmtH(billH)} of delivery capacity` },
+        ]).map(k => (
           <div key={k.label} style={{ ...card, flex: 1, padding: 16, display: "flex", flexDirection: "column", gap: 4 }}>
             <span style={{ fontSize: 12, fontWeight: 500, color: t.secondaryFg, lineHeight: "16px" }}>{k.label}</span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -3676,31 +3808,25 @@ function PeopleOpsDashboard() {
 
           {/* Chart column */}
           <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column" }}>
-            {/* Chart body — fixed 325px height matches Figma canvas exactly */}
-            <div style={{ display: "flex", height: 325 }}>
-              {/* Y-axis labels at Figma-exact grid percentages */}
-              <div style={{ position: "relative", width: 48, flexShrink: 0 }}>
-                {([["4.27%","6,000h"],["27.96%","4,000h"],["51.65%","2,000h"],["75.35%","1,000h"],["99.35%","0h"]] as const).map(([top,lbl]) => (
-                  <span key={lbl} style={{ position: "absolute", top, right: 6, fontSize: 12, color: t.secondaryFg, lineHeight: "16px", transform: "translateY(-50%)", whiteSpace: "nowrap" as const }}>{lbl}</span>
-                ))}
-              </div>
-              {/* Chart image canvas */}
-              <div style={{ flex: 1, position: "relative", overflow: "hidden", borderLeft: `1px solid ${t.border}` }}>
-                {/* Grid lines at Figma positions (tops: 13.88/90.88/167.88/244.88/322.88 in 325px) */}
-                {[4.27, 27.96, 51.65, 75.35, 99.35].map(pct => (
-                  <div key={pct} style={{ position: "absolute", top: `${pct}%`, left: 0, right: 0, height: 1, background: t.border, opacity: 0.45 }}/>
-                ))}
-                {/* Figma z-order: fillBand → topBand → future(underlay) → gross(on top) → deliv(orange, top) */}
-                <img src={I.capFillBand} alt="" style={{ position: "absolute", left: 0,       top: "8.92%",  width: "100%",   height: "46.15%", opacity: 0.5 }}/>
-                <img src={I.capTopBand}  alt="" style={{ position: "absolute", left: 0,       top: "8.92%",  width: "100%",   height: "23.85%" }}/>
-                <img src={I.capFuture}   alt="" style={{ position: "absolute", left: 0,       top: "34.17%", width: "47.65%", height: "5.51%" }}/>
-                <img src={I.capGross}    alt="" style={{ position: "absolute", left: 0,       top: "20%",    width: "100%",   height: "34.92%" }}/>
-                <img src={I.capDeliv}    alt="" style={{ position: "absolute", left: "47.65%",top: "36.46%", width: "52.28%", height: "29.08%" }}/>
-              </div>
-            </div>
-            {/* Date axis */}
-            <div style={{ display: "flex", justifyContent: "space-between", paddingLeft: 48, paddingTop: 8, fontSize: 12, color: t.secondaryFg }}>
-              {["1 Dec","8 Dec","15 Dec","22 Dec","29 Dec"].map(d => <span key={d}>{d}</span>)}
+            <div style={{ height: 340 }}>
+              <ClientOnly height={340}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={capacityData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                    <defs>
+                      <linearGradient id={`cap-${office.replace(/\s/g,"-")}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#8290aa" stopOpacity={0.22}/>
+                        <stop offset="95%" stopColor="#8290aa" stopOpacity={0.03}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} stroke={t.border} strokeOpacity={0.45}/>
+                    <XAxis dataKey="week" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: t.secondaryFg }} tickMargin={8}/>
+                    <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: t.secondaryFg }} tickFormatter={(v: number) => `${Math.round(v/1000)}kh`} width={48}/>
+                    <Area dataKey="gross" type="monotone" fill={`url(#cap-${office.replace(/\s/g,"-")})`} stroke="#8290aa" strokeWidth={1} strokeDasharray="5 3" isAnimationActive={true} animationDuration={1400} animationEasing="ease-out" dot={false}/>
+                    <Line dataKey="delivery" type="monotone" stroke="#2e5fe8" strokeWidth={1} isAnimationActive={true} animationDuration={1400} animationEasing="ease-out" dot={false}/>
+                    <Line dataKey="demand" type="monotone" stroke="#f59e0b" strokeWidth={1} strokeDasharray="5 3" isAnimationActive={true} animationDuration={1400} animationEasing="ease-out" dot={false}/>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </ClientOnly>
             </div>
           </div>
 
@@ -3709,25 +3835,25 @@ function PeopleOpsDashboard() {
 
           {/* Legend column — Figma: gap=24 between top-level rows */}
           <div style={{ flex: "0 0 27%", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
-            <LegRow indicator={<LineSample src={I.lgGross}/>}    label="Gross capacity"   value="30,346h"/>
-            <LegRow indicator={<div style={{ width: 10, height: 10, borderRadius: 5, background: "#dce2eb", flexShrink: 0 }}/>} label="Time off" value="466h"/>
-            <LegRow indicator={<LineSample src={I.lgDelivery}/>} label="Delivery capacity" value="29,880h"/>
+            <LegRow indicator={<LineSample src={I.lgGross}/>}    label="Gross capacity"   value={fmtH(d.gross)}/>
+            <LegRow indicator={<div style={{ width: 10, height: 10, borderRadius: 5, background: "#dce2eb", flexShrink: 0 }}/>} label="Time off" value={fmtH(d.toh)}/>
+            <LegRow indicator={<LineSample src={I.lgDelivery}/>} label="Delivery capacity" value={fmtH(delivery)}/>
             {/* Future scheduled — header + gap-8 + breakdown gap-4 */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <LegRow indicator={<LineSample src={I.lgFuture}/>} label="Future scheduled" value="18,000h"/>
+              <LegRow indicator={<LineSample src={I.lgFuture}/>} label="Future scheduled" value={fmtH(futTotal)}/>
               <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-                <BreakRow label="On track"  value="7,200h" sepSrc={I.capSepFsOnTrack}/>
-                <BreakRow label="Off track" value="3,600h" sepSrc={I.capSepFsOffTrack}/>
-                <BreakRow label="Completed" value="7,200h" sepSrc={I.capSepFsCompleted}/>
+                <BreakRow label="On track"  value={fmtH(futOT)}   sepSrc={I.capSepFsOnTrack}/>
+                <BreakRow label="Off track" value={fmtH(futOffT)} sepSrc={I.capSepFsOffTrack}/>
+                <BreakRow label="Completed" value={fmtH(futComp)} sepSrc={I.capSepFsCompleted}/>
               </div>
             </div>
             {/* Past logged */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <LegRow indicator={<LineSample src={I.lgPastLog}/>} label="Past logged" value="6,800h"/>
+              <LegRow indicator={<LineSample src={I.lgPastLog}/>} label="Past logged" value={fmtH(pastTotal)}/>
               <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-                <BreakRow label="On track"  value="2,400h" sepSrc={I.capSepPlOnTrack}/>
-                <BreakRow label="Off track" value="1,800h" sepSrc={I.capSepPlOffTrack}/>
-                <BreakRow label="Completed" value="1,800h" sepSrc={I.capSepPlCompleted}/>
+                <BreakRow label="On track"  value={fmtH(pastOT)}   sepSrc={I.capSepPlOnTrack}/>
+                <BreakRow label="Off track" value={fmtH(pastOffT)} sepSrc={I.capSepPlOffTrack}/>
+                <BreakRow label="Completed" value={fmtH(pastComp)} sepSrc={I.capSepPlCompleted}/>
               </div>
             </div>
           </div>
@@ -3740,45 +3866,49 @@ function PeopleOpsDashboard() {
         <div style={{ ...card, flex: 1, height: 512 }}>
           <p style={{ position: "absolute", top: 15, left: 15, margin: 0, fontSize: 13, fontWeight: 500, color: t.fg }}>People types</p>
           <div style={{ position: "absolute", left: "50%", top: "calc(50% - 77px)", transform: "translate(-50%, -50%)", width: 238, height: 238 }}>
-            <PieChart width={238} height={238}>
-              <Pie data={[{v:15514},{v:6000},{v:1486},{v:1000}]} dataKey="v" cx={119} cy={119} innerRadius={93} outerRadius={110} startAngle={90} endAngle={-270} stroke={t.card} strokeWidth={2}>
-                <Cell fill="#baa7ff"/><Cell fill="#7d66d9"/><Cell fill="#8290aa"/><Cell fill="#cfd8e5"/>
-              </Pie>
-            </PieChart>
-            <p style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", margin: 0, fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, whiteSpace: "nowrap" }}>24,000h</p>
+            <ClientOnly width={238} height={238}>
+              <PieChart width={238} height={238}>
+                <Pie data={[{v:empH},{v:conH},{v:phH},{v:unaH}]} dataKey="v" cx={119} cy={119} innerRadius={93} outerRadius={110} startAngle={90} endAngle={-270} stroke={t.card} strokeWidth={2}>
+                  <Cell fill="#baa7ff"/><Cell fill="#7d66d9"/><Cell fill="#8290aa"/><Cell fill="#cfd8e5"/>
+                </Pie>
+              </PieChart>
+            </ClientOnly>
+            <p style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", margin: 0, fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, whiteSpace: "nowrap" }}>{fmtH(delivery)}</p>
           </div>
           <div style={{ position: "absolute", left: "50%", top: "calc(50% + 115px)", transform: "translate(-50%, -50%)", width: "calc(100% - 30px)", display: "flex", flexDirection: "column", gap: 6 }}>
             {([
-              { color: "#baa7ff", label: "Employees (48)",      value: "15,514h" },
-              { color: "#7d66d9", label: "Contractors (24)",    value: "6,000h"  },
-              { color: "#8290aa", label: "Placeholders (6)",    value: "1,486h"  },
-              { color: "#cfd8e5", label: "Unassigned roles (2)",value: "1,000h"  },
-            ] as const).map(r => <DonutRow key={r.label} color={r.color} label={r.label} value={r.value}/>)}
+              { color: "#baa7ff", label: `Employees (${d.emp})`,       value: fmtH(empH) },
+              { color: "#7d66d9", label: `Contractors (${d.con})`,     value: fmtH(conH) },
+              { color: "#8290aa", label: `Placeholders (${d.ph})`,     value: fmtH(phH)  },
+              { color: "#cfd8e5", label: `Unassigned roles (${d.una})`,value: fmtH(unaH) },
+            ]).map(r => <DonutRow key={r.label} color={r.color} label={r.label} value={r.value}/>)}
           </div>
         </div>
 
         <div style={{ ...card, flex: 1, height: 512 }}>
           <p style={{ position: "absolute", top: 15, left: 15, margin: 0, fontSize: 13, fontWeight: 500, color: t.fg }}>Time offs</p>
           <div style={{ position: "absolute", left: "50%", top: "calc(50% - 77px)", transform: "translate(-50%, -50%)", width: 238, height: 238 }}>
-            <PieChart width={238} height={238}>
-              <Pie data={[{v:26},{v:12},{v:9},{v:4},{v:4},{v:3}]} dataKey="v" cx={119} cy={119} innerRadius={93} outerRadius={110} startAngle={90} endAngle={-270} stroke={t.card} strokeWidth={2}>
-                <Cell fill="#0094ff"/><Cell fill="#f93446"/><Cell fill="#ff5b00"/><Cell fill="#10e1ff"/><Cell fill="#e92ca2"/><Cell fill="#8290aa"/>
-              </Pie>
-            </PieChart>
+            <ClientOnly width={238} height={238}>
+              <PieChart width={238} height={238}>
+                <Pie data={d.toBreak.map(v => ({v}))} dataKey="v" cx={119} cy={119} innerRadius={93} outerRadius={110} startAngle={90} endAngle={-270} stroke={t.card} strokeWidth={2}>
+                  <Cell fill="#0094ff"/><Cell fill="#f93446"/><Cell fill="#ff5b00"/><Cell fill="#10e1ff"/><Cell fill="#e92ca2"/><Cell fill="#8290aa"/>
+                </Pie>
+              </PieChart>
+            </ClientOnly>
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" as const }}>
-              <p style={{ margin: 0, fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, whiteSpace: "nowrap" }}>58 days</p>
-              <p style={{ margin: 0, fontSize: 13, color: t.mutedFg, lineHeight: "20px", whiteSpace: "nowrap" }}>(466 h)</p>
+              <p style={{ margin: 0, fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, whiteSpace: "nowrap" }}>{d.toDays} days</p>
+              <p style={{ margin: 0, fontSize: 13, color: t.mutedFg, lineHeight: "20px", whiteSpace: "nowrap" }}>({fmtH(d.toh)})</p>
             </div>
           </div>
           <div style={{ position: "absolute", left: "50%", top: "calc(50% + 145px)", transform: "translate(-50%, -50%)", width: "calc(100% - 30px)", display: "flex", flexDirection: "column", gap: 6 }}>
             {([
-              { color: "#0094ff", label: "Paid time off",        value: "26 days", sub: "(208h)" },
-              { color: "#f93446", label: "Sick leave",           value: "12 days", sub: "(96h)"  },
-              { color: "#ff5b00", label: "Annual leave",         value: "9 days",  sub: "(72h)"  },
-              { color: "#10e1ff", label: "Compassionate leave",  value: "4 days",  sub: "(32h)"  },
-              { color: "#e92ca2", label: "Family leave",         value: "4 days",  sub: "(32h)"  },
-              { color: "#8290aa", label: "+2 time offs types",   value: "3 days",  sub: "(26h)"  },
-            ] as const).map(r => <DonutRow key={r.label} color={r.color} label={r.label} value={r.value} sub={r.sub}/>)}
+              { color: "#0094ff", label: "Paid time off",       value: `${d.toBreak[0]} days`, sub: `(${fmtH(d.toBreak[0]*8)})` },
+              { color: "#f93446", label: "Sick leave",          value: `${d.toBreak[1]} days`, sub: `(${fmtH(d.toBreak[1]*8)})` },
+              { color: "#ff5b00", label: "Annual leave",        value: `${d.toBreak[2]} days`, sub: `(${fmtH(d.toBreak[2]*8)})` },
+              { color: "#10e1ff", label: "Compassionate leave", value: `${d.toBreak[3]} days`, sub: `(${fmtH(d.toBreak[3]*8)})` },
+              { color: "#e92ca2", label: "Family leave",        value: `${d.toBreak[4]} days`, sub: `(${fmtH(d.toBreak[4]*8)})` },
+              { color: "#8290aa", label: "+2 time off types",   value: `${d.toBreak[5]} days`, sub: `(${fmtH(d.toBreak[5]*8)})` },
+            ]).map(r => <DonutRow key={r.label} color={r.color} label={r.label} value={r.value} sub={r.sub}/>)}
           </div>
         </div>
       </div>
@@ -3789,7 +3919,7 @@ function PeopleOpsDashboard() {
         <div style={{ display: "flex", padding: "12px 15px 0", height: 390 }}>
           <div style={{ flex: "0 0 68%", display: "flex", flexDirection: "column", minWidth: 0 }}>
             <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-              <YAxis labels={["120%", "90%", "60%", "30%", "0%"]}/>
+              <VertLabels labels={["120%", "90%", "60%", "30%", "0%"]}/>
               <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
                 <img src={I.utilBand} alt="" style={{ position: "absolute", left: "4%", top: "10.8%", width: "96%", height: "49.2%", opacity: 0.5 }}/>
                 <img src={I.utilL1}   alt="" style={{ position: "absolute", left: "4%", top: "10.8%", width: "96%", height: "29.1%" }}/>
@@ -3799,22 +3929,22 @@ function PeopleOpsDashboard() {
             {dateAxis}
           </div>
           <div style={{ flex: "0 0 32%", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 20, paddingTop: 4, minWidth: 0, overflow: "hidden" }}>
-            <LegRow indicator={<div style={{ width: 10, flexShrink: 0, borderTop: `2px dashed ${t.border}` }}/>} label="Delivery capacity" value="100%" sub="(29,880h)"/>
-            <LegRow indicator={<LineSample src={I.lgUtil}/>} label="Utilization" value="72%" sub="(21,514h)"/>
+            <LegRow indicator={<div style={{ width: 10, flexShrink: 0, borderTop: `2px dashed ${t.border}` }}/>} label="Delivery capacity" value="100%" sub={`(${fmtH(delivery)})`}/>
+            <LegRow indicator={<LineSample src={I.lgUtil}/>} label="Utilization" value={`${d.util}%`} sub={`(${fmtH(utilH)})`}/>
             <div style={{ flexShrink: 0 }}>
-              <LegRow indicator={<LineSample src={I.lgBillable}/>} label="Billable utilization" value="54%" sub="(16,135h)"/>
+              <LegRow indicator={<LineSample src={I.lgBillable}/>} label="Billable utilization" value={`${d.bill}%`} sub={`(${fmtH(billH)})`}/>
               <div style={{ paddingLeft: 18 }}>
-                <BreakRow label="On track" value="16%" sub="(4,781h)"/>
-                <BreakRow label="Off track" value="14%" sub="(4,183h)"/>
-                <BreakRow label="Completed" value="24%" sub="(7,171h)"/>
+                <BreakRow label="On track" value={`${billOnT}%`} sub={`(${fmtH(billOnTH)})`}/>
+                <BreakRow label="Off track" value={`${billOffT}%`} sub={`(${fmtH(billOffTH)})`}/>
+                <BreakRow label="Completed" value={`${billComp}%`} sub={`(${fmtH(billCompH)})`}/>
               </div>
             </div>
             <div style={{ flexShrink: 0 }}>
-              <LegRow indicator={<LineSample src={I.lgNonBill}/>} label="Non-billable utilization" value="18%" sub="(5,378h)"/>
+              <LegRow indicator={<LineSample src={I.lgNonBill}/>} label="Non-billable utilization" value={`${nonBillPct}%`} sub={`(${fmtH(nonBillH)})`}/>
               <div style={{ paddingLeft: 18 }}>
-                <BreakRow label="On track" value="6%" sub="(1,793h)"/>
-                <BreakRow label="Off track" value="6%" sub="(1,793h)"/>
-                <BreakRow label="Completed" value="6%" sub="(1,793h)"/>
+                <BreakRow label="On track" value={`${nBillOnT}%`} sub={`(${fmtH(nBillOnTH)})`}/>
+                <BreakRow label="Off track" value={`${nBillOffT}%`} sub={`(${fmtH(nBillOffTH)})`}/>
+                <BreakRow label="Completed" value={`${nBillComp}%`} sub={`(${fmtH(nBillCompH)})`}/>
               </div>
             </div>
           </div>
@@ -3825,7 +3955,7 @@ function PeopleOpsDashboard() {
   )
 }
 
-function ProjectFinanceDashboard() {
+function ProjectFinanceDashboard({ office = "Global" }: { office?: string }) {
   const card: React.CSSProperties = { background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: "hidden", position: "relative" }
   const sep: React.CSSProperties = { flex: 1, minWidth: 4, height: 0, borderBottom: `1.5px dotted ${t.border}` }
   const secTxt: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: t.secondaryFg, lineHeight: "16px", whiteSpace: "nowrap" as const }
@@ -3848,6 +3978,8 @@ function ProjectFinanceDashboard() {
     sep3: "https://www.figma.com/api/mcp/asset/135b359f-1eba-4626-8cf2-05daf2c3def4", // Line188
     sep4: "https://www.figma.com/api/mcp/asset/e32ad86d-a32e-457a-a346-3f4ee273d752", // Line189
   }
+
+  const { d, delivery, billH, barData, revenueData, fmt, fmtH, fmtUSD } = computeDash(office)
 
   function LegRow({ indicator, label, value }: { indicator: React.ReactNode; label: string; value: string }) {
     return (
@@ -3893,13 +4025,7 @@ function ProjectFinanceDashboard() {
     )
   }
 
-  const barData = [
-    { name: "Employees",    billable: 52000, nonBillable: 40000 },
-    { name: "Contractors",  billable: 33000, nonBillable: 17000 },
-    { name: "Unassigned",   billable: 9000,  nonBillable: 7000  },
-    { name: "Placeholders", billable: 800,   nonBillable: 400   },
-    { name: "Expenses",     billable: 56000, nonBillable: 43000 },
-  ]
+  // barData computed by computeDash(office) above
 
   return (
     <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: 16, background: t.bg, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -3907,12 +4033,12 @@ function ProjectFinanceDashboard() {
       {/* KPI Row */}
       <div style={{ display: "flex", gap: 8 }}>
         {([
-          { label: "Delivery revenue",   value: "$1,000,000", sub: null,         unit: null, arr: "▼", pct: "1%",  pc: "#bd4b00", note: "Fixed fee & T&M" },
-          { label: "Delivery costs",     value: "$320,000",   sub: null,         unit: null, arr: "▼", pct: "1",   pc: t.secondaryFg, note: "Cost of time & project expenses" },
-          { label: "Delivery margin",    value: "70%",        sub: "$7,000,000", unit: null, arr: "→", pct: "0%",  pc: t.mutedFg, note: "After all delivery costs" },
-          { label: "Effective bill rate",value: "$150",       sub: null,         unit: "/hr",arr: "▼", pct: "1%",  pc: "#bd4b00", note: "Across 8,000h" },
-          { label: "Average bill rate",  value: "$150",       sub: null,         unit: "/hr",arr: "▼", pct: "1%",  pc: "#bd4b00", note: "Across 6,250h" },
-        ] as const).map(k => (
+          { label: "Delivery revenue",   value: fmtUSD(d.rev),   sub: null,                 unit: null,  arr: "▲", pct: "3%",  pc: "#0b752e",     note: "Fixed fee & T&M" },
+          { label: "Delivery costs",     value: fmtUSD(d.costs), sub: null,                 unit: null,  arr: "▼", pct: "1%",  pc: t.secondaryFg, note: "Cost of time & project expenses" },
+          { label: "Delivery margin",    value: `${d.margin}%`,  sub: fmtUSD(d.rev*12),    unit: null,  arr: "→", pct: "0%",  pc: t.mutedFg,     note: "After all delivery costs" },
+          { label: "Effective bill rate",value: `$${d.effR}`,    sub: null,                 unit: "/hr", arr: "▼", pct: "1%",  pc: "#bd4b00",     note: `Across ${fmtH(billH)}` },
+          { label: "Average bill rate",  value: `$${d.avgR}`,    sub: null,                 unit: "/hr", arr: "▼", pct: "1%",  pc: "#bd4b00",     note: `Across ${fmtH(Math.round(billH*0.78))}` },
+        ]).map(k => (
           <div key={k.label} style={{ ...card, flex: 1, padding: 16, display: "flex", flexDirection: "column", gap: 4 }}>
             <span style={{ fontSize: 12, fontWeight: 500, color: t.secondaryFg, lineHeight: "16px" }}>{k.label}</span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -3936,31 +4062,28 @@ function ProjectFinanceDashboard() {
         <div style={{ display: "flex", paddingLeft: 15, paddingRight: 15, paddingBottom: 15 }}>
           {/* Chart column */}
           <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", height: 335 }}>
-              {/* Y-axis labels — centered at Figma grid positions (% of 335px) */}
-              <div style={{ position: "relative", width: 48, flexShrink: 0 }}>
-                {([["4.8%","$32K"],["26.3%","$24k"],["47.8%","$16k"],["69%","$8k"],["91.2%","$0k"]] as const).map(([top, lbl]) => (
-                  <span key={lbl} style={{ position: "absolute", top, right: 6, fontSize: 12, color: t.secondaryFg, lineHeight: "16px", transform: "translateY(-50%)", whiteSpace: "nowrap" as const }}>{lbl}</span>
-                ))}
-              </div>
-              {/* Chart canvas */}
-              <div style={{ flex: 1, position: "relative", overflow: "hidden", borderLeft: `1px solid ${t.border}` }}>
-                {/* Grid lines at Figma y positions (y=16,88,160,231,305.5 / 335) */}
-                {[4.8, 26.3, 47.8, 69.0, 91.2].map(pct => (
-                  <div key={pct} style={{ position: "absolute", top: `${pct}%`, left: 0, right: 0, height: 1, background: t.border, opacity: 0.45 }}/>
-                ))}
-                {/* Images in Figma z-order (bottom → top) */}
-                <img src={I.revFill}  alt="" style={{ position: "absolute", left: 0, top: "22.2%", width: "100%", height: "69.7%" }}/>
-                <img src={I.revArea}  alt="" style={{ position: "absolute", left: 0, top: "5.7%",  width: "100%", height: "63%" }}/>
-                <img src={I.revExtra} alt="" style={{ position: "absolute", left: 0, top: "36.1%", width: "100%", height: "28.1%" }}/>
-                <img src={I.costLine} alt="" style={{ position: "absolute", left: 0, top: 0,        width: "20%",  height: "100%" }}/>
-                <img src={I.bandTop}  alt="" style={{ position: "absolute", left: 0, top: "22.2%", width: "100%", height: "16.4%" }}/>
-                <img src={I.bandMid}  alt="" style={{ position: "absolute", left: 0, top: "60.3%", width: "100%", height: "16.4%" }}/>
-                <img src={I.costFill} alt="" style={{ position: "absolute", left: 0, top: "60.3%", width: "100%", height: "30.7%" }}/>
-              </div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", paddingLeft: 48, paddingTop: 8, fontSize: 12, color: t.secondaryFg }}>
-              {["1 Dec","8 Dec","15 Dec","22 Dec","29 Dec"].map(d => <span key={d}>{d}</span>)}
+            <div style={{ height: 350 }}>
+              <ClientOnly height={350}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={revenueData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                    <defs>
+                      <linearGradient id={`rev-${office.replace(/\s/g,"-")}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#2e5fe8" stopOpacity={0.35}/>
+                        <stop offset="95%" stopColor="#2e5fe8" stopOpacity={0.04}/>
+                      </linearGradient>
+                      <linearGradient id={`cost-${office.replace(/\s/g,"-")}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#344765" stopOpacity={0.55}/>
+                        <stop offset="95%" stopColor="#344765" stopOpacity={0.08}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} stroke={t.border} strokeOpacity={0.45}/>
+                    <XAxis dataKey="week" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: t.secondaryFg }} tickMargin={8}/>
+                    <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: t.secondaryFg }} tickFormatter={(v: number) => `$${Math.round(v/1000)}k`} width={52}/>
+                    <Area dataKey="revenue" type="monotone" fill={`url(#rev-${office.replace(/\s/g,"-")})`} stroke="#2e5fe8" strokeWidth={1} isAnimationActive={true} animationDuration={1400} animationEasing="ease-out" dot={false}/>
+                    <Area dataKey="costs"   type="monotone" fill={`url(#cost-${office.replace(/\s/g,"-")})`} stroke="#344765" strokeWidth={1} isAnimationActive={true} animationDuration={1400} animationEasing="ease-out" dot={false}/>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </ClientOnly>
             </div>
           </div>
 
@@ -3970,19 +4093,19 @@ function ProjectFinanceDashboard() {
           {/* Legend */}
           <div style={{ flex: "0 0 28%", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <LegRow indicator={<Dot color="#2e5fe8"/>} label="Delivery revenue" value="$1,000,000"/>
+              <LegRow indicator={<Dot color="#2e5fe8"/>} label="Delivery revenue" value={fmtUSD(d.rev)}/>
               <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-                <BreakRow label="On track"  value="$8,000" sepSrc={I.sep1}/>
-                <BreakRow label="Off track" value="$8,000" sepSrc={I.sep2}/>
-                <BreakRow label="Completed" value="$8,000" sepSrc={I.sep3}/>
+                <BreakRow label="On track"  value={fmtUSD(Math.round(d.rev*0.32))} sepSrc={I.sep1}/>
+                <BreakRow label="Off track" value={fmtUSD(Math.round(d.rev*0.22))} sepSrc={I.sep2}/>
+                <BreakRow label="Completed" value={fmtUSD(Math.round(d.rev*0.46))} sepSrc={I.sep3}/>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <LegRow indicator={<Dot color="#344765"/>} label="Delivery costs" value="$320,000"/>
+              <LegRow indicator={<Dot color="#344765"/>} label="Delivery costs" value={fmtUSD(d.costs)}/>
               <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-                <BreakRow label="On track"  value="$8,000" sepSrc={I.sep4}/>
-                <BreakRow label="Off track" value="$8,000" sepSrc={I.sep2}/>
-                <BreakRow label="Completed" value="$8,000" sepSrc={I.sep3}/>
+                <BreakRow label="On track"  value={fmtUSD(Math.round(d.costs*0.38))} sepSrc={I.sep4}/>
+                <BreakRow label="Off track" value={fmtUSD(Math.round(d.costs*0.24))} sepSrc={I.sep2}/>
+                <BreakRow label="Completed" value={fmtUSD(Math.round(d.costs*0.38))} sepSrc={I.sep3}/>
               </div>
             </div>
           </div>
@@ -3995,22 +4118,20 @@ function ProjectFinanceDashboard() {
         <div style={{ ...card, flex: 1, height: 512 }}>
           <p style={{ position: "absolute", top: 15, left: 15, margin: 0, fontSize: 13, fontWeight: 500, color: t.fg }}>Revenue</p>
           <div style={{ position: "absolute", left: "50%", top: "calc(50% - 77px)", transform: "translate(-50%, -50%)", width: 238, height: 238 }}>
-            <PieChart width={238} height={238}>
-              <Pie data={[{v:33},{v:25},{v:18},{v:14},{v:10}]} dataKey="v" cx={119} cy={119} innerRadius={93} outerRadius={110} startAngle={90} endAngle={-270} stroke={t.card} strokeWidth={2}>
-                <Cell fill="#173074"/><Cell fill="#254cba"/><Cell fill="#2e5fe8"/><Cell fill="#1a90dc"/><Cell fill="#6ad2ff"/>
-              </Pie>
-            </PieChart>
-            <p style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", margin: 0, fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, whiteSpace: "nowrap" }}>$1,000,000</p>
+            <ClientOnly width={238} height={238}>
+              <PieChart width={238} height={238}>
+                <Pie data={d.topClients.map(([,v]) => ({v}))} dataKey="v" cx={119} cy={119} innerRadius={93} outerRadius={110} startAngle={90} endAngle={-270} stroke={t.card} strokeWidth={2}>
+                  <Cell fill="#173074"/><Cell fill="#254cba"/><Cell fill="#2e5fe8"/><Cell fill="#1a90dc"/><Cell fill="#6ad2ff"/>
+                </Pie>
+              </PieChart>
+            </ClientOnly>
+            <p style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", margin: 0, fontSize: 20, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, whiteSpace: "nowrap" }}>{fmtUSD(d.rev)}</p>
           </div>
           <div style={{ position: "absolute", left: "50%", top: "calc(50% + 115px)", transform: "translate(-50%, -50%)", width: "calc(100% - 30px)", display: "flex", flexDirection: "column", gap: 6 }}>
-            {([
-              { color: "#173074", label: "Client 1",   value: "$8,000", trend: "3%",  tc: "#0b752e" },
-              { color: "#254cba", label: "Client 2",   value: "$8,000", trend: "— %", tc: t.mutedFg },
-              { color: "#2e5fe8", label: "Client 3",   value: "$8,000", trend: "3%",  tc: "#0b752e" },
-              { color: "#1a90dc", label: "Client 4",   value: "$8,000", trend: "3%",  tc: "#0b752e" },
-              { color: "#6ad2ff", label: "Client 5",   value: "$8,000", trend: "3%",  tc: "#0b752e" },
-              { color: "#cee7fe", label: "+4 clients", value: "$8,000", trend: "3%",  tc: "#0b752e" },
-            ] as const).map(r => <DonutRow key={r.label} color={r.color} label={r.label} value={r.value} trend={r.trend} tc={r.tc}/>)}
+            {d.topClients.map(([name, v], i) => {
+              const colors = ["#173074","#254cba","#2e5fe8","#1a90dc","#6ad2ff","#cee7fe"]
+              return <DonutRow key={name} color={colors[i] ?? "#cee7fe"} label={name} value={fmtUSD(v)} trend="3%" tc="#0b752e"/>
+            })}
           </div>
         </div>
 
@@ -4065,18 +4186,19 @@ function ProjectFinanceDashboard() {
 
 function DashboardView({ breadcrumb }: any) {
   const [activeTab, setActiveTab] = useState<"finance"|"people">("people")
+  const office = (breadcrumb?.[0] && breadcrumb[0] !== "Dashboard") ? breadcrumb[0] : "Global"
   return (
     <div style={{ display: "flex", flex: 1, flexDirection: "column", background: t.bg, minHeight: 0 }}>
       <DashboardHeader activeTab={activeTab} setActiveTab={setActiveTab}/>
-      {activeTab === "people" ? <PeopleOpsDashboard/> : <ProjectFinanceDashboard/>}
+      {activeTab === "people" ? <PeopleOpsDashboard key={office} office={office}/> : <ProjectFinanceDashboard key={office} office={office}/>}
     </div>
   )
 }
 
 
 const SCHED_PEOPLE = [
-  { name: "Jake Peralta",    initials: "JP", role: "CD Nike",          team: "Engin",          util: 102, tags: ["H tag", "Red team save"], extra: 2,  color: "#2d6a4f", hasPhoto: false },
-  { name: "Cam Rickersey",   initials: "CR", role: "CD Nike",          team: "Engin",          util: 112, tags: ["Location: New york"],     extra: 10, color: "#6b7280", hasPhoto: true  },
+  { name: "Jake Peralta",    initials: "JP", role: "CD Adidas",        team: "Engin",          util: 102, tags: ["H tag", "Red team save"], extra: 2,  color: "#2d6a4f", hasPhoto: false },
+  { name: "Cam Rickersey",   initials: "CR", role: "CD Adidas",        team: "Engin",          util: 112, tags: ["Location: New york"],     extra: 10, color: "#6b7280", hasPhoto: true  },
   { name: "Kevin Cozner",    initials: "KC", role: "UX researcher",    team: "Front end",      util: 0,   tags: ["Location: London"],       extra: 1,  color: "#0d9488", hasPhoto: false },
   { name: "Norm Scully",     initials: "NS", role: "UX researcher",    team: "Front end",      util: 300, tags: ["Red team save"],          extra: 3,  color: "#ea580c", hasPhoto: false },
   { name: "Doug Judy",       initials: "DJ", role: "Design director",  team: "Engin",          util: 0,   tags: ["H tag", "Reebok"],        extra: 8,  color: "#1e3a5f", hasPhoto: false },
@@ -4676,11 +4798,13 @@ function ClientRevenueCard({ projects, clientsFull }: { projects: any[], clients
       <div style={{ display: "flex", minHeight: 220 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 8px 20px 18px" }}>
           <div style={{ position: "relative", width: 200, height: 200, flexShrink: 0 }}>
-            <PieChart width={200} height={200}>
-              <Pie data={data} cx={95} cy={95} innerRadius={78} outerRadius={92} dataKey="value" startAngle={90} endAngle={-270} stroke={t.card} strokeWidth={2}>
-                {data.map((_, i) => <Cell key={i} fill={CLIENT_COLORS[i % CLIENT_COLORS.length]}/>)}
-              </Pie>
-            </PieChart>
+            <ClientOnly width={200} height={200}>
+              <PieChart width={200} height={200}>
+                <Pie data={data} cx={95} cy={95} innerRadius={78} outerRadius={92} dataKey="value" startAngle={90} endAngle={-270} stroke={t.card} strokeWidth={2}>
+                  {data.map((_, i) => <Cell key={i} fill={CLIENT_COLORS[i % CLIENT_COLORS.length]}/>)}
+                </Pie>
+              </PieChart>
+            </ClientOnly>
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>USD {total.toLocaleString()}</span>
             </div>
@@ -4739,11 +4863,13 @@ function TimeOffCard() {
       <div style={{ display: "flex", minHeight: 220 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 8px 20px 18px" }}>
           <div style={{ position: "relative", width: 200, height: 200, flexShrink: 0 }}>
-            <PieChart width={200} height={200}>
-              <Pie data={pieData} cx={95} cy={95} innerRadius={78} outerRadius={92} dataKey="value" startAngle={90} endAngle={-270} strokeWidth={2} stroke={t.card}>
-                {pieData.map((_, i) => <Cell key={i} fill={TIME_OFF_DATA[i].color}/>)}
-              </Pie>
-            </PieChart>
+            <ClientOnly width={200} height={200}>
+              <PieChart width={200} height={200}>
+                <Pie data={pieData} cx={95} cy={95} innerRadius={78} outerRadius={92} dataKey="value" startAngle={90} endAngle={-270} strokeWidth={2} stroke={t.card}>
+                  {pieData.map((_, i) => <Cell key={i} fill={TIME_OFF_DATA[i].color}/>)}
+                </Pie>
+              </PieChart>
+            </ClientOnly>
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{total} days</span>
             </div>
@@ -5290,7 +5416,7 @@ const TALENT_SKILLS_MAP: Record<string, string[]> = {
   "Brand Strategist": ["Strategy", "Brand", "Research"],
   "Social Media Manager": ["Social", "Content", "Analytics"],
 }
-const TALENT_CLIENTS = ["Google", "Nike", "Patagonia", "LinkedIn", "Toyota", "Verizon"]
+const TALENT_CLIENTS = ["Adidas", "Budweiser", "Unilever", "Johnnie Walker", "Mini", "Rimowa"]
 const TALENT_CATS = ["fashion", "sport", "tech", "auto", "retail", "finance"]
 
 type TGNode = { id: number, name: string, initials: string, role: string, dept: string, x: number, y: number, fx?: number | null, fy?: number | null }
@@ -5668,17 +5794,17 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
     simRef.current?.stop()
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
 
-    const centerNode: SGNode = { id: person.name, type: "person", label: initials, sub: roleName, r: 38, x: w / 2, y: h / 2, fx: w / 2, fy: h / 2 }
+    const centerNode: SGNode = { id: person.name, type: "person", label: initials, sub: roleName, r: 46, x: w / 2, y: h / 2, fx: w / 2, fy: h / 2 }
 
     const skillNodes: SGNode[] = roleData.skills.map((skill: string) => {
       const level = skillLevels[skill]
-      const r = 12 + (level - 1) * 3.2
+      const r = 14 + (level - 1) * 3.8
       return { id: `skill-${skill}`, type: "skill" as const, label: skill, sub: String(level), r, x: w * 0.3 + (Math.random() - 0.5) * 80, y: h / 2 + (Math.random() - 0.5) * 120 }
     })
 
     const connectionNodes: SGNode[] = connections.map((c: any) => {
       const count = connCounts[c.id]
-      const r = 14 + (count - 1) * 2
+      const r = 17 + (count - 1) * 2.4
       return { id: `conn-${c.id}`, type: "person" as const, label: c.initials, sub: c.role, r, x: w * 0.7 + (Math.random() - 0.5) * 80, y: h / 2 + (Math.random() - 0.5) * 120 }
     })
 
@@ -5693,15 +5819,15 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
 
     const sim = forceSimulation<SGNode>(nodes)
       .force("link", forceLink<SGNode, SGLink>(links).id((d: any) => d.id)
-        .distance((d: any) => { const tgt = d.target as SGNode; return 38 + tgt.r + 55 })
+        .distance((d: any) => { const tgt = d.target as SGNode; return 46 + tgt.r + 66 })
         .strength(0.5))
-      .force("charge", forceManyBody().strength(-160))
+      .force("charge", forceManyBody().strength(-192))
       .force("x", forceX<SGNode>((d) => {
         if (d.id === person.name) return w / 2
         return (d.id as string).startsWith("skill-") ? w * 0.27 : w * 0.73
       }).strength(0.38))
       .force("y", forceY<SGNode>(h / 2).strength(0.1))
-      .force("collide", forceCollide<SGNode>((d) => d.r + 10))
+      .force("collide", forceCollide<SGNode>((d) => d.r + 12))
 
     simRef.current = sim
     sim.stop().tick(800)
@@ -5740,8 +5866,8 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
           </defs>
 
           {/* Column labels */}
-          <text x="14%" y={32} textAnchor="middle" fill={t.fg} fillOpacity={0.28} fontSize={12} fontFamily="var(--font-sans), sans-serif">skills</text>
-          <text x="86%" y={32} textAnchor="middle" fill={t.fg} fillOpacity={0.28} fontSize={12} fontFamily="var(--font-sans), sans-serif">worked with</text>
+          <text x="14%" y={60} textAnchor="middle" fill={t.fg} fillOpacity={0.28} fontSize={12} fontFamily="var(--font-sans), sans-serif">skills</text>
+          <text x="86%" y={60} textAnchor="middle" fill={t.fg} fillOpacity={0.28} fontSize={12} fontFamily="var(--font-sans), sans-serif">worked with</text>
 
           {links.map((lk, i) => {
             const src = lk.source as SGNode, tgt = lk.target as SGNode
@@ -6207,8 +6333,8 @@ const ROLE_SKILLS_EXTENDED: Record<string, { category: string, skills: string[] 
 
 const EXPERIENCE_INDUSTRIES = [
   { name: "Automotive",      clients: ["Tesla", "Volvo", "Ford", "BMW", "Mercedes-Benz", "Audi"] },
-  { name: "Technology",      clients: ["Apple", "Google", "Microsoft", "Spotify", "Airbnb", "Salesforce"] },
-  { name: "Fashion",         clients: ["Nike", "Adidas", "Gucci", "Zara", "Levi's", "Burberry"] },
+  { name: "Technology",      clients: ["Apple", "Microsoft", "Spotify", "Airbnb", "Salesforce", "Unilever"] },
+  { name: "Fashion",         clients: ["Adidas", "Carhartt", "Gucci", "Zara", "Levi's", "Burberry"] },
   { name: "Food & Beverage", clients: ["Coca-Cola", "Heineken", "McDonald's", "Nespresso", "Red Bull", "Diageo"] },
   { name: "Finance",         clients: ["Goldman Sachs", "Mastercard", "Revolut", "HSBC", "Barclays", "Amex"] },
   { name: "Retail",          clients: ["Amazon", "IKEA", "Uniqlo", "Sephora", "eBay", "Zalando"] },
@@ -6225,7 +6351,7 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
   const [hovered, setHovered] = useState<string | null>(null)
   const [hoveredAt, setHoveredAt] = useState(0)
   const [transitionStart, setTransitionStart] = useState(0)
-  const [selectedOffices, setSelectedOffices] = useState(["Beaverton HQ"])
+  const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
   const [graphMode, setGraphMode] = useState("skills")
   const [peopleFilter, setPeopleFilter] = useState("employees")
   const [searchQuery, setSearchQuery] = useState("")
@@ -7091,7 +7217,7 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
           <div style={{ fontSize: 11, fontWeight: 450, color: t.mutedFg, marginBottom: 10 }}>Access</div>
           <div style={{ fontSize: 12, color: t.mutedFg, marginBottom: 10 }}>View and request resources:</div>
           <ul style={{ margin: "0 0 14px", paddingLeft: 18 }}>
-            <li style={{ fontSize: 12, color: t.fg, marginBottom: 4 }}><strong>Resource planners</strong> in <strong>Sydney</strong> and <strong>New York</strong></li>
+            <li style={{ fontSize: 12, color: t.fg, marginBottom: 4 }}><strong>Resource planners</strong> in <strong>Berlin</strong> and <strong>New York</strong></li>
             <li style={{ fontSize: 12, color: t.fg }}><strong>Jean-Pierre</strong> in <strong>Paris</strong></li>
           </ul>
           <div style={{ fontSize: 12, color: t.mutedFg, marginBottom: 10 }}>Edit and schedule:</div>
@@ -7200,9 +7326,9 @@ function VersionsToggle({ version, onChange }: any) {
 }
 
 export default function App() {
-  const [version, setVersion] = useState("single")
-  const [activeItem, setActiveItem] = useState("Project tracker")
-  const [breadcrumb, setBreadcrumb] = useState(["Beaverton HQ", "Project tracker"])
+  const [version, setVersion] = useState("multi")
+  const [activeItem, setActiveItem] = useState("Dashboard")
+  const [breadcrumb, setBreadcrumb] = useState(["Global", "Dashboard"])
   const [roles, setRoles] = useState(INITIAL_ROLES)
   const [departments, setDepartments] = useState(INITIAL_DEPARTMENTS)
   const [deliveryTeams, setDeliveryTeams] = useState(INITIAL_DELIVERY_TEAMS)
@@ -7216,7 +7342,7 @@ export default function App() {
   const [clientsFilter, setClientsFilter] = useState<string[]|null>(null)
   const [projectsClientFilter, setProjectsClientFilter] = useState<string|null>(null)
   const [projectsRateCardFilter, setProjectsRateCardFilter] = useState<{clientName: string, rateCardName: string}|null>(null)
-  const [themeMode, setThemeMode] = useState<"light" | "dark" | "black" | "float-dark">("light")
+  const [themeMode, setThemeMode] = useState<"light" | "dark" | "black" | "float-dark">("float-dark")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [navHoverOpen, setNavHoverOpen] = useState(false)
@@ -7265,7 +7391,7 @@ export default function App() {
   return (
     <div style={{ display:"flex", height:"100vh", overflow:"hidden", background:t.bg, color:t.fg, fontFamily:"var(--font-sans), -apple-system, sans-serif" }}>
       {activeItem !== "Settings" && <>
-        <SidebarNav version={version} activeItem={activeItem} onActiveItemChange={setActiveItem} onBreadcrumbChange={setBreadcrumb} themeMode={themeMode} onThemeChange={setThemeMode} visibleDataHubItems={visibleDataHubItems} onVisibleDataHubItemsChange={setVisibleDataHubItems} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed(c => !c)} notificationsOpen={notificationsOpen} onNotificationsToggle={() => setNotificationsOpen(o => !o)} onHoverChange={setNavHoverOpen} onSettingsOffice={(name: string | null) => { setSettingsOfficeTarget(name); setActiveItem("Settings"); setBreadcrumb(["Settings"]) }} hasSavedDashboard={savedDashboardCards.length > 0} onSavedDashboardClick={() => { setActiveItem("Saved Dashboard"); setBreadcrumb(["Float Agent", "Saved Dashboard"]) }} showFloatAgent={showFloatAgent} onFloatAgentToggle={setShowFloatAgent}/>
+        <SidebarNav version={version} activeItem={activeItem} breadcrumb={breadcrumb} onActiveItemChange={setActiveItem} onBreadcrumbChange={setBreadcrumb} themeMode={themeMode} onThemeChange={setThemeMode} visibleDataHubItems={visibleDataHubItems} onVisibleDataHubItemsChange={setVisibleDataHubItems} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed(c => !c)} notificationsOpen={notificationsOpen} onNotificationsToggle={() => setNotificationsOpen(o => !o)} onHoverChange={setNavHoverOpen} onSettingsOffice={(name: string | null) => { setSettingsOfficeTarget(name); setActiveItem("Settings"); setBreadcrumb(["Settings"]) }} hasSavedDashboard={savedDashboardCards.length > 0} onSavedDashboardClick={() => { setActiveItem("Saved Dashboard"); setBreadcrumb(["Float Agent", "Saved Dashboard"]) }} showFloatAgent={showFloatAgent} onFloatAgentToggle={setShowFloatAgent}/>
         {notificationsOpen && <NotificationsPanel floating={sidebarCollapsed} navHoverOpen={navHoverOpen} onClose={() => setNotificationsOpen(false)}/>}
       </>}
       <main style={{ ...s.main, position:"relative" as const, paddingLeft: activeItem !== "Settings" && sidebarCollapsed ? 36 : 0, transition: "padding-left 0.2s ease" }}>
