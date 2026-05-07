@@ -289,8 +289,10 @@ function DataTable({ columns, data, onRowClick, isRowSelected, onSelectionChange
             {row.getVisibleCells().map((cell: any, i: number) => {
               const divL = cell.column.columnDef.meta?.dividerLeft
               return (
-              <div key={cell.id} style={{ display: "flex", alignItems: "center", padding: "10px 0", paddingLeft: divL ? 14 : (i === 0 ? 16 : 8), overflow: "hidden", fontSize: 13, ...(divL ? { borderLeft: `1px solid ${t.fgAlpha06}`, animation: "colDivider 4s ease-in-out infinite" } : {}) }}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              <div key={cell.id} style={{ display: "flex", alignItems: "center", padding: "10px 0", paddingLeft: divL ? 14 : (i === 0 ? 16 : 8), overflow: "hidden", minWidth: 0, fontSize: 13, ...(divL ? { borderLeft: `1px solid ${t.fgAlpha06}`, animation: "colDivider 4s ease-in-out infinite" } : {}) }}>
+                <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </div>
               </div>
             )})}
 
@@ -717,10 +719,10 @@ const STAGE_OPTIONS = [
 const CURRENCIES = ["USD","AUD","GBP","EUR","CAD","NZD","SGD","JPY"]
 
 const ACTIVITY_LOG_DATA = [
-  { source: "people", entity: "Jake Peralta", type: "allocation", description: "Allocated to Project Phoenix", date: "Feb 12, 2026", details: "40 hrs/week for 8 weeks" },
-  { source: "people", entity: "Rosa Diaz", type: "allocation", description: "Allocated to Project Stealth", date: "Feb 14, 2026", details: "40 hrs/week for 10 weeks" },
+  { source: "people", entity: "Jake Peralta", type: "allocation", description: "Allocated to Red Light Interactive Platform", date: "Feb 12, 2026", details: "40 hrs/week for 8 weeks" },
+  { source: "people", entity: "Rosa Diaz", type: "allocation", description: "Allocated to Impossible Is Nothing Global Campaign", date: "Feb 14, 2026", details: "40 hrs/week for 10 weeks" },
   { source: "roles", entity: "Designer", type: "person_assigned", description: "Jake Peralta assigned", date: "Feb 12, 2026", details: "Transferred from Developer role" },
-  { source: "people", entity: "Amy Santiago", type: "allocation", description: "Allocated to Project Binder", date: "Feb 5, 2026", details: "35 hrs/week for 6 weeks" },
+  { source: "people", entity: "Amy Santiago", type: "allocation", description: "Allocated to Freaky Fast Anti-Hero Campaign", date: "Feb 5, 2026", details: "35 hrs/week for 6 weeks" },
   { source: "roles", entity: "Developer", type: "rate_change", description: "Cost rate changed from $130 to $140", date: "Jan 15, 2026", details: "Market rate adjustment" },
   { source: "departments", entity: "Design", type: "person_assigned", description: "Amy Santiago added", date: "Jan 10, 2026", details: "Transferred from Engineering" },
   { source: "roles", entity: "Senior Designer", type: "person_assigned", description: "Amy Santiago assigned", date: "Jan 10, 2026", details: "Promoted from Designer" },
@@ -741,12 +743,12 @@ const ROLE_ACTIVITY = {
 }
 const PERSON_ACTIVITY = {
   "Jake Peralta": [
-    { type: "allocation", description: "Allocated to Project Phoenix", date: "Feb 12, 2026", details: "40 hrs/week for 8 weeks" },
+    { type: "allocation", description: "Allocated to Red Light Interactive Platform", date: "Feb 12, 2026", details: "40 hrs/week for 8 weeks" },
     { type: "role_change", description: "Role changed from Developer to Designer", date: "Jan 28, 2026" },
     { type: "added", description: "Added to the team", date: "Sep 15, 2025", details: "Joined as Developer" },
   ],
   "Amy Santiago": [
-    { type: "allocation", description: "Allocated to Project Binder", date: "Feb 5, 2026", details: "35 hrs/week for 6 weeks" },
+    { type: "allocation", description: "Allocated to Freaky Fast Anti-Hero Campaign", date: "Feb 5, 2026", details: "35 hrs/week for 6 weeks" },
     { type: "role_change", description: "Role changed from Designer to Senior Designer", date: "Jan 10, 2026" },
     { type: "added", description: "Added to the team", date: "Aug 1, 2025" },
   ],
@@ -798,79 +800,83 @@ const CLIENTS_FULL = [
 ]
 
 const BUSINESS_UNITS_FULL = [
-  { name: "Airmax", employees: 145, projects: 3, projectsList: [
-    { title: "Airmax 90 Retro Redux", status: "Active", team: 12, budget: 285000 },
-    { title: "Airmax Summer Collection", status: "Active", team: 8, budget: 165000 },
-    { title: "Airmax Sustainability Initiative", status: "Planning", team: 5, budget: 95000 },
+  { name: "dosist", employees: 18, projects: 3, projectsList: [
+    { title: "dosist Brand Platform Creation", status: "Active", team: 10, budget: 385000 },
+    { title: "Dose Control Product Launch", status: "Active", team: 8, budget: 245000 },
+    { title: "Wellness DTC Strategy", status: "Planning", team: 5, budget: 120000 },
   ], departments: [
-    { title: "Marketing Campaign", budget: 450000, spent: 285000, currency: "USD", linkedRoles: [{roleId:0,allocation:15},{roleId:1,allocation:12},{roleId:2,allocation:25},{roleId:3,allocation:10},{roleId:4,allocation:8},{roleId:5,allocation:5}] },
-    { title: "Product Launch", budget: 200000, spent: 85000, currency: "USD", linkedRoles: [{roleId:0,allocation:10},{roleId:1,allocation:8},{roleId:2,allocation:18},{roleId:3,allocation:6},{roleId:4,allocation:5},{roleId:5,allocation:3}] },
+    { title: "Brand Creation", budget: 420000, spent: 285000, currency: "USD", linkedRoles: [{roleId:0,allocation:15},{roleId:1,allocation:12},{roleId:2,allocation:25},{roleId:3,allocation:10},{roleId:4,allocation:8},{roleId:5,allocation:5}] },
+    { title: "Product Innovation", budget: 200000, spent: 95000, currency: "USD", linkedRoles: [{roleId:0,allocation:8},{roleId:1,allocation:7},{roleId:2,allocation:14},{roleId:3,allocation:5},{roleId:4,allocation:4},{roleId:5,allocation:2}] },
   ]},
-  { name: "LeBron", employees: 98, projects: 4, projectsList: [
-    { title: "LeBron XX Performance Testing", status: "Active", team: 15, budget: 340000 },
-    { title: "LeBron Signature Lifestyle Line", status: "Active", team: 10, budget: 220000 },
-    { title: "LeBron Global Tour Campaign", status: "In Progress", team: 8, budget: 155000 },
-    { title: "LeBron Kids Collection", status: "Planning", team: 6, budget: 85000 },
+  { name: "Budweiser", employees: 24, projects: 4, projectsList: [
+    { title: "Red Light Interactive Platform", status: "Active", team: 14, budget: 520000 },
+    { title: "NHL Season Campaign", status: "Active", team: 11, budget: 310000 },
+    { title: "Made in America Festival", status: "In Progress", team: 9, budget: 275000 },
+    { title: "Super Bowl Integration", status: "Planning", team: 7, budget: 195000 },
   ], departments: [
-    { title: "Design Development", budget: 380000, spent: 220000, currency: "USD", linkedRoles: [{roleId:0,allocation:12},{roleId:1,allocation:10},{roleId:2,allocation:20},{roleId:3,allocation:8},{roleId:4,allocation:6},{roleId:5,allocation:4}] },
-    { title: "Athlete Relations", budget: 150000, spent: 65000, currency: "USD", linkedRoles: [{roleId:0,allocation:8},{roleId:1,allocation:6},{roleId:2,allocation:14},{roleId:3,allocation:5},{roleId:4,allocation:4},{roleId:5,allocation:2}] },
+    { title: "Digital Products", budget: 580000, spent: 360000, currency: "USD", linkedRoles: [{roleId:0,allocation:16},{roleId:1,allocation:13},{roleId:2,allocation:26},{roleId:3,allocation:11},{roleId:4,allocation:9},{roleId:5,allocation:5}] },
+    { title: "Campaign Production", budget: 310000, spent: 180000, currency: "USD", linkedRoles: [{roleId:0,allocation:10},{roleId:1,allocation:8},{roleId:2,allocation:17},{roleId:3,allocation:7},{roleId:4,allocation:5},{roleId:5,allocation:3}] },
   ]},
-  { name: "Jordan", employees: 112, projects: 3, projectsList: [
-    { title: "Air Jordan 39 Release", status: "Active", team: 18, budget: 425000 },
-    { title: "Jordan Heritage Museum Digital", status: "Active", team: 7, budget: 145000 },
-    { title: "Jordan Women's Expansion", status: "Planning", team: 9, budget: 195000 },
+  { name: "Bud Light", employees: 16, projects: 3, projectsList: [
+    { title: "Equal Play EDM Documentary", status: "Active", team: 12, budget: 420000 },
+    { title: "Female DJs Social Campaign", status: "Active", team: 8, budget: 235000 },
+    { title: "Music Culture Platform", status: "Planning", team: 6, budget: 145000 },
   ], departments: [
-    { title: "Heritage Marketing", budget: 420000, spent: 195000, currency: "USD", linkedRoles: [{roleId:0,allocation:14},{roleId:1,allocation:11},{roleId:2,allocation:22},{roleId:3,allocation:9},{roleId:4,allocation:7},{roleId:5,allocation:4}] },
+    { title: "Content & Social", budget: 450000, spent: 265000, currency: "USD", linkedRoles: [{roleId:0,allocation:12},{roleId:1,allocation:10},{roleId:2,allocation:20},{roleId:3,allocation:8},{roleId:4,allocation:6},{roleId:5,allocation:4}] },
   ]},
-  { name: "Nike Runnings", employees: 156, projects: 5, projectsList: [
-    { title: "Vaporfly Elite Development", status: "Active", team: 20, budget: 580000 },
-    { title: "NextGen Running App", status: "Active", team: 14, budget: 320000 },
-    { title: "Marathon Training Series", status: "In Progress", team: 11, budget: 240000 },
-    { title: "Trail Running Expansion", status: "Active", team: 9, budget: 185000 },
-    { title: "Running Analytics Platform", status: "Planning", team: 8, budget: 165000 },
+  { name: "Jimmy John's", employees: 14, projects: 3, projectsList: [
+    { title: "Freaky Fast Anti-Hero Campaign", status: "Active", team: 13, budget: 380000 },
+    { title: "Speed Guaranteed Digital Rollout", status: "In Progress", team: 9, budget: 215000 },
+    { title: "Franchise Brand Refresh", status: "Planning", team: 6, budget: 135000 },
   ], departments: [
-    { title: "Performance Research", budget: 520000, spent: 340000, currency: "USD", linkedRoles: [{roleId:0,allocation:18},{roleId:1,allocation:14},{roleId:2,allocation:28},{roleId:3,allocation:12},{roleId:4,allocation:10},{roleId:5,allocation:6}] },
-    { title: "Technology Innovation", budget: 250000, spent: 120000, currency: "USD", linkedRoles: [{roleId:0,allocation:12},{roleId:1,allocation:10},{roleId:2,allocation:20},{roleId:3,allocation:8},{roleId:4,allocation:6},{roleId:5,allocation:4}] },
+    { title: "Integrated Advertising", budget: 420000, spent: 250000, currency: "USD", linkedRoles: [{roleId:0,allocation:13},{roleId:1,allocation:10},{roleId:2,allocation:21},{roleId:3,allocation:8},{roleId:4,allocation:7},{roleId:5,allocation:4}] },
   ]},
-  { name: "Nike Football", employees: 78, projects: 3, projectsList: [
-    { title: "Phantom GX Elite Campaign", status: "Active", team: 13, budget: 295000 },
-    { title: "Football Academy Sponsorship", status: "Active", team: 7, budget: 125000 },
-    { title: "Women's Football Growth", status: "Planning", team: 9, budget: 185000 },
+  { name: "Adidas", employees: 32, projects: 5, projectsList: [
+    { title: "Impossible Is Nothing Global Campaign", status: "Active", team: 18, budget: 650000 },
+    { title: "Originals Heritage Relaunch", status: "Active", team: 12, budget: 345000 },
+    { title: "Sustainability Brand Narrative", status: "In Progress", team: 10, budget: 280000 },
+    { title: "Athlete Creator Programme", status: "Active", team: 8, budget: 195000 },
+    { title: "Digital Flagship Experience", status: "Planning", team: 9, budget: 225000 },
   ], departments: [
-    { title: "Team Partnerships", budget: 280000, spent: 150000, currency: "USD", linkedRoles: [{roleId:0,allocation:8},{roleId:1,allocation:7},{roleId:2,allocation:14},{roleId:3,allocation:6},{roleId:4,allocation:5},{roleId:5,allocation:3}] },
+    { title: "Global Brand Strategy", budget: 680000, spent: 420000, currency: "USD", linkedRoles: [{roleId:0,allocation:18},{roleId:1,allocation:15},{roleId:2,allocation:29},{roleId:3,allocation:12},{roleId:4,allocation:10},{roleId:5,allocation:6}] },
+    { title: "Creative Production", budget: 380000, spent: 195000, currency: "USD", linkedRoles: [{roleId:0,allocation:12},{roleId:1,allocation:9},{roleId:2,allocation:20},{roleId:3,allocation:8},{roleId:4,allocation:6},{roleId:5,allocation:4}] },
   ]},
-  { name: "Nike Sportswear", employees: 134, projects: 4, projectsList: [
-    { title: "Essentials Collection Redesign", status: "Active", team: 12, budget: 275000 },
-    { title: "Sustainability Material Research", status: "In Progress", team: 8, budget: 165000 },
-    { title: "Urban Lifestyle Campaign", status: "Active", team: 10, budget: 225000 },
-    { title: "Vintage Revival Series", status: "Planning", team: 6, budget: 95000 },
+  { name: "Unilever", employees: 28, projects: 4, projectsList: [
+    { title: "Dove Real Beauty Evolution", status: "Active", team: 16, budget: 480000 },
+    { title: "Axe House Party Experience", status: "Active", team: 11, budget: 295000 },
+    { title: "Rexona Performance Platform", status: "In Progress", team: 8, budget: 220000 },
+    { title: "Ben & Jerry's Activism Campaign", status: "Planning", team: 7, budget: 165000 },
   ], departments: [
-    { title: "Lifestyle Marketing", budget: 395000, spent: 210000, currency: "USD", linkedRoles: [{roleId:0,allocation:13},{roleId:1,allocation:9},{roleId:2,allocation:21},{roleId:3,allocation:8},{roleId:4,allocation:7},{roleId:5,allocation:4}] },
+    { title: "Multi-Brand Strategy", budget: 560000, spent: 310000, currency: "USD", linkedRoles: [{roleId:0,allocation:14},{roleId:1,allocation:12},{roleId:2,allocation:23},{roleId:3,allocation:9},{roleId:4,allocation:8},{roleId:5,allocation:5}] },
+    { title: "Content Production", budget: 240000, spent: 115000, currency: "USD", linkedRoles: [{roleId:0,allocation:8},{roleId:1,allocation:7},{roleId:2,allocation:14},{roleId:3,allocation:5},{roleId:4,allocation:4},{roleId:5,allocation:2}] },
   ]},
-  { name: "Nike Training", employees: 89, projects: 3, projectsList: [
-    { title: "Metcon Innovation Program", status: "Active", team: 11, budget: 245000 },
-    { title: "Fitness App Integration", status: "In Progress", team: 9, budget: 185000 },
-    { title: "Training Equipment Redesign", status: "Planning", team: 7, budget: 135000 },
+  { name: "Rimowa", employees: 15, projects: 3, projectsList: [
+    { title: "Original Never Still Campaign", status: "Active", team: 10, budget: 320000 },
+    { title: "Rimowa x Cultural Icons Collab", status: "Active", team: 7, budget: 215000 },
+    { title: "Digital Brand Experience", status: "Planning", team: 6, budget: 145000 },
   ], departments: [
-    { title: "Fitness Program", budget: 310000, spent: 160000, currency: "USD", linkedRoles: [{roleId:0,allocation:9},{roleId:1,allocation:8},{roleId:2,allocation:16},{roleId:3,allocation:7},{roleId:4,allocation:5},{roleId:5,allocation:3}] },
+    { title: "Luxury Brand Strategy", budget: 380000, spent: 210000, currency: "USD", linkedRoles: [{roleId:0,allocation:11},{roleId:1,allocation:9},{roleId:2,allocation:18},{roleId:3,allocation:7},{roleId:4,allocation:6},{roleId:5,allocation:4}] },
   ]},
-  { name: "Nike SB", employees: 67, projects: 2, projectsList: [
-    { title: "SB Dunk Premium Series", status: "Active", team: 8, budget: 165000 },
-    { title: "Skate Park Partnership Network", status: "Active", team: 5, budget: 95000 },
+  { name: "Israella Kobla", employees: 8, projects: 2, projectsList: [
+    { title: "IK Brand Identity System", status: "Active", team: 6, budget: 175000 },
+    { title: "London Fashion Week Activation", status: "In Progress", team: 5, budget: 120000 },
   ], departments: [
-    { title: "Skate Culture", budget: 240000, spent: 130000, currency: "USD", linkedRoles: [{roleId:0,allocation:7},{roleId:1,allocation:6},{roleId:2,allocation:12},{roleId:3,allocation:5},{roleId:4,allocation:4},{roleId:5,allocation:2}] },
+    { title: "Fashion Brand Creation", budget: 220000, spent: 130000, currency: "USD", linkedRoles: [{roleId:0,allocation:8},{roleId:1,allocation:6},{roleId:2,allocation:13},{roleId:3,allocation:5},{roleId:4,allocation:4},{roleId:5,allocation:2}] },
   ]},
-  { name: "Zoom Air", employees: 103, projects: 2, projectsList: [
-    { title: "Zoom Air Cushioning Tech Gen 4", status: "Active", team: 14, budget: 325000 },
-    { title: "Cross-Sport Zoom Integration", status: "Planning", team: 8, budget: 175000 },
+  { name: "Mini", employees: 22, projects: 4, projectsList: [
+    { title: "Mini Electric Launch Campaign", status: "Active", team: 14, budget: 425000 },
+    { title: "Urban Adventure Digital Series", status: "Active", team: 9, budget: 240000 },
+    { title: "Mini x Streetwear Collaboration", status: "In Progress", team: 7, budget: 180000 },
+    { title: "Charging Network Brand Story", status: "Planning", team: 5, budget: 115000 },
   ], departments: [
-    { title: "Technology Development", budget: 360000, spent: 190000, currency: "USD", linkedRoles: [{roleId:0,allocation:11},{roleId:1,allocation:9},{roleId:2,allocation:19},{roleId:3,allocation:8},{roleId:4,allocation:6},{roleId:5,allocation:4}] },
+    { title: "Automotive Brand", budget: 480000, spent: 275000, currency: "USD", linkedRoles: [{roleId:0,allocation:13},{roleId:1,allocation:11},{roleId:2,allocation:22},{roleId:3,allocation:9},{roleId:4,allocation:7},{roleId:5,allocation:4}] },
   ]},
-  { name: "Converse", employees: 91, projects: 2, projectsList: [
-    { title: "Chuck Taylor All Star 2050", status: "Active", team: 10, budget: 245000 },
-    { title: "Converse Collaboration Series", status: "In Progress", team: 7, budget: 155000 },
+  { name: "Johnnie Walker", employees: 20, projects: 3, projectsList: [
+    { title: "Keep Walking Global Refresh", status: "Active", team: 13, budget: 395000 },
+    { title: "Blue Label Luxury Experience", status: "Active", team: 9, budget: 265000 },
+    { title: "Heritage Cocktail Culture Platform", status: "Planning", team: 6, budget: 145000 },
   ], departments: [
-    { title: "Brand Strategy", budget: 330000, spent: 175000, currency: "USD", linkedRoles: [{roleId:0,allocation:10},{roleId:1,allocation:8},{roleId:2,allocation:17},{roleId:3,allocation:7},{roleId:4,allocation:5},{roleId:5,allocation:3}] },
+    { title: "Spirits Brand Strategy", budget: 440000, spent: 245000, currency: "USD", linkedRoles: [{roleId:0,allocation:12},{roleId:1,allocation:10},{roleId:2,allocation:20},{roleId:3,allocation:8},{roleId:4,allocation:7},{roleId:5,allocation:4}] },
   ]},
 ]
 
