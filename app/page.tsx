@@ -467,10 +467,11 @@ function Collapsible({ expanded, children }: any) {
   )
 }
 
-function NikeLogo() {
+function NGLogo() {
   return (
-    <svg height="20" viewBox="0 0 872 1572" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style={{ display: "block", flexShrink: 0 }}>
-      <path d="M15 0H235.5L871.5 1571.5H643L465 1106H0V927H392.5L15 0Z"/>
+    <svg height="20" viewBox="0 0 55 42" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: "block", flexShrink: 0 }}>
+      <path d="M37 40.9952L26.6278 40.7273L8.90909 15.0938H8.6108V40.7273H0V0H7.55682L37 40.9952Z" fill="currentColor"/>
+      <path d="M54.2666 24.6118C54.2666 28.1846 53.5124 31.2547 52.0039 33.8218C50.4954 36.3756 48.4179 38.3474 45.7715 39.7368C44.7309 40.2779 43.6299 40.7102 42.4707 41.0386L37.5645 34.1743C39.1502 34.0876 40.5295 33.7528 41.7021 33.1665C43.0914 32.4652 44.1502 31.4796 44.8779 30.2095C45.5819 29.0026 45.9512 27.5863 45.9863 25.9614H37.2559V19.4907H54.2666V24.6118ZM36.502 0.0385742C38.8043 0.0386114 40.9478 0.37644 42.9326 1.05127C44.9175 1.7129 46.6779 2.65224 48.2129 3.86963C49.761 5.08698 51.0248 6.53588 52.0039 8.21631C52.9831 9.88361 53.6118 11.7235 53.8896 13.7349H45.1553C44.8774 12.769 44.4872 11.9153 43.9844 11.1743C43.4815 10.4201 42.8665 9.78414 42.1387 9.26807C41.4242 8.73885 40.6039 8.33499 39.6777 8.05713C38.7647 7.77925 37.7521 7.64112 36.6406 7.64111C34.5631 7.64111 32.7368 8.15682 31.1621 9.18896C29.6007 10.2211 28.3831 11.7232 27.5098 13.6948C26.8995 15.0633 26.5032 16.6451 26.3193 18.4399L20.0322 9.64307C20.8424 8.10779 21.8197 6.74497 22.9648 5.55615C24.6982 3.75669 26.7162 2.38721 29.0186 1.44775C31.321 0.508258 33.8158 0.0385742 36.502 0.0385742Z" fill="currentColor"/>
     </svg>
   )
 }
@@ -1535,7 +1536,7 @@ function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBre
           <DropdownWrapper open={orgOpen} setOpen={setOrgOpen}
             trigger={
               <HoverBtn onClick={() => setOrgOpen(!orgOpen)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 6px", borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", color: t.fg }}>
-                <NikeLogo />
+                <NGLogo />
                 <ChevronDown size={12} strokeWidth={0.9} color={t.secondaryFg} style={{ transform: orgOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}/>
               </HoverBtn>
             }>
@@ -3639,7 +3640,7 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 24px 12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
           <HoverBtn onClick={() => setDateOffset(o => o - 1)} style={s.secIconBtn}>
             <ChevronLeft size={14} strokeWidth={0.9}/>
           </HoverBtn>
@@ -3647,18 +3648,20 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
             <ChevronRight size={14} strokeWidth={0.9}/>
           </HoverBtn>
         </div>
-        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14 }}>
+        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14, flexShrink: 0, whiteSpace: "nowrap" as const }}>
           <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>{monthLabel}</span>
           {rangeStr}
           <ChevronDown size={12} strokeWidth={0.9}/>
         </HoverBtn>
         <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
-        <FilterChip category="Project stage" operator="is any of" value="On track, +2" onClear={() => {}}/>
-        {activeTab === "people" && <FilterChip category="People type" operator="is any of" value="Active, +4" onClear={() => {}}/>}
-        {activeTab === "people" && <FilterChip category="Time off" operator="is any of" value="Active, +1" onClear={() => {}}/>}
-        <HoverBtn style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4 }}>
-          <Plus size={11} strokeWidth={0.9}/>Filter
-        </HoverBtn>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
+          <FilterChip category="Project stage" operator="is any of" value="On track, +2" onClear={() => {}}/>
+          {activeTab === "people" && <FilterChip category="People type" operator="is any of" value="Active, +4" onClear={() => {}}/>}
+          {activeTab === "people" && <FilterChip category="Time off" operator="is any of" value="Active, +1" onClear={() => {}}/>}
+          <HoverBtn style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4, flexShrink: 0 }}>
+            <Plus size={11} strokeWidth={0.9}/>Filter
+          </HoverBtn>
+        </div>
       </div>
     </div>
   )
@@ -3727,16 +3730,11 @@ function PeopleOpsDashboard({ office = "Global" }: { office?: string }) {
       </div>
     )
   }
-  function BreakRow({ label, value, sub, sepSrc }: { label: string; value: string; sub?: string; sepSrc?: string }) {
+  function BreakRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
     return (
       <div style={{ display: "flex", alignItems: "flex-end", gap: 4, paddingTop: 4, paddingBottom: 4 }}>
         <span style={{ ...mutTxt, flexShrink: 0 }}>{label}</span>
-        {sepSrc
-          ? <div style={{ flex: "1 0 0", minWidth: 1, height: 0, position: "relative", marginBottom: 2 }}>
-              <img alt="" src={sepSrc} style={{ position: "absolute", top: -1, left: 0, right: 0, display: "block", width: "100%", height: 2, maxWidth: "none" as const, objectFit: "fill" as const }}/>
-            </div>
-          : <div style={sep}/>
-        }
+        <div style={sep}/>
         <span style={{ ...mutTxt, flexShrink: 0 }}>{value}</span>
         {sub && <span style={mutTxt}>{sub}</span>}
       </div>
@@ -3841,25 +3839,25 @@ function PeopleOpsDashboard({ office = "Global" }: { office?: string }) {
 
           {/* Legend column — Figma: gap=24 between top-level rows */}
           <div style={{ flex: "0 0 27%", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
-            <LegRow indicator={<LineSample src={I.lgGross}/>}    label="Gross capacity"   value={fmtH(d.gross)}/>
+            <LegRow indicator={<svg width="18" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="18" y2="4" stroke="#8290aa" strokeWidth="1.5" strokeDasharray="4 3"/></svg>} label="Gross capacity"   value={fmtH(d.gross)}/>
             <LegRow indicator={<div style={{ width: 10, height: 10, borderRadius: 5, background: "#dce2eb", flexShrink: 0 }}/>} label="Time off" value={fmtH(d.toh)}/>
-            <LegRow indicator={<LineSample src={I.lgDelivery}/>} label="Delivery capacity" value={fmtH(delivery)}/>
+            <LegRow indicator={<svg width="18" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="18" y2="4" stroke="#2e5fe8" strokeWidth="1.5"/></svg>} label="Delivery capacity" value={fmtH(delivery)}/>
             {/* Future scheduled — header + gap-8 + breakdown gap-4 */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <LegRow indicator={<LineSample src={I.lgFuture}/>} label="Future scheduled" value={fmtH(futTotal)}/>
+              <LegRow indicator={<svg width="18" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="18" y2="4" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="4 3"/></svg>} label="Future scheduled" value={fmtH(futTotal)}/>
               <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-                <BreakRow label="On track"  value={fmtH(futOT)}   sepSrc={I.capSepFsOnTrack}/>
-                <BreakRow label="Off track" value={fmtH(futOffT)} sepSrc={I.capSepFsOffTrack}/>
-                <BreakRow label="Completed" value={fmtH(futComp)} sepSrc={I.capSepFsCompleted}/>
+                <BreakRow label="On track"  value={fmtH(futOT)}/>
+                <BreakRow label="Off track" value={fmtH(futOffT)}/>
+                <BreakRow label="Completed" value={fmtH(futComp)}/>
               </div>
             </div>
             {/* Past logged */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <LegRow indicator={<LineSample src={I.lgPastLog}/>} label="Past logged" value={fmtH(pastTotal)}/>
+              <LegRow indicator={<svg width="18" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="18" y2="4" stroke="#22c55e" strokeWidth="1.5"/></svg>} label="Past logged" value={fmtH(pastTotal)}/>
               <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-                <BreakRow label="On track"  value={fmtH(pastOT)}   sepSrc={I.capSepPlOnTrack}/>
-                <BreakRow label="Off track" value={fmtH(pastOffT)} sepSrc={I.capSepPlOffTrack}/>
-                <BreakRow label="Completed" value={fmtH(pastComp)} sepSrc={I.capSepPlCompleted}/>
+                <BreakRow label="On track"  value={fmtH(pastOT)}/>
+                <BreakRow label="Off track" value={fmtH(pastOffT)}/>
+                <BreakRow label="Completed" value={fmtH(pastComp)}/>
               </div>
             </div>
           </div>
@@ -3936,9 +3934,9 @@ function PeopleOpsDashboard({ office = "Global" }: { office?: string }) {
           </div>
           <div style={{ flex: "0 0 32%", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 20, paddingTop: 4, minWidth: 0, overflow: "hidden" }}>
             <LegRow indicator={<div style={{ width: 10, flexShrink: 0, borderTop: `2px dashed ${t.border}` }}/>} label="Delivery capacity" value="100%" sub={`(${fmtH(delivery)})`}/>
-            <LegRow indicator={<LineSample src={I.lgUtil}/>} label="Utilization" value={`${d.util}%`} sub={`(${fmtH(utilH)})`}/>
+            <LegRow indicator={<svg width="18" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="18" y2="4" stroke="#2e5fe8" strokeWidth="1.5"/></svg>} label="Utilization" value={`${d.util}%`} sub={`(${fmtH(utilH)})`}/>
             <div style={{ flexShrink: 0 }}>
-              <LegRow indicator={<LineSample src={I.lgBillable}/>} label="Billable utilization" value={`${d.bill}%`} sub={`(${fmtH(billH)})`}/>
+              <LegRow indicator={<svg width="18" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="18" y2="4" stroke="#7d66d9" strokeWidth="1.5"/></svg>} label="Billable utilization" value={`${d.bill}%`} sub={`(${fmtH(billH)})`}/>
               <div style={{ paddingLeft: 18 }}>
                 <BreakRow label="On track" value={`${billOnT}%`} sub={`(${fmtH(billOnTH)})`}/>
                 <BreakRow label="Off track" value={`${billOffT}%`} sub={`(${fmtH(billOffTH)})`}/>
@@ -3946,7 +3944,7 @@ function PeopleOpsDashboard({ office = "Global" }: { office?: string }) {
               </div>
             </div>
             <div style={{ flexShrink: 0 }}>
-              <LegRow indicator={<LineSample src={I.lgNonBill}/>} label="Non-billable utilization" value={`${nonBillPct}%`} sub={`(${fmtH(nonBillH)})`}/>
+              <LegRow indicator={<svg width="18" height="8" style={{ flexShrink: 0 }}><line x1="0" y1="4" x2="18" y2="4" stroke="#8290aa" strokeWidth="1.5" strokeDasharray="4 3"/></svg>} label="Non-billable utilization" value={`${nonBillPct}%`} sub={`(${fmtH(nonBillH)})`}/>
               <div style={{ paddingLeft: 18 }}>
                 <BreakRow label="On track" value={`${nBillOnT}%`} sub={`(${fmtH(nBillOnTH)})`}/>
                 <BreakRow label="Off track" value={`${nBillOffT}%`} sub={`(${fmtH(nBillOffTH)})`}/>
@@ -3995,16 +3993,11 @@ function ProjectFinanceDashboard({ office = "Global" }: { office?: string }) {
       </div>
     )
   }
-  function BreakRow({ label, value, sepSrc }: { label: string; value: string; sepSrc?: string }) {
+  function BreakRow({ label, value }: { label: string; value: string }) {
     return (
       <div style={{ display: "flex", alignItems: "flex-end", gap: 4, paddingTop: 4, paddingBottom: 4 }}>
         <span style={{ ...mutTxt, flexShrink: 0 }}>{label}</span>
-        {sepSrc
-          ? <div style={{ flex: "1 0 0", minWidth: 1, height: 0, position: "relative", marginBottom: 2 }}>
-              <img alt="" src={sepSrc} style={{ position: "absolute", top: -1, left: 0, right: 0, display: "block", width: "100%", height: 2, maxWidth: "none" as const, objectFit: "fill" as const }}/>
-            </div>
-          : <div style={sep}/>
-        }
+        <div style={sep}/>
         <span style={{ ...mutTxt, flexShrink: 0 }}>{value}</span>
       </div>
     )
@@ -4101,17 +4094,17 @@ function ProjectFinanceDashboard({ office = "Global" }: { office?: string }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <LegRow indicator={<Dot color="#2e5fe8"/>} label="Delivery revenue" value={fmtUSD(d.rev)}/>
               <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-                <BreakRow label="On track"  value={fmtUSD(Math.round(d.rev*0.32))} sepSrc={I.sep1}/>
-                <BreakRow label="Off track" value={fmtUSD(Math.round(d.rev*0.22))} sepSrc={I.sep2}/>
-                <BreakRow label="Completed" value={fmtUSD(Math.round(d.rev*0.46))} sepSrc={I.sep3}/>
+                <BreakRow label="On track"  value={fmtUSD(Math.round(d.rev*0.32))}/>
+                <BreakRow label="Off track" value={fmtUSD(Math.round(d.rev*0.22))}/>
+                <BreakRow label="Completed" value={fmtUSD(Math.round(d.rev*0.46))}/>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <LegRow indicator={<Dot color="#344765"/>} label="Delivery costs" value={fmtUSD(d.costs)}/>
               <div style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-                <BreakRow label="On track"  value={fmtUSD(Math.round(d.costs*0.38))} sepSrc={I.sep4}/>
-                <BreakRow label="Off track" value={fmtUSD(Math.round(d.costs*0.24))} sepSrc={I.sep2}/>
-                <BreakRow label="Completed" value={fmtUSD(Math.round(d.costs*0.38))} sepSrc={I.sep3}/>
+                <BreakRow label="On track"  value={fmtUSD(Math.round(d.costs*0.38))}/>
+                <BreakRow label="Off track" value={fmtUSD(Math.round(d.costs*0.24))}/>
+                <BreakRow label="Completed" value={fmtUSD(Math.round(d.costs*0.38))}/>
               </div>
             </div>
           </div>
@@ -4384,7 +4377,7 @@ function FilterChip({ category, operator, value, onClear }: any) {
     fontSize: 12, color: t.fg, whiteSpace: "nowrap" as const,
   }
   return (
-    <div style={{ display: "flex", alignItems: "center" }}>
+    <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
       <div style={{ ...seg, borderRadius: "6px 0 0 6px", padding: "0 8px", marginRight: -1 }}>{category}</div>
       <div style={{ ...seg, padding: "0 8px", color: t.secondaryFg, marginRight: -1 }}>{operator}</div>
       <div style={{ ...seg, padding: "0 8px", color: t.secondaryFg, marginRight: -1 }}>{value}</div>
@@ -7332,7 +7325,7 @@ function VersionsToggle({ version, onChange }: any) {
 }
 
 export default function App() {
-  const [version, setVersion] = useState("multi")
+  const [version, setVersion] = useState("single")
   const [activeItem, setActiveItem] = useState("Dashboard")
   const [breadcrumb, setBreadcrumb] = useState(["Global", "Dashboard"])
   const [roles, setRoles] = useState(INITIAL_ROLES)
@@ -7348,7 +7341,7 @@ export default function App() {
   const [clientsFilter, setClientsFilter] = useState<string[]|null>(null)
   const [projectsClientFilter, setProjectsClientFilter] = useState<string|null>(null)
   const [projectsRateCardFilter, setProjectsRateCardFilter] = useState<{clientName: string, rateCardName: string}|null>(null)
-  const [themeMode, setThemeMode] = useState<"light" | "dark" | "black" | "float-dark">("float-dark")
+  const [themeMode, setThemeMode] = useState<"light" | "dark" | "black" | "float-dark">("light")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [navHoverOpen, setNavHoverOpen] = useState(false)
