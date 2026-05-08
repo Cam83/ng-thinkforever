@@ -1727,7 +1727,7 @@ function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBre
             <Collapsible expanded={showFullNav && favoritesExp}>
               <div style={{ marginLeft: 18, marginTop: 8, borderLeft: `1px solid rgba(168,168,168,0.25)` }}>
                 {savedViews.filter((v: SavedView) => v.favorited).map((v: SavedView) => (
-                  <HoverBtn key={v.id} onClick={() => { onActiveItemChange("Dashboard"); onBreadcrumbChange(["Global", "Dashboard"]) }}
+                  <HoverBtn key={v.id} onClick={() => { if (v.page === "project-tracker") { onActiveItemChange("Project tracker"); onBreadcrumbChange(["Project tracker"]) } else { onActiveItemChange("Dashboard"); onBreadcrumbChange(["Global", "Dashboard"]) } }}
                     style={{ ...navItemStyle(false), paddingTop: 6, paddingBottom: 6, paddingRight: 8, paddingLeft: 16 }}>
                     <span style={{ display: "flex", width: 16, flexShrink: 0, justifyContent: "center" }}><Layers size={14} strokeWidth={0.9}/></span>{v.name}
                   </HoverBtn>
@@ -2635,12 +2635,19 @@ function SmartAnalysePanel({ project, onClose }: any) {
   )
 }
 
-function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
+function ProjectTracker({ projects, onProjectsChange, people, clients, savedViews = [], setSavedViews }: any) {
   const [showModal, setShowModal] = useState(false)
   const [panel, setPanel] = useState<{ type: "notes" | "activity" | "analyse"; idx: number } | null>(null)
   const [monthOffset, setMonthOffset] = useState(0)
   const [tableView, setTableView] = useState("all")
   const [selectedProjectIndices, setSelectedProjectIndices] = useState<number[]>([])
+  const [ptFilters, setPtFilters] = useState<any[]>(PT_DEFAULT_FILTERS)
+  const [ptFilterOpen, setPtFilterOpen] = useState(false)
+  const [ptFilterQuery, setPtFilterQuery] = useState("")
+  const [activePtViewId, setActivePtViewId] = useState<string | null>(null)
+  const [ptSaveModalOpen, setPtSaveModalOpen] = useState(false)
+  const [ptContextMenu, setPtContextMenu] = useState<{ x: number; y: number; viewId: string } | null>(null)
+  const [ptRenameViewId, setPtRenameViewId] = useState<string | null>(null)
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(() => {
     try {
       const saved = typeof window !== "undefined" ? localStorage.getItem("projectTracker.hiddenCols.all") : null
@@ -2664,6 +2671,11 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
     const label = monthOffset === 0 ? "This month" : monthOffset === -1 ? "Last month" : monthOffset === 1 ? "Next month" : start.toLocaleString("default", { month: "long", year: "numeric" })
     return { start: fmt(start), end: fmt(end), label }
   }, [monthOffset])
+
+  const ptSavedViews = savedViews.filter((v: SavedView) => v.page === "project-tracker")
+  const ptActiveView = ptSavedViews.find((v: SavedView) => v.id === activePtViewId)
+  const ptBaseFilters = ptActiveView ? ptActiveView.filters : PT_DEFAULT_FILTERS
+  const ptFiltersDirty = JSON.stringify(ptFilters) !== JSON.stringify(ptBaseFilters)
 
   const columns = useMemo(() => [
     { accessorKey: "name", header: "Project", size: 240,
@@ -2780,20 +2792,42 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
     <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
     <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden", background: t.bg }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg }}>{projects.length} Projects</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>{projects.length} Projects</h1>
           <HoverBtn style={s.secIconBtn}>
             <Layers size={13} strokeWidth={0.9}/>
           </HoverBtn>
-          <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {([["all","View all"],["recognised","Revenue recognition"]] as const).map(([v,l]) => (
+              <RadiusTab key={v} active={tableView === v && !activePtViewId} onClick={() => { setTableView(v); setActivePtViewId(null); setPtFilters(PT_DEFAULT_FILTERS) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                <Circle size={10} strokeWidth={0.9} style={{ fill: tableView === v && !activePtViewId ? t.fg : "none" }}/>{l}
+              </RadiusTab>
+            ))}
+            <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0, margin: "0 4px" }}/>
+            {ptSavedViews.map(v => (
+              <div key={v.id} style={{ display: "inline-flex", flexShrink: 0 }}
+                onContextMenu={(e: React.MouseEvent) => { e.preventDefault(); setPtContextMenu({ x: e.clientX, y: e.clientY, viewId: v.id }) }}>
+                <RadiusTab active={activePtViewId === v.id}
+                  onClick={() => { setActivePtViewId(v.id); setPtFilters([...(v.filters ?? [])]) }}
+                  activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                  <Circle size={10} strokeWidth={0.9} style={{ fill: activePtViewId === v.id ? t.fg : "none" }}/>{v.name}
+                </RadiusTab>
+              </div>
+            ))}
+            <HoverBtn
+              onClick={() => ptFiltersDirty ? setPtSaveModalOpen(true) : undefined}
+              style={{ ...s.secIconBtn, borderRadius: "50%", width: 24, height: 24, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: ptFiltersDirty ? "pointer" : "default", ...(ptFiltersDirty ? { background: t.sectionAddBtnBg, border: `1px solid ${t.sectionAddBtnBg}`, color: "#ffffff" } : {}) }}>
+              <LayersPlus size={14} strokeWidth={0.9}/>
+            </HoverBtn>
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>
-          <button onClick={() => setShowModal(true)} style={s.primaryBtn}><Plus size={16} strokeWidth={0.9}/></button>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <HoverBtn style={{ ...s.outlineBtn, gap: 4 }}><Download size={12} strokeWidth={0.9}/>Export / import</HoverBtn>
+          <button onClick={() => setShowModal(true)} style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}><Plus size={14} strokeWidth={0.9}/></button>
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 24px 12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
           <HoverBtn onClick={() => setMonthOffset(o => o - 1)} style={s.secIconBtn}>
             <ChevronLeft size={14} strokeWidth={0.9}/>
           </HoverBtn>
@@ -2801,19 +2835,60 @@ function ProjectTracker({ projects, onProjectsChange, people, clients }: any) {
             <ChevronRight size={14} strokeWidth={0.9}/>
           </HoverBtn>
         </div>
-        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14 }}>
+        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14, flexShrink: 0, whiteSpace: "nowrap" as const }}>
           <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>{monthRange.label}</span>
           {monthRange.start} – {monthRange.end}
           <ChevronDown size={12} strokeWidth={0.9}/>
         </HoverBtn>
         <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
-        {[["all","View all"],["recognised","Revenue recognition"]].map(([v,l]) => (
-          <RadiusTab key={v} active={tableView === v} onClick={() => setTableView(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-            <Circle size={10} strokeWidth={0.9} style={{ fill: tableView === v ? t.fg : "none" }}/>{l}
-          </RadiusTab>
-        ))}
-        <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={tableView === "recognised" ? columns.filter((c: any) => ["name","clientId","health","projectComplete","planAccuracy","budget","margin","revenueRecognisedPct","scheduledBillable","hoursScheduled","totalHoursAtCompletion"].includes(c.id ?? c.accessorKey)) : columns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
+          {ptFilters.map((f: any) => (
+            <FilterChip key={f.id} category={f.category} operator={f.operator} value={f.value} onClear={() => setPtFilters(prev => prev.filter((pf: any) => pf.id !== f.id))}/>
+          ))}
+          <DropdownWrapper open={ptFilterOpen} setOpen={(v: boolean) => { setPtFilterOpen(v); if (!v) setPtFilterQuery("") }}
+            trigger={
+              <HoverBtn onClick={() => setPtFilterOpen(o => !o)} style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4, flexShrink: 0 }}>
+                <Plus size={11} strokeWidth={0.9}/>Filter
+              </HoverBtn>
+            }>
+            <div style={{ ...s.dropdown, width: 220, padding: 0, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: `1px solid ${t.border}` }}>
+                <Search size={13} strokeWidth={0.9} color={t.mutedFg} style={{ flexShrink: 0 }}/>
+                <input
+                  autoFocus
+                  value={ptFilterQuery}
+                  onChange={e => setPtFilterQuery(e.target.value)}
+                  placeholder="Search"
+                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: t.fg, fontFamily: "inherit" }}
+                />
+              </div>
+              <div style={{ padding: 4 }}>
+                {([1, 2] as const).map(g => {
+                  const items = PROJECT_FILTER_MENU.filter(o => o.group === g && o.label.toLowerCase().includes(ptFilterQuery.toLowerCase()))
+                  if (!items.length) return null
+                  return (
+                    <div key={g}>
+                      {g === 2 && <div style={{ height: 1, background: t.border, margin: "4px 0" }}/>}
+                      {items.map(o => (
+                        <button key={o.label}
+                          onClick={() => { setPtFilters(prev => { if (prev.some((f: any) => f.id === o.label.toLowerCase().replace(/ /g,"-"))) return prev; return [...prev, { id: o.label.toLowerCase().replace(/ /g,"-"), category: o.label, operator: "is any of", value: "Active, +1" }] }); setPtFilterOpen(false) }}
+                          style={{ ...s.dropdownItem(false), display: "flex", alignItems: "center", gap: 10, justifyContent: "flex-start" }}>
+                          <span style={{ color: t.mutedFg, display: "flex", flexShrink: 0 }}>{o.icon}</span>
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </DropdownWrapper>
+        </div>
+        <div style={{ flexShrink: 0 }}><ColVisibilityBtn columns={tableView === "recognised" ? columns.filter((c: any) => ["name","clientId","health","projectComplete","planAccuracy","budget","margin","revenueRecognisedPct","scheduledBillable","hoursScheduled","totalHoursAtCompletion"].includes(c.id ?? c.accessorKey)) : columns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
       </div>
+      {ptSaveModalOpen && <SaveViewModal filters={ptFilters} onSave={(name: string) => { const id=`view-${Date.now()}`; setSavedViews((prev: SavedView[]) => [...prev, { id, name, filters: ptFilters, page: "project-tracker", tableView }]); setActivePtViewId(id); setPtSaveModalOpen(false) }} onClose={() => setPtSaveModalOpen(false)}/>}
+      {ptContextMenu && (() => { const cv = ptSavedViews.find(v => v.id === ptContextMenu.viewId); if (!cv) return null; return <ViewContextMenu x={ptContextMenu.x} y={ptContextMenu.y} view={cv} onClose={() => setPtContextMenu(null)} onRename={() => { setPtRenameViewId(cv.id); setPtContextMenu(null) }} onDuplicate={() => { const id=`view-${Date.now()}`; setSavedViews((prev: SavedView[]) => [...prev, { ...cv, id, name: `${cv.name} Copy` }]); setPtContextMenu(null) }} onDelete={() => { setSavedViews((prev: SavedView[]) => prev.filter(v => v.id !== cv.id)); if (activePtViewId === cv.id) setActivePtViewId(null); setPtContextMenu(null) }} onFavorite={() => { setSavedViews((prev: SavedView[]) => prev.map(v => v.id === cv.id ? { ...v, favorited: !v.favorited } : v)); setPtContextMenu(null) }}/> })()}
+      {ptRenameViewId && (() => { const cv = ptSavedViews.find(v => v.id === ptRenameViewId); if (!cv) return null; return <SaveViewModal filters={cv.filters} initialName={cv.name} onSave={(name: string) => { setSavedViews((prev: SavedView[]) => prev.map(v => v.id === ptRenameViewId ? { ...v, name } : v)); setPtRenameViewId(null) }} onClose={() => setPtRenameViewId(null)}/> })()}
       {tableView === "recognised" && (
         <div style={{ display: "flex", gap: 12, padding: "4px 24px 16px" }}>
           {[
@@ -3704,6 +3779,17 @@ const FILTER_MENU = [
   { group: 2, label: "Project owner", icon: <FolderOpen size={14} strokeWidth={0.9}/> },
 ]
 
+const PT_DEFAULT_FILTERS: any[] = []
+
+const PROJECT_FILTER_MENU = [
+  { group: 1, label: "Client",        icon: <Building2    size={14} strokeWidth={0.9}/> },
+  { group: 1, label: "Project stage", icon: <Layers       size={14} strokeWidth={0.9}/> },
+  { group: 1, label: "Project tag",   icon: <Tags         size={14} strokeWidth={0.9}/> },
+  { group: 2, label: "Project owner", icon: <FolderOpen   size={14} strokeWidth={0.9}/> },
+  { group: 2, label: "Department",    icon: <LayoutGrid   size={14} strokeWidth={0.9}/> },
+  { group: 2, label: "Team member",   icon: <Star         size={14} strokeWidth={0.9}/> },
+]
+
 const DEFAULT_FILTERS = [
   { id: "project-stage", category: "Project stage", operator: "is any of", value: "On track, +2",  peopleOnly: false },
   { id: "people-type",   category: "People type",   operator: "is any of", value: "Active, +4",    peopleOnly: true  },
@@ -3711,7 +3797,7 @@ const DEFAULT_FILTERS = [
 ]
 
 // Double-tier dashboard header
-type SavedView = { id: string; name: string; filters: typeof DEFAULT_FILTERS; baseTab: "finance"|"people"; favorited?: boolean }
+type SavedView = { id: string; name: string; filters: any[]; baseTab?: "finance"|"people"; page?: string; tableView?: string; favorited?: boolean }
 
 function ViewContextMenu({ x, y, view, onClose, onRename, onDuplicate, onDelete, onFavorite }: {
   x: number; y: number; view: SavedView;
@@ -3759,7 +3845,7 @@ function DashboardHeader({ activeTab, setActiveTab, savedViews, setSavedViews }:
   const filtersDirty = JSON.stringify(activeFilters) !== JSON.stringify(baseFilters)
   function handleSaveView(name: string) {
     const id = `view-${Date.now()}`
-    const baseTab = (activeTab === "people" || activeTab === "finance") ? activeTab : (activeView?.baseTab ?? "people")
+    const baseTab: "finance"|"people" = (activeTab === "people" || activeTab === "finance") ? activeTab as "finance"|"people" : (activeView?.baseTab ?? "people")
     setSavedViews(prev => [...prev, { id, name, filters: activeFilters, baseTab }])
     setActiveTab(id)
     setSaveModalOpen(false)
@@ -3775,9 +3861,6 @@ function DashboardHeader({ activeTab, setActiveTab, savedViews, setSavedViews }:
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Dashboard</h1>
-          <HoverBtn style={s.secIconBtn}>
-            <Layers size={13} strokeWidth={0.9}/>
-          </HoverBtn>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {([["people", "People operations"], ["finance", "Project finance"]] as const).map(([v, l]) => (
               <RadiusTab key={v} active={activeTab === v} onClick={() => setActiveTab(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
@@ -4639,9 +4722,6 @@ function ReportHeader({ dateOffset, setDateOffset, reportEntity, setReportEntity
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Report</h1>
-          <HoverBtn style={s.secIconBtn}>
-            <Layers size={13} strokeWidth={0.9}/>
-          </HoverBtn>
           {([["people", `${peopleCount} People`], ["projects", `${projectsCount} Projects`]] as const).map(([v, l]) => (
             <RadiusTab key={v} active={reportEntity === v} onClick={() => setReportEntity(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
               <Circle size={10} strokeWidth={0.9} style={{ fill: reportEntity === v ? t.fg : "none" }}/>{l}
@@ -7606,7 +7686,7 @@ export default function App() {
     if (activeItem === "Company") return <OrgStructurePage people={people} contractors={contractors} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} onDeliveryTeamsChange={setDeliveryTeams} groups={groups} onGroupsChange={setGroups} roles={roles} deptPeopleCounts={deptPeopleCounts} onNavigateToPeople={(o: string) => { setFilteredOfficeForPeople(o); setInitialPeopleView(null); setActiveItem("People"); setBreadcrumb(["Data studio", "People"]) }}/>
     if (activeItem === "Roles") return <RolesAndRates roles={roles} onRolesChange={setRoles} people={people} departments={departments} onNavigateToPeopleByRole={(role: string) => { setFilteredRoleForPeople(role); setFilteredBusinessUnitForPeople(null); setActiveItem("People"); setBreadcrumb(["People"]) }} version={version}/>
     if (activeItem === "People") return <People roles={roles} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} groups={groups} people={people} onPeopleChange={setPeople} contractors={contractors} onContractorsChange={setContractors} deptPeopleCounts={deptPeopleCounts} filteredBusinessUnit={filteredBusinessUnitForPeople} onFilterClear={() => setFilteredBusinessUnitForPeople(null)} filteredRole={filteredRoleForPeople} onRoleFilterClear={() => setFilteredRoleForPeople(null)} filteredOffice={filteredOfficeForPeople} onOfficeFilterClear={() => setFilteredOfficeForPeople(null)} initialView={initialPeopleView} onInitialViewConsumed={() => setInitialPeopleView(null)} version={version}/>
-    if (activeItem === "Project tracker") return <ProjectTracker projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull}/>
+    if (activeItem === "Project tracker") return <ProjectTracker projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull} savedViews={savedViews} setSavedViews={setSavedViews}/>
     if (activeItem === "Projects") return <ProjectsDataHub visibleItems={visibleDataHubItems} projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull} filteredBusinessUnit={filteredBusinessUnit} onFilterClear={() => setFilteredBusinessUnit(null)} filteredClient={projectsClientFilter} onClientFilterClear={() => setProjectsClientFilter(null)} filteredRateCard={projectsRateCardFilter} onRateCardFilterClear={() => setProjectsRateCardFilter(null)} version={version}/>
     if (activeItem === "Clients") return <Clients roles={roles} people={people} clients={clientsFull} onClientsChange={setClientsFull} projects={projects} onNavigateToRateCards={(name: string) => { setRateCardFilter(name); setActiveItem("Rate cards") }} filterClients={clientsFilter} onClearClientsFilter={() => setClientsFilter(null)} onNavigateToProjects={(name: string) => { setProjectsClientFilter(name); setActiveItem("Projects") }} version={version}/>
     if (activeItem === "Rate cards") return <RateCards roles={roles} clients={clientsFull} onClientsChange={setClientsFull} filterClient={rateCardFilter} onClearFilter={() => setRateCardFilter(null)} onNavigateToClients={(names: string[]) => { setClientsFilter(names); setActiveItem("Clients") }} projects={projects} onNavigateToProjects={(clientName: string, rateCardName: string) => { setProjectsClientFilter(null); setProjectsRateCardFilter({ clientName, rateCardName }); setActiveItem("Projects"); setBreadcrumb(["Data studio", "Projects"]) }} version={version}/>
