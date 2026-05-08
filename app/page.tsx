@@ -6,9 +6,11 @@ import {
   ChevronDown, Gauge, BarChart3, Clock, Users, Database,
   FolderOpen, Building, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
   Plus, RefreshCw, Settings2, Check, X, Circle, UserPlus, ArrowRightLeft,
-  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, Sparkles, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe, Eye, EyeOff, Columns, Activity, GripVertical, Download
+  CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, Sparkles, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe, Eye, EyeOff, Columns, Activity, GripVertical, Download,
+  LayoutGrid, Tags, Network, FolderSearch, LayersPlus, Link2, Pencil, Copy, Trash2
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
+import { Combobox } from "@base-ui/react/combobox"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, BarChart, Bar } from "recharts"
 import { HoverBtn as CamHoverBtn, RadiusTab } from "@cam-ui/components"
 function ClientOnly({ children, width, height }: { children: React.ReactNode; width?: number; height?: number }) {
@@ -64,7 +66,7 @@ const blackTheme = {
 }
 
 const lightTheme = {
-  bg: "#ffffff", fg: "#0B0C10", card: "#ffffff", popover: "#f5f5f5",
+  bg: "#ffffff", fg: "#0B0C10", card: "#ffffff", popover: "#ffffff",
   primary: "#0B0C10", primaryFg: "#ffffff", secondary: "#f0f0f0",
   secondaryFg: "#0B0C10", muted: "#f0f0f0", mutedFg: "#333333", captionMutedFg: "#605c5c",
   accent: "#E6E6E8", accentFg: "#0B0C10", border: "#e0e0e0",
@@ -1208,6 +1210,48 @@ function AddRoleModal({ onAdd, onClose }: any) {
   )
 }
 
+function SaveViewModal({ filters, onSave, onClose, initialName = "" }: { filters: any[]; onSave: (name: string) => void; onClose: () => void; initialName?: string }) {
+  const [name, setName] = useState(initialName)
+  const nameRef = useRef<HTMLInputElement>(null)
+  useEffect(() => { nameRef.current?.focus() }, [])
+  function submit() {
+    const n = name.trim()
+    if (!n) return
+    onSave(n)
+  }
+  const isEdit = initialName !== ""
+  return (
+    <div style={{ position: "fixed", inset: 0, background: t.overlayBg, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div style={{ background: t.popover, border: `1px solid ${t.border}`, borderRadius: 12, padding: 24, width: 360, boxShadow: `0 8px 32px ${t.shadowDarker}` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: t.fg }}>{isEdit ? "Edit view" : "Save view"}</h2>
+          <HoverBtn onClick={onClose} style={{ ...s.iconBtn, color: t.mutedFg }}><X size={16} strokeWidth={0.9}/></HoverBtn>
+        </div>
+        <div style={{ marginBottom: filters.length > 0 ? 8 : 24 }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 450, color: t.mutedFg, marginBottom: 6 }}>View name</label>
+          <input ref={nameRef} value={name} onChange={e => setName(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onClose() }}
+            placeholder="e.g. My view"
+            style={{ width: "100%", fontSize: 13, color: t.fg, background: t.muted, border: `1px solid ${t.border}`, borderRadius: 6, padding: "8px 12px", outline: "none", fontFamily: "inherit" }}/>
+        </div>
+        {filters.length > 0 && (
+          <p style={{ fontSize: 12, color: t.mutedFg, marginBottom: 24 }}>
+            {filters.length} filter{filters.length !== 1 ? "s" : ""} will be saved with this view
+          </p>
+        )}
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <HoverBtn onClick={onClose} style={{ ...s.outlineBtn, padding: "6px 16px", borderRadius: 6 }}>Cancel</HoverBtn>
+          <button onClick={submit} disabled={!name.trim()}
+            style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: name.trim() ? t.sectionAddBtnBg : t.muted, color: name.trim() ? "#ffffff" : t.mutedFg, cursor: name.trim() ? "pointer" : "not-allowed", fontSize: 13, fontWeight: 450 }}>
+            {isEdit ? "Save changes" : "Save view"}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AddPersonModal({ roles, departments, onAdd, onClose, type = "employee" }: any) {
   const [name, setName] = useState("")
   const [roleId, setRoleId] = useState(0)
@@ -1412,10 +1456,11 @@ function NotificationsPanel({ onClose, floating, navHoverOpen }: { onClose: () =
 }
 
 // ── Sidebar ──
-function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBreadcrumbChange, themeMode, onThemeChange, visibleDataHubItems, onVisibleDataHubItemsChange, collapsed, onToggleCollapsed, notificationsOpen, onNotificationsToggle, onHoverChange, onSettingsOffice, hasSavedDashboard, onSavedDashboardClick, showFloatAgent, onFloatAgentToggle }: any) {
+function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBreadcrumbChange, themeMode, onThemeChange, visibleDataHubItems, onVisibleDataHubItemsChange, collapsed, onToggleCollapsed, notificationsOpen, onNotificationsToggle, onHoverChange, onSettingsOffice, hasSavedDashboard, onSavedDashboardClick, showFloatAgent, onFloatAgentToggle, savedViews = [] }: any) {
   const [locs, setLocs] = useState(LOCATIONS_INIT)
   const [dataHubExp, setDataHubExp] = useState(true)
   const [graphExp, setGraphExp] = useState(true)
+  const [favoritesExp, setFavoritesExp] = useState(true)
   const [dataHubSettingsOpen, setDataHubSettingsOpen] = useState(false)
   const dataHubSettingsRef = useRef<HTMLDivElement>(null)
   const [orgOpen, setOrgOpen] = useState(false)
@@ -1663,6 +1708,35 @@ function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBre
         )}
 
         {/* Graphs collapsible group */}
+        {savedViews.some((v: SavedView) => v.favorited) && (
+          <div style={{ marginTop: 24 }}>
+            {!showFullNav ? (
+              <HoverBtn style={{ ...navItemStyle(false), justifyContent: "center" }}>
+                <span style={{ color: t.secondaryFg }}><Star size={16} strokeWidth={0.9}/></span>
+              </HoverBtn>
+            ) : (
+              <HoverBtn onClick={() => setFavoritesExp(!favoritesExp)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "6px 8px", borderRadius: 6, border: "none", background: "transparent", cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: t.secondaryFg }}><Star size={16} strokeWidth={0.9}/></span>
+                  <span style={{ fontSize: 13, fontWeight: 450, color: t.fg }}>Favorites</span>
+                </div>
+                <ChevronDown size={13} strokeWidth={0.9} color={t.sidebarFg} style={{ transform: favoritesExp ? "none" : "rotate(-180deg)", transition: "transform 0.2s" }}/>
+              </HoverBtn>
+            )}
+            <Collapsible expanded={showFullNav && favoritesExp}>
+              <div style={{ marginLeft: 18, marginTop: 8, borderLeft: `1px solid rgba(168,168,168,0.25)` }}>
+                {savedViews.filter((v: SavedView) => v.favorited).map((v: SavedView) => (
+                  <HoverBtn key={v.id} onClick={() => { onActiveItemChange("Dashboard"); onBreadcrumbChange(["Global", "Dashboard"]) }}
+                    style={{ ...navItemStyle(false), paddingTop: 6, paddingBottom: 6, paddingRight: 8, paddingLeft: 16 }}>
+                    <span style={{ display: "flex", width: 16, flexShrink: 0, justifyContent: "center" }}><Layers size={14} strokeWidth={0.9}/></span>{v.name}
+                  </HoverBtn>
+                ))}
+              </div>
+            </Collapsible>
+          </div>
+        )}
+
         <div style={{ marginTop: 24 }}>
           {!showFullNav ? (
             <HoverBtn style={{ ...navItemStyle(false), justifyContent: "center" }}>
@@ -3059,29 +3133,48 @@ function PlanAccuracyDropdown({ value, onChange }: any) {
 }
 
 function StageDropdown({ value, onChange }: any) {
-  const [open, setOpen] = useState(false)
   const current = STAGE_OPTIONS.find(o => o.value === value) || STAGE_OPTIONS[0]
   return (
-    <DropdownWrapper open={open} setOpen={setOpen}
-      trigger={
-        <HoverBtn onClick={(e: any) => { e.stopPropagation(); setOpen(!open) }}
-          style={{ display:"flex", alignItems:"center", gap:6, height:24, padding:"0 8px", borderRadius:6, border:s.gradBorder, background:s.gradBg, cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg }}>
-          <StageIcon type={current.iconType} color={current.color}/>
-          {current.label}
-          <ChevronDown size={10} strokeWidth={0.9} color={t.mutedFg}/>
-        </HoverBtn>
-      }>
-      <div style={{ ...s.dropdown, width: 150 }}>
-        {STAGE_OPTIONS.map(o => (
-          <button key={o.value} onClick={(e: any) => { e.stopPropagation(); onChange(o.value); setOpen(false) }}
-            style={{ ...s.dropdownItem(o.value === value), display:"flex", alignItems:"center", gap:8 }}>
-            <StageIcon type={o.iconType} color={o.color}/>
-            <span style={{ flex: 1 }}>{o.label}</span>
-            {o.value === value && <Check size={11} strokeWidth={0.9}/>}
-          </button>
-        ))}
-      </div>
-    </DropdownWrapper>
+    <Combobox.Root
+      value={value}
+      onValueChange={(v: any) => v && onChange(v)}
+      items={STAGE_OPTIONS}
+    >
+      <Combobox.Trigger
+        onClick={(e: any) => e.stopPropagation()}
+        style={{ display:"flex", alignItems:"center", gap:6, height:24, padding:"0 8px", borderRadius:6, border:s.gradBorder, background:s.gradBg, cursor:"pointer", fontSize:12, fontWeight:450, color: t.fg, outline:"none" }}
+      >
+        <StageIcon type={current.iconType} color={current.color}/>
+        {current.label}
+        <ChevronDown size={10} strokeWidth={0.9} color={t.mutedFg}/>
+      </Combobox.Trigger>
+      <Combobox.Portal>
+        <Combobox.Positioner sideOffset={4} align="start">
+          <Combobox.Popup style={{ ...s.dropdown, width: 150, outline: "none" }}>
+            <Combobox.List style={{ listStyle: "none", margin: 0, padding: 0, outline: "none" }}>
+              {STAGE_OPTIONS.map(o => (
+                <Combobox.Item
+                  key={o.value}
+                  value={o.value}
+                  style={{ outline: "none" }}
+                  render={(props: any, state: any) => (
+                    <button
+                      {...props}
+                      onClick={(e: any) => { e.stopPropagation(); props.onClick?.(e) }}
+                      style={{ ...s.dropdownItem(state.selected), display:"flex", alignItems:"center", gap:8, outline:"none" }}
+                    >
+                      <StageIcon type={o.iconType} color={o.color}/>
+                      <span style={{ flex: 1 }}>{o.label}</span>
+                      {state.selected && <Check size={11} strokeWidth={0.9}/>}
+                    </button>
+                  )}
+                />
+              ))}
+            </Combobox.List>
+          </Combobox.Popup>
+        </Combobox.Positioner>
+      </Combobox.Portal>
+    </Combobox.Root>
   )
 }
 
@@ -3601,8 +3694,76 @@ function ViewWrapper({ breadcrumb, children }: any) {
   )
 }
 
-function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"people"; setActiveTab: (v: "finance"|"people") => void }) {
+const FILTER_MENU = [
+  { group: 1, label: "Department",    icon: <LayoutGrid size={14} strokeWidth={0.9}/> },
+  { group: 1, label: "Role",          icon: <Database   size={14} strokeWidth={0.9}/> },
+  { group: 1, label: "Person tag",    icon: <Tags       size={14} strokeWidth={0.9}/> },
+  { group: 1, label: "Manager",       icon: <Network    size={14} strokeWidth={0.9}/> },
+  { group: 2, label: "Client",        icon: <Building2  size={14} strokeWidth={0.9}/> },
+  { group: 2, label: "Project tag",   icon: <FolderSearch size={14} strokeWidth={0.9}/> },
+  { group: 2, label: "Project owner", icon: <FolderOpen size={14} strokeWidth={0.9}/> },
+]
+
+const DEFAULT_FILTERS = [
+  { id: "project-stage", category: "Project stage", operator: "is any of", value: "On track, +2",  peopleOnly: false },
+  { id: "people-type",   category: "People type",   operator: "is any of", value: "Active, +4",    peopleOnly: true  },
+  { id: "time-off",      category: "Time off",       operator: "is any of", value: "Active, +1",    peopleOnly: true  },
+]
+
+// Double-tier dashboard header
+type SavedView = { id: string; name: string; filters: typeof DEFAULT_FILTERS; baseTab: "finance"|"people"; favorited?: boolean }
+
+function ViewContextMenu({ x, y, view, onClose, onRename, onDuplicate, onDelete, onFavorite }: {
+  x: number; y: number; view: SavedView;
+  onClose: () => void; onRename: () => void; onDuplicate: () => void; onDelete: () => void; onFavorite: () => void;
+}) {
+  const menuRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    function h(e: any) { if (!menuRef.current?.contains(e.target)) onClose() }
+    document.addEventListener("mousedown", h)
+    return () => document.removeEventListener("mousedown", h)
+  }, [onClose])
+  const item = (icon: React.ReactNode, label: string, action: () => void, danger = false) => (
+    <button onClick={() => { action(); onClose() }}
+      style={{ ...s.dropdownItem(false), display: "flex", alignItems: "center", gap: 10, justifyContent: "flex-start", color: danger ? "#ef4444" : t.fg, width: "100%" }}>
+      <span style={{ color: danger ? "#ef4444" : t.mutedFg, display: "flex", flexShrink: 0 }}>{icon}</span>
+      {label}
+    </button>
+  )
+  return createPortal(
+    <div ref={menuRef} style={{ position: "fixed", top: y, left: x, zIndex: 9999, background: t.popover, border: `1px solid ${t.border}`, borderRadius: 8, padding: 4, boxShadow: `0 4px 20px ${t.shadowDark}`, width: 190, minWidth: 160 }}>
+      {item(<Link2 size={13} strokeWidth={0.9}/>, "Copy link", () => navigator.clipboard?.writeText(window.location.href))}
+      {item(<Star size={13} strokeWidth={0.9} style={{ fill: view.favorited ? "currentColor" : "none" }}/>, view.favorited ? "Unfavorite" : "Favorite", onFavorite)}
+      <div style={{ height: 1, background: t.border, margin: "4px 0" }}/>
+      {item(<Pencil size={13} strokeWidth={0.9}/>, "Edit...", onRename)}
+      {item(<Copy size={13} strokeWidth={0.9}/>, "Duplicate...", onDuplicate)}
+      {item(<Trash2 size={13} strokeWidth={0.9}/>, "Delete", onDelete, true)}
+    </div>,
+    document.body
+  )
+}
+
+function DashboardHeader({ activeTab, setActiveTab, savedViews, setSavedViews }: { activeTab: string; setActiveTab: (v: string) => void; savedViews: SavedView[]; setSavedViews: React.Dispatch<React.SetStateAction<SavedView[]>> }) {
   const [dateOffset, setDateOffset] = useState(0)
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [filterQuery, setFilterQuery] = useState("")
+  const [activeFilters, setActiveFilters] = useState(DEFAULT_FILTERS)
+  const [saveModalOpen, setSaveModalOpen] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; viewId: string } | null>(null)
+  const [renameViewId, setRenameViewId] = useState<string | null>(null)
+  const removeFilter = (id: string) => setActiveFilters(prev => prev.filter(f => f.id !== id))
+  const effectiveBaseTab = savedViews.find(v => v.id === activeTab)?.baseTab ?? (activeTab as "finance"|"people")
+  const visibleFilters = activeFilters.filter(f => !f.peopleOnly || effectiveBaseTab === "people")
+  const activeView = savedViews.find(v => v.id === activeTab)
+  const baseFilters = activeView ? activeView.filters : DEFAULT_FILTERS
+  const filtersDirty = JSON.stringify(activeFilters) !== JSON.stringify(baseFilters)
+  function handleSaveView(name: string) {
+    const id = `view-${Date.now()}`
+    const baseTab = (activeTab === "people" || activeTab === "finance") ? activeTab : (activeView?.baseTab ?? "people")
+    setSavedViews(prev => [...prev, { id, name, filters: activeFilters, baseTab }])
+    setActiveTab(id)
+    setSaveModalOpen(false)
+  }
   const now = new Date()
   const base = new Date(now.getFullYear(), now.getMonth() + dateOffset, 1)
   const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate()
@@ -3623,6 +3784,22 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
                 <Circle size={10} strokeWidth={0.9} style={{ fill: activeTab === v ? t.fg : "none" }}/>{l}
               </RadiusTab>
             ))}
+            <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0, margin: "0 4px" }}/>
+            {savedViews.map(v => (
+              <div key={v.id} style={{ display: "inline-flex", flexShrink: 0 }}
+                onContextMenu={(e: React.MouseEvent) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, viewId: v.id }) }}>
+                <RadiusTab active={activeTab === v.id}
+                  onClick={() => { setActiveTab(v.id); setActiveFilters([...v.filters]) }}
+                  activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                  <Circle size={10} strokeWidth={0.9} style={{ fill: activeTab === v.id ? t.fg : "none" }}/>{v.name}
+                </RadiusTab>
+              </div>
+            ))}
+            <HoverBtn
+              onClick={() => filtersDirty ? setSaveModalOpen(true) : undefined}
+              style={{ ...s.secIconBtn, borderRadius: "50%", width: 24, height: 24, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: filtersDirty ? "pointer" : "default", ...(filtersDirty ? { background: t.sectionAddBtnBg, border: `1px solid ${t.sectionAddBtnBg}`, color: "#ffffff" } : {}) }}>
+              <LayersPlus size={14} strokeWidth={0.9}/>
+            </HoverBtn>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -3655,14 +3832,75 @@ function DashboardHeader({ activeTab, setActiveTab }: { activeTab: "finance"|"pe
         </HoverBtn>
         <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
-          <FilterChip category="Project stage" operator="is any of" value="On track, +2" onClear={() => {}}/>
-          {activeTab === "people" && <FilterChip category="People type" operator="is any of" value="Active, +4" onClear={() => {}}/>}
-          {activeTab === "people" && <FilterChip category="Time off" operator="is any of" value="Active, +1" onClear={() => {}}/>}
-          <HoverBtn style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4, flexShrink: 0 }}>
-            <Plus size={11} strokeWidth={0.9}/>Filter
-          </HoverBtn>
+          {visibleFilters.map(f => (
+            <FilterChip key={f.id} category={f.category} operator={f.operator} value={f.value} onClear={() => removeFilter(f.id)}/>
+          ))}
+          <DropdownWrapper open={filterOpen} setOpen={(v: boolean) => { setFilterOpen(v); if (!v) setFilterQuery("") }}
+            trigger={
+              <HoverBtn onClick={() => setFilterOpen(o => !o)} style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4, flexShrink: 0 }}>
+                <Plus size={11} strokeWidth={0.9}/>Filter
+              </HoverBtn>
+            }>
+            <div style={{ ...s.dropdown, width: 220, padding: 0, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: `1px solid ${t.border}` }}>
+                <Search size={13} strokeWidth={0.9} color={t.mutedFg} style={{ flexShrink: 0 }}/>
+                <input
+                  autoFocus
+                  value={filterQuery}
+                  onChange={e => setFilterQuery(e.target.value)}
+                  placeholder="Search"
+                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: t.fg, fontFamily: "inherit" }}
+                />
+              </div>
+              <div style={{ padding: 4 }}>
+                {([1, 2] as const).map(g => {
+                  const items = FILTER_MENU.filter(o => o.group === g && o.label.toLowerCase().includes(filterQuery.toLowerCase()))
+                  if (!items.length) return null
+                  return (
+                    <div key={g}>
+                      {g === 2 && <div style={{ height: 1, background: t.border, margin: "4px 0" }}/>}
+                      {items.map(o => (
+                        <button key={o.label} onClick={() => setFilterOpen(false)}
+                          style={{ ...s.dropdownItem(false), display: "flex", alignItems: "center", gap: 10, justifyContent: "flex-start" }}>
+                          <span style={{ color: t.mutedFg, display: "flex", flexShrink: 0 }}>{o.icon}</span>
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </DropdownWrapper>
         </div>
       </div>
+      {saveModalOpen && <SaveViewModal filters={activeFilters} onSave={handleSaveView} onClose={() => setSaveModalOpen(false)}/>}
+      {contextMenu && (() => {
+        const cv = savedViews.find(v => v.id === contextMenu.viewId)
+        if (!cv) return null
+        return (
+          <ViewContextMenu
+            x={contextMenu.x} y={contextMenu.y} view={cv}
+            onClose={() => setContextMenu(null)}
+            onRename={() => setRenameViewId(cv.id)}
+            onDuplicate={() => { const id = `view-${Date.now()}`; setSavedViews(prev => [...prev, { ...cv, id, name: `${cv.name} Copy` }]) }}
+            onDelete={() => { setSavedViews(prev => prev.filter(v => v.id !== cv.id)); if (activeTab === cv.id) setActiveTab("people") }}
+            onFavorite={() => setSavedViews(prev => prev.map(v => v.id === cv.id ? { ...v, favorited: !v.favorited } : v))}
+          />
+        )
+      })()}
+      {renameViewId && (() => {
+        const cv = savedViews.find(v => v.id === renameViewId)
+        if (!cv) return null
+        return (
+          <SaveViewModal
+            filters={cv.filters}
+            initialName={cv.name}
+            onSave={(name: string) => { setSavedViews(prev => prev.map(v => v.id === renameViewId ? { ...v, name } : v)); setRenameViewId(null) }}
+            onClose={() => setRenameViewId(null)}
+          />
+        )
+      })()}
     </div>
   )
 }
@@ -4183,13 +4421,14 @@ function ProjectFinanceDashboard({ office = "Global" }: { office?: string }) {
   )
 }
 
-function DashboardView({ breadcrumb }: any) {
-  const [activeTab, setActiveTab] = useState<"finance"|"people">("people")
+function DashboardView({ breadcrumb, savedViews, setSavedViews }: any) {
+  const [activeTab, setActiveTab] = useState<string>("people")
   const office = (breadcrumb?.[0] && breadcrumb[0] !== "Dashboard") ? breadcrumb[0] : "Global"
+  const effectiveTab = savedViews.find((v: SavedView) => v.id === activeTab)?.baseTab ?? (activeTab as "finance"|"people")
   return (
     <div style={{ display: "flex", flex: 1, flexDirection: "column", background: t.bg, minHeight: 0 }}>
-      <DashboardHeader activeTab={activeTab} setActiveTab={setActiveTab}/>
-      {activeTab === "people" ? <PeopleOpsDashboard key={office} office={office}/> : <ProjectFinanceDashboard key={office} office={office}/>}
+      <DashboardHeader activeTab={activeTab} setActiveTab={setActiveTab} savedViews={savedViews} setSavedViews={setSavedViews}/>
+      {effectiveTab === "people" ? <PeopleOpsDashboard key={office} office={office}/> : <ProjectFinanceDashboard key={office} office={office}/>}
     </div>
   )
 }
@@ -7354,6 +7593,7 @@ export default function App() {
   const [settingsOfficeTarget, setSettingsOfficeTarget] = useState<string | null>(null)
   const [savedDashboardCards, setSavedDashboardCards] = useState<string[]>([])
   const [showFloatAgent, setShowFloatAgent] = useState(false)
+  const [savedViews, setSavedViews] = useState<SavedView[]>([])
 
   const deptPeopleCounts: Record<number, number> = {}
   people.forEach((p: any) => { deptPeopleCounts[p.departmentId] = (deptPeopleCounts[p.departmentId] || 0) + 1 })
@@ -7378,7 +7618,7 @@ export default function App() {
     if (activeItem === "Float Agent") return <FloatAgentView projects={projects} clientsFull={clientsFull} people={people} onSaveDashboard={cards => { setSavedDashboardCards(cards); setActiveItem("Saved Dashboard"); setBreadcrumb(["Float Agent", "Saved Dashboard"]) }}/>
     if (activeItem === "Saved Dashboard") return <SavedDashboardView cards={savedDashboardCards} projects={projects} clientsFull={clientsFull} people={people}/>
     if (activeItem === "Settings") return <SettingsPage key={settingsOfficeTarget ?? "__org__"} t={t} s={s} locations={LOCATIONS_INIT} officeTarget={settingsOfficeTarget} onBack={() => { setActiveItem("Dashboard"); setBreadcrumb(["Global", "Dashboard"]); setSettingsOfficeTarget(null) }}/>
-    if (activeItem === "Dashboard") return <DashboardView breadcrumb={breadcrumb}/>
+    if (activeItem === "Dashboard") return <DashboardView breadcrumb={breadcrumb} savedViews={savedViews} setSavedViews={setSavedViews}/>
     if (activeItem === "Report") return <ReportView breadcrumb={breadcrumb} people={people} roles={roles} departments={departments} projects={projects}/>
     if (activeItem === "Schedule") return <ScheduleView breadcrumb={breadcrumb}/>
     if (activeItem === "Project plan") return <ProjectPlanView breadcrumb={breadcrumb}/>
@@ -7390,7 +7630,7 @@ export default function App() {
   return (
     <div style={{ display:"flex", height:"100vh", overflow:"hidden", background:t.bg, color:t.fg, fontFamily:"var(--font-sans), -apple-system, sans-serif" }}>
       {activeItem !== "Settings" && <>
-        <SidebarNav version={version} activeItem={activeItem} breadcrumb={breadcrumb} onActiveItemChange={setActiveItem} onBreadcrumbChange={setBreadcrumb} themeMode={themeMode} onThemeChange={setThemeMode} visibleDataHubItems={visibleDataHubItems} onVisibleDataHubItemsChange={setVisibleDataHubItems} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed(c => !c)} notificationsOpen={notificationsOpen} onNotificationsToggle={() => setNotificationsOpen(o => !o)} onHoverChange={setNavHoverOpen} onSettingsOffice={(name: string | null) => { setSettingsOfficeTarget(name); setActiveItem("Settings"); setBreadcrumb(["Settings"]) }} hasSavedDashboard={savedDashboardCards.length > 0} onSavedDashboardClick={() => { setActiveItem("Saved Dashboard"); setBreadcrumb(["Float Agent", "Saved Dashboard"]) }} showFloatAgent={showFloatAgent} onFloatAgentToggle={setShowFloatAgent}/>
+        <SidebarNav version={version} activeItem={activeItem} breadcrumb={breadcrumb} onActiveItemChange={setActiveItem} onBreadcrumbChange={setBreadcrumb} themeMode={themeMode} onThemeChange={setThemeMode} visibleDataHubItems={visibleDataHubItems} onVisibleDataHubItemsChange={setVisibleDataHubItems} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed(c => !c)} notificationsOpen={notificationsOpen} onNotificationsToggle={() => setNotificationsOpen(o => !o)} onHoverChange={setNavHoverOpen} onSettingsOffice={(name: string | null) => { setSettingsOfficeTarget(name); setActiveItem("Settings"); setBreadcrumb(["Settings"]) }} hasSavedDashboard={savedDashboardCards.length > 0} onSavedDashboardClick={() => { setActiveItem("Saved Dashboard"); setBreadcrumb(["Float Agent", "Saved Dashboard"]) }} showFloatAgent={showFloatAgent} onFloatAgentToggle={setShowFloatAgent} savedViews={savedViews}/>
         {notificationsOpen && <NotificationsPanel floating={sidebarCollapsed} navHoverOpen={navHoverOpen} onClose={() => setNotificationsOpen(false)}/>}
       </>}
       <main style={{ ...s.main, position:"relative" as const, paddingLeft: activeItem !== "Settings" && sidebarCollapsed ? 36 : 0, transition: "padding-left 0.2s ease" }}>
