@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { RadiusTab } from "@cam-ui/components"
-import { Button } from "@/components/ui/button"
+import { HoverBtn, RadiusTab } from "@cam-ui/components"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -13,7 +12,7 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs as _Tabs, TabsContent as _TabsContent, TabsList as _TabsList, TabsTrigger as _TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -87,6 +86,13 @@ export default function ComponentsPage() {
   const [toggled, setToggled] = useState(false)
   const [theme, setTheme] = useState<"light" | "dark" | "float-dark">("light")
   const [radiusTab, setRadiusTab] = useState<"people" | "roles" | "rates">("people")
+  const [headerTab, setHeaderTab] = useState<"people" | "finance">("people")
+
+  const accent = "#2E5FE8"
+  const outlineBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 5, height: 24, padding: "0 10px 0 8px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", color: "hsl(var(--muted-foreground))", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }
+  const iconBtn: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: "hsl(var(--muted-foreground))", cursor: "pointer" }
+  const secIconBtn: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", color: "hsl(var(--muted-foreground))", cursor: "pointer" }
+  const actionBtn: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, border: "none", background: accent, color: "#ffffff", cursor: "pointer" }
 
   return (
     <TooltipProvider>
@@ -117,15 +123,34 @@ export default function ComponentsPage() {
 
           {/* Buttons */}
           <Section title="Button">
-            <Button variant="default">Default</Button>
-            <Button variant="secondary">Secondary</Button>
-            <Button variant="outline">Outline</Button>
-            <Button variant="ghost">Ghost</Button>
-            <Button variant="destructive">Destructive</Button>
-            <Button variant="link">Link</Button>
-            <Button size="sm">Small</Button>
-            <Button size="lg">Large</Button>
-            <Button disabled>Disabled</Button>
+            {/* Outline — text */}
+            <div className="flex flex-col items-start gap-1.5">
+              <span className="text-[11px] text-muted-foreground">Outline</span>
+              <div className="flex items-center gap-2">
+                <HoverBtn accentColor={accent} style={outlineBtn}>Filter</HoverBtn>
+                <HoverBtn accentColor={accent} style={outlineBtn}><Plus size={11} strokeWidth={0.9}/>Filter</HoverBtn>
+                <HoverBtn accentColor={accent} style={outlineBtn}>Weeks<ChevronDown size={13} strokeWidth={0.9}/></HoverBtn>
+                <HoverBtn accentColor={accent} style={{ ...outlineBtn, padding: "0 8px 0 10px" }}>Past logged + Future scheduled<ChevronDown size={13} strokeWidth={0.9}/></HoverBtn>
+              </div>
+            </div>
+            {/* Icon buttons */}
+            <div className="flex flex-col items-start gap-1.5">
+              <span className="text-[11px] text-muted-foreground">Icon</span>
+              <div className="flex items-center gap-2">
+                <HoverBtn accentColor={accent} style={iconBtn}><Settings size={16} strokeWidth={0.9}/></HoverBtn>
+                <HoverBtn accentColor={accent} style={iconBtn}><Bell size={16} strokeWidth={0.9}/></HoverBtn>
+                <HoverBtn accentColor={accent} style={secIconBtn}><ChevronLeft size={14} strokeWidth={0.9}/></HoverBtn>
+                <HoverBtn accentColor={accent} style={secIconBtn}><RefreshCw size={13} strokeWidth={0.9}/></HoverBtn>
+              </div>
+            </div>
+            {/* Primary action */}
+            <div className="flex flex-col items-start gap-1.5">
+              <span className="text-[11px] text-muted-foreground">Action</span>
+              <div className="flex items-center gap-2">
+                <button style={actionBtn}><Plus size={14} strokeWidth={0.9}/></button>
+                <button style={{ ...actionBtn, width: "auto", padding: "0 12px", fontSize: 12, gap: 5, fontFamily: "inherit" }}><Plus size={14} strokeWidth={0.9}/>Add person</button>
+              </div>
+            </div>
           </Section>
 
           {/* Badge */}
@@ -246,45 +271,48 @@ export default function ComponentsPage() {
             </div>
           </Section>
 
-          {/* Radius tab (cam-ui) */}
-          <Section title="Radius tab">
-            <div className="flex flex-col gap-3">
-              <p className="text-xs text-muted-foreground w-full">Pill tabs from @cam-ui/components — tighter horizontal padding than TabBtn.</p>
-              <div className="flex flex-wrap items-center gap-1">
-                {([
-                  ["people", "People"],
-                  ["roles", "Roles"],
-                  ["rates", "Rate cards"],
-                ] as const).map(([id, label]) => (
+          {/* Tabs */}
+          <Section title="Tabs">
+            {/* Header tabs — with Circle indicator (dashboard / My work style) */}
+            <div className="flex flex-col items-start gap-1.5 w-full">
+              <span className="text-[11px] text-muted-foreground">Header tabs</span>
+              <div className="flex items-center gap-4">
+                {([["people", "People operations"], ["finance", "Project finance"]] as const).map(([v, l]) => (
                   <RadiusTab
-                    key={id}
-                    active={radiusTab === id}
-                    onClick={() => setRadiusTab(id)}
+                    key={v}
+                    active={headerTab === v}
+                    onClick={() => setHeaderTab(v)}
                     activeColor="hsl(var(--foreground) / 0.28)"
                     activeBg="hsl(var(--accent))"
                     mutedColor="hsl(var(--muted-foreground))"
                     bg="hsl(var(--background))"
                     borderColor="hsl(var(--border))"
                   >
-                    {label}
+                    <Circle size={10} strokeWidth={0.9} style={{ fill: headerTab === v ? "currentColor" : "none" }}/>{l}
                   </RadiusTab>
                 ))}
               </div>
             </div>
-          </Section>
-
-          {/* Tabs */}
-          <Section title="Tabs">
-            <Tabs defaultValue="tab1" className="w-80">
-              <TabsList>
-                <TabsTrigger value="tab1">Overview</TabsTrigger>
-                <TabsTrigger value="tab2">Analytics</TabsTrigger>
-                <TabsTrigger value="tab3">Settings</TabsTrigger>
-              </TabsList>
-              <TabsContent value="tab1"><p className="text-sm text-muted-foreground pt-2">Overview content.</p></TabsContent>
-              <TabsContent value="tab2"><p className="text-sm text-muted-foreground pt-2">Analytics content.</p></TabsContent>
-              <TabsContent value="tab3"><p className="text-sm text-muted-foreground pt-2">Settings content.</p></TabsContent>
-            </Tabs>
+            {/* Plain tabs — no icon (people list / roles style) */}
+            <div className="flex flex-col items-start gap-1.5 w-full">
+              <span className="text-[11px] text-muted-foreground">Plain tabs</span>
+              <div className="flex items-center gap-1">
+                {([["people", "People"], ["roles", "Roles"], ["rates", "Rate cards"]] as const).map(([v, l]) => (
+                  <RadiusTab
+                    key={v}
+                    active={radiusTab === v}
+                    onClick={() => setRadiusTab(v)}
+                    activeColor="hsl(var(--foreground) / 0.28)"
+                    activeBg="hsl(var(--accent))"
+                    mutedColor="hsl(var(--muted-foreground))"
+                    bg="hsl(var(--background))"
+                    borderColor="hsl(var(--border))"
+                  >
+                    {l}
+                  </RadiusTab>
+                ))}
+              </div>
+            </div>
           </Section>
 
           {/* Accordion */}
@@ -334,7 +362,7 @@ export default function ComponentsPage() {
           <Section title="Tooltip">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm">Hover me</Button>
+                <HoverBtn accentColor={accent} style={{ ...outlineBtn, fontSize: 13 }}>Hover me</HoverBtn>
               </TooltipTrigger>
               <TooltipContent>This is a tooltip</TooltipContent>
             </Tooltip>

@@ -7,7 +7,7 @@ import {
   FolderOpen, Building, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
   Plus, RefreshCw, Settings2, Check, X, Circle, UserPlus, ArrowRightLeft,
   CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, Sparkles, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe, Eye, EyeOff, Columns, Activity, GripVertical, Download,
-  LayoutGrid, Tags, Network, FolderSearch, LayersPlus, Link2, Pencil, Copy, Trash2
+  LayoutGrid, Tags, Network, FolderSearch, LayersPlus, Link2, Pencil, Copy, Trash2, Maximize2
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { Combobox } from "@base-ui/react/combobox"
@@ -1063,6 +1063,63 @@ function Tabs({ tabs, active, onChange }: any) {
   )
 }
 
+function DraggableTabs({ order, onReorder, onItemContextMenu, children }: {
+  order: string[]
+  onReorder: (next: string[]) => void
+  onItemContextMenu?: (id: string, e: React.MouseEvent) => void
+  children: (id: string) => React.ReactNode
+}) {
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const clearDrag = () => { setDraggingId(null); setDragOverId(null) }
+  return (
+    <>
+      {order.map(id => (
+        <div key={id}
+          draggable
+          onDragStart={() => setDraggingId(id)}
+          onDragOver={e => { e.preventDefault(); if (draggingId !== null) setDragOverId(id) }}
+          onDrop={() => {
+            if (draggingId && draggingId !== id) {
+              const next = [...order]
+              const fi = next.indexOf(draggingId), ti = next.indexOf(id)
+              if (fi !== -1 && ti !== -1) { next.splice(fi, 1); next.splice(ti, 0, draggingId) }
+              onReorder(next)
+            }
+            clearDrag()
+          }}
+          onDragEnd={clearDrag}
+          onContextMenu={onItemContextMenu ? (e: React.MouseEvent) => { e.preventDefault(); onItemContextMenu(id, e) } : undefined}
+          style={{ display: "inline-flex", flexShrink: 0, opacity: draggingId === id ? 0.4 : 1, borderLeft: dragOverId === id && draggingId !== id ? `2px solid ${t.accent}` : "2px solid transparent", transition: "border-color 0.1s" }}>
+          {children(id)}
+        </div>
+      ))}
+    </>
+  )
+}
+
+function SaveViewBtn({ active, onClick }: { active: boolean; onClick?: () => void }) {
+  const [hov, setHov] = useState(false)
+  const base: React.CSSProperties = {
+    display: "flex", alignItems: "center", justifyContent: "center",
+    width: 24, height: 24, borderRadius: "50%",
+    padding: 0, border: "none", cursor: active ? "pointer" : "default",
+    fontFamily: "inherit", transition: "background 0.1s",
+  }
+  const style: React.CSSProperties = active
+    ? { ...base, background: hov ? t.accent : s.gradBg, border: s.gradBorder, color: t.fg }
+    : { ...base, background: "transparent", border: `1px solid ${t.fgAlpha10}`, color: t.fgAlpha30 }
+  return (
+    <button
+      onClick={active ? onClick : undefined}
+      onMouseEnter={() => active && setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={style}>
+      <LayersPlus size={14} strokeWidth={1}/>
+    </button>
+  )
+}
+
 function SectionHeader({ count, label, onAdd, filterField, filterValue, onClearFilter, actions }: any) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 12px" }}>
@@ -1607,6 +1664,13 @@ function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBre
       </div>
 
       <nav style={{ flex: 1, overflowY: "auto", padding: "8px 8px" }}>
+        {/* My work */}
+        <div style={{ marginBottom: 4 }}>
+          <HoverBtn onClick={() => setActive("My work", ["My work"])} style={{ ...navItemStyle(activeItem === "My work"), justifyContent: showFullNav ? "flex-start" : "center" }}>
+            <LayoutGrid size={16} strokeWidth={0.9}/>{showFullNav && "My work"}
+          </HoverBtn>
+        </div>
+
         {/* Float Agent */}
         {showFloatAgent && (
           <div style={{ marginBottom: 8 }}>
@@ -2149,9 +2213,9 @@ function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateTo
   )
 }
 
-function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups, people, onPeopleChange, contractors, onContractorsChange, deptPeopleCounts, filteredBusinessUnit, onFilterClear, filteredRole, onRoleFilterClear, filteredOffice, onOfficeFilterClear, initialView, onInitialViewConsumed, version }: any) {
+function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups, people, onPeopleChange, contractors, onContractorsChange, deptPeopleCounts, filteredBusinessUnit, onFilterClear, filteredRole, onRoleFilterClear, filteredOffice, onOfficeFilterClear, initialView, onInitialViewConsumed, version, viewOrder, setViewOrder }: any) {
   const [tab, setTab] = useState("active")
-  const [view, setView] = useState("employees")
+  const [view, setView] = useState(viewOrder?.[0] ?? "employees")
   const [selectedPerson, setSelectedPerson] = useState<number|null>(null)
   const [selectedDept, setSelectedDept] = useState<number|null>(null)
   const [selectedDeliveryTeam, setSelectedDeliveryTeam] = useState<number|null>(null)
@@ -2210,11 +2274,18 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
               </HoverBtn>
             )}
             {(version !== "single" || !!filteredBusinessUnit) && <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>}
-            {[["all","View all"],["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
-              <RadiusTab key={v} active={view === v} onClick={() => { setView(v); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-                <Circle size={10} strokeWidth={0.9} style={{ fill: view === v ? t.fg : "none" }}/>{l}
-              </RadiusTab>
-            ))}
+            {(() => {
+              const LABELS: Record<string, string> = { all: "View all", employees: "Employees", contractors: "Contractors" }
+              return (
+                <DraggableTabs order={viewOrder ?? ["employees", "all", "contractors"]} onReorder={setViewOrder}>
+                  {id => (
+                    <RadiusTab active={view === id} onClick={() => { setView(id); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                      <Circle size={10} strokeWidth={0.9} style={{ fill: view === id ? t.fg : "none" }}/>{LABELS[id]}
+                    </RadiusTab>
+                  )}
+                </DraggableTabs>
+              )
+            })()}
           </div>
         </div>
 
@@ -2635,11 +2706,11 @@ function SmartAnalysePanel({ project, onClose }: any) {
   )
 }
 
-function ProjectTracker({ projects, onProjectsChange, people, clients, savedViews = [], setSavedViews }: any) {
+function ProjectTracker({ projects, onProjectsChange, people, clients, savedViews = [], setSavedViews, ptTabOrder, setPtTabOrder }: any) {
   const [showModal, setShowModal] = useState(false)
   const [panel, setPanel] = useState<{ type: "notes" | "activity" | "analyse"; idx: number } | null>(null)
   const [monthOffset, setMonthOffset] = useState(0)
-  const [tableView, setTableView] = useState("all")
+  const [tableView, setTableView] = useState(ptTabOrder?.[0] ?? "all")
   const [selectedProjectIndices, setSelectedProjectIndices] = useState<number[]>([])
   const [ptFilters, setPtFilters] = useState<any[]>(PT_DEFAULT_FILTERS)
   const [ptFilterOpen, setPtFilterOpen] = useState(false)
@@ -2798,27 +2869,36 @@ function ProjectTracker({ projects, onProjectsChange, people, clients, savedView
             <Layers size={13} strokeWidth={0.9}/>
           </HoverBtn>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {([["all","View all"],["recognised","Revenue recognition"]] as const).map(([v,l]) => (
-              <RadiusTab key={v} active={tableView === v && !activePtViewId} onClick={() => { setTableView(v); setActivePtViewId(null); setPtFilters(PT_DEFAULT_FILTERS) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-                <Circle size={10} strokeWidth={0.9} style={{ fill: tableView === v && !activePtViewId ? t.fg : "none" }}/>{l}
-              </RadiusTab>
-            ))}
+            {(() => {
+              const LABELS: Record<string, string> = { all: "View all", recognised: "Revenue recognition" }
+              return (
+                <DraggableTabs order={ptTabOrder ?? ["all", "recognised"]} onReorder={setPtTabOrder}>
+                  {id => (
+                    <RadiusTab active={tableView === id && !activePtViewId} onClick={() => { setTableView(id); setActivePtViewId(null); setPtFilters(PT_DEFAULT_FILTERS) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                      <Circle size={10} strokeWidth={0.9} style={{ fill: tableView === id && !activePtViewId ? t.fg : "none" }}/>{LABELS[id]}
+                    </RadiusTab>
+                  )}
+                </DraggableTabs>
+              )
+            })()}
             <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0, margin: "0 4px" }}/>
-            {ptSavedViews.map(v => (
-              <div key={v.id} style={{ display: "inline-flex", flexShrink: 0 }}
-                onContextMenu={(e: React.MouseEvent) => { e.preventDefault(); setPtContextMenu({ x: e.clientX, y: e.clientY, viewId: v.id }) }}>
+            <DraggableTabs
+              order={ptSavedViews.map((v: any) => v.id)}
+              onReorder={newIds => setSavedViews((prev: any[]) => {
+                const byId = Object.fromEntries(prev.map((v: any) => [v.id, v]))
+                return newIds.map((id: string) => byId[id]).filter(Boolean).concat(prev.filter((v: any) => !newIds.includes(v.id)))
+              })}
+              onItemContextMenu={(id, e) => setPtContextMenu({ x: e.clientX, y: e.clientY, viewId: id })}
+            >
+              {id => { const v = ptSavedViews.find((x: any) => x.id === id)!; return (
                 <RadiusTab active={activePtViewId === v.id}
                   onClick={() => { setActivePtViewId(v.id); setPtFilters([...(v.filters ?? [])]) }}
                   activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
                   <Circle size={10} strokeWidth={0.9} style={{ fill: activePtViewId === v.id ? t.fg : "none" }}/>{v.name}
                 </RadiusTab>
-              </div>
-            ))}
-            <HoverBtn
-              onClick={() => ptFiltersDirty ? setPtSaveModalOpen(true) : undefined}
-              style={{ ...s.secIconBtn, borderRadius: "50%", width: 24, height: 24, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: ptFiltersDirty ? "pointer" : "default", ...(ptFiltersDirty ? { background: t.sectionAddBtnBg, border: `1px solid ${t.sectionAddBtnBg}`, color: "#ffffff" } : {}) }}>
-              <LayersPlus size={14} strokeWidth={0.9}/>
-            </HoverBtn>
+              )}}
+            </DraggableTabs>
+            <SaveViewBtn active={ptFiltersDirty} onClick={() => setPtSaveModalOpen(true)}/>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -2848,7 +2928,7 @@ function ProjectTracker({ projects, onProjectsChange, people, clients, savedView
           <DropdownWrapper open={ptFilterOpen} setOpen={(v: boolean) => { setPtFilterOpen(v); if (!v) setPtFilterQuery("") }}
             trigger={
               <HoverBtn onClick={() => setPtFilterOpen(o => !o)} style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4, flexShrink: 0 }}>
-                <Plus size={11} strokeWidth={0.9}/>Filter
+                {ptFilters.length > 0 ? <Plus size={11} strokeWidth={0.9}/> : <ListFilter size={11} strokeWidth={0.9}/>}Filter
               </HoverBtn>
             }>
             <div style={{ ...s.dropdown, width: 220, padding: 0, overflow: "hidden" }}>
@@ -3829,7 +3909,9 @@ function ViewContextMenu({ x, y, view, onClose, onRename, onDuplicate, onDelete,
   )
 }
 
-function DashboardHeader({ activeTab, setActiveTab, savedViews, setSavedViews }: { activeTab: string; setActiveTab: (v: string) => void; savedViews: SavedView[]; setSavedViews: React.Dispatch<React.SetStateAction<SavedView[]>> }) {
+const LEFT_TAB_LABELS: Record<string, string> = { people: "People operations", finance: "Project finance" }
+
+function DashboardHeader({ activeTab, setActiveTab, savedViews, setSavedViews, tabOrder, setTabOrder }: { activeTab: string; setActiveTab: (v: string) => void; savedViews: SavedView[]; setSavedViews: React.Dispatch<React.SetStateAction<SavedView[]>>; tabOrder: string[]; setTabOrder: React.Dispatch<React.SetStateAction<string[]>> }) {
   const [dateOffset, setDateOffset] = useState(0)
   const [filterOpen, setFilterOpen] = useState(false)
   const [filterQuery, setFilterQuery] = useState("")
@@ -3838,9 +3920,10 @@ function DashboardHeader({ activeTab, setActiveTab, savedViews, setSavedViews }:
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; viewId: string } | null>(null)
   const [renameViewId, setRenameViewId] = useState<string | null>(null)
   const removeFilter = (id: string) => setActiveFilters(prev => prev.filter(f => f.id !== id))
-  const effectiveBaseTab = savedViews.find(v => v.id === activeTab)?.baseTab ?? (activeTab as "finance"|"people")
+  const dashViews = savedViews.filter(v => v.page !== "project-tracker")
+  const effectiveBaseTab = dashViews.find(v => v.id === activeTab)?.baseTab ?? (activeTab as "finance"|"people")
   const visibleFilters = activeFilters.filter(f => !f.peopleOnly || effectiveBaseTab === "people")
-  const activeView = savedViews.find(v => v.id === activeTab)
+  const activeView = dashViews.find(v => v.id === activeTab)
   const baseFilters = activeView ? activeView.filters : DEFAULT_FILTERS
   const filtersDirty = JSON.stringify(activeFilters) !== JSON.stringify(baseFilters)
   function handleSaveView(name: string) {
@@ -3862,27 +3945,31 @@ function DashboardHeader({ activeTab, setActiveTab, savedViews, setSavedViews }:
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Dashboard</h1>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {([["people", "People operations"], ["finance", "Project finance"]] as const).map(([v, l]) => (
-              <RadiusTab key={v} active={activeTab === v} onClick={() => setActiveTab(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-                <Circle size={10} strokeWidth={0.9} style={{ fill: activeTab === v ? t.fg : "none" }}/>{l}
-              </RadiusTab>
-            ))}
+            <DraggableTabs order={tabOrder} onReorder={setTabOrder}>
+              {id => (
+                <RadiusTab active={activeTab === id} onClick={() => setActiveTab(id)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                  <Circle size={10} strokeWidth={0.9} style={{ fill: activeTab === id ? t.fg : "none" }}/>{LEFT_TAB_LABELS[id]}
+                </RadiusTab>
+              )}
+            </DraggableTabs>
             <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0, margin: "0 4px" }}/>
-            {savedViews.map(v => (
-              <div key={v.id} style={{ display: "inline-flex", flexShrink: 0 }}
-                onContextMenu={(e: React.MouseEvent) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, viewId: v.id }) }}>
+            <DraggableTabs
+              order={dashViews.map(v => v.id)}
+              onReorder={newIds => setSavedViews(prev => {
+                const byId = Object.fromEntries(prev.map(v => [v.id, v]))
+                return newIds.map(id => byId[id]).filter(Boolean).concat(prev.filter(v => !newIds.includes(v.id)))
+              })}
+              onItemContextMenu={(id, e) => setContextMenu({ x: e.clientX, y: e.clientY, viewId: id })}
+            >
+              {id => { const v = dashViews.find(x => x.id === id)!; return (
                 <RadiusTab active={activeTab === v.id}
                   onClick={() => { setActiveTab(v.id); setActiveFilters([...v.filters]) }}
                   activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
                   <Circle size={10} strokeWidth={0.9} style={{ fill: activeTab === v.id ? t.fg : "none" }}/>{v.name}
                 </RadiusTab>
-              </div>
-            ))}
-            <HoverBtn
-              onClick={() => filtersDirty ? setSaveModalOpen(true) : undefined}
-              style={{ ...s.secIconBtn, borderRadius: "50%", width: 24, height: 24, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: filtersDirty ? "pointer" : "default", ...(filtersDirty ? { background: t.sectionAddBtnBg, border: `1px solid ${t.sectionAddBtnBg}`, color: "#ffffff" } : {}) }}>
-              <LayersPlus size={14} strokeWidth={0.9}/>
-            </HoverBtn>
+              )}}
+            </DraggableTabs>
+            <SaveViewBtn active={filtersDirty} onClick={() => setSaveModalOpen(true)}/>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -3921,7 +4008,7 @@ function DashboardHeader({ activeTab, setActiveTab, savedViews, setSavedViews }:
           <DropdownWrapper open={filterOpen} setOpen={(v: boolean) => { setFilterOpen(v); if (!v) setFilterQuery("") }}
             trigger={
               <HoverBtn onClick={() => setFilterOpen(o => !o)} style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4, flexShrink: 0 }}>
-                <Plus size={11} strokeWidth={0.9}/>Filter
+                {visibleFilters.length > 0 ? <Plus size={11} strokeWidth={0.9}/> : <ListFilter size={11} strokeWidth={0.9}/>}Filter
               </HoverBtn>
             }>
             <div style={{ ...s.dropdown, width: 220, padding: 0, overflow: "hidden" }}>
@@ -3967,7 +4054,7 @@ function DashboardHeader({ activeTab, setActiveTab, savedViews, setSavedViews }:
             onClose={() => setContextMenu(null)}
             onRename={() => setRenameViewId(cv.id)}
             onDuplicate={() => { const id = `view-${Date.now()}`; setSavedViews(prev => [...prev, { ...cv, id, name: `${cv.name} Copy` }]) }}
-            onDelete={() => { setSavedViews(prev => prev.filter(v => v.id !== cv.id)); if (activeTab === cv.id) setActiveTab("people") }}
+            onDelete={() => { setSavedViews(prev => prev.filter(v => v.id !== cv.id)); if (activeTab === cv.id) setActiveTab(tabOrder[0] ?? "people") }}
             onFavorite={() => setSavedViews(prev => prev.map(v => v.id === cv.id ? { ...v, favorited: !v.favorited } : v))}
           />
         )
@@ -4504,13 +4591,250 @@ function ProjectFinanceDashboard({ office = "Global" }: { office?: string }) {
   )
 }
 
-function DashboardView({ breadcrumb, savedViews, setSavedViews }: any) {
-  const [activeTab, setActiveTab] = useState<string>("people")
+function MyWorkHeader({ activeTab, setActiveTab, tabOrder, setTabOrder, weekOffset, setWeekOffset }: { activeTab: string; setActiveTab: (v: string) => void; tabOrder?: string[]; setTabOrder?: (next: string[]) => void; weekOffset: number; setWeekOffset: React.Dispatch<React.SetStateAction<number>> }) {
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [filterQuery, setFilterQuery] = useState("")
+  const TODAY = new Date(2026, 4, 11)
+  const weekStart = new Date(TODAY); weekStart.setDate(TODAY.getDate() + weekOffset * 7)
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 4)
+  const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString("default", { month: "short" })} ${d.getFullYear()}`
+  const rangeStr = `${fmt(weekStart)} – ${fmt(weekEnd)}`
+  const weekLabel = weekOffset === 0 ? "This week" : weekOffset === -1 ? "Last week" : weekOffset === 1 ? "Next week" : fmt(weekStart)
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>My work</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {(() => {
+              const LABELS: Record<string, string> = { "my-work": "My work", "my-team": "My team" }
+              return (
+                <DraggableTabs order={tabOrder ?? ["my-work", "my-team"]} onReorder={setTabOrder ?? (() => {})}>
+                  {id => (
+                    <RadiusTab active={activeTab === id} onClick={() => setActiveTab(id)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                      <Circle size={10} strokeWidth={0.9} style={{ fill: activeTab === id ? t.fg : "none" }}/>{LABELS[id]}
+                    </RadiusTab>
+                  )}
+                </DraggableTabs>
+              )
+            })()}
+            <SaveViewBtn active={false}/>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <HoverBtn style={{ ...s.outlineBtn, gap: 4, padding: "0 8px 0 10px" }}>
+            Scheduled
+            <ChevronDown size={13} strokeWidth={0.9}/>
+          </HoverBtn>
+          <HoverBtn style={{ ...s.outlineBtn, gap: 4 }}>
+            Weeks
+            <ChevronDown size={13} strokeWidth={0.9}/>
+          </HoverBtn>
+          <button style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}>
+            <Plus size={14} strokeWidth={0.9}/>
+          </button>
+        </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 24px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+          <HoverBtn onClick={() => setWeekOffset(o => o - 1)} style={s.secIconBtn}>
+            <ChevronLeft size={14} strokeWidth={0.9}/>
+          </HoverBtn>
+          <HoverBtn onClick={() => setWeekOffset(o => o + 1)} style={s.secIconBtn}>
+            <ChevronRight size={14} strokeWidth={0.9}/>
+          </HoverBtn>
+        </div>
+        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14, flexShrink: 0, whiteSpace: "nowrap" as const }}>
+          <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>{weekLabel}</span>
+          {rangeStr}
+          <ChevronDown size={12} strokeWidth={0.9}/>
+        </HoverBtn>
+        <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
+          <DropdownWrapper open={filterOpen} setOpen={(v: boolean) => { setFilterOpen(v); if (!v) setFilterQuery("") }}
+            trigger={
+              <HoverBtn onClick={() => setFilterOpen(o => !o)} style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4, flexShrink: 0 }}>
+                <ListFilter size={11} strokeWidth={0.9}/>Filter
+              </HoverBtn>
+            }>
+            <div style={{ ...s.dropdown, width: 220, padding: 0, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: `1px solid ${t.border}` }}>
+                <Search size={13} strokeWidth={0.9} color={t.mutedFg} style={{ flexShrink: 0 }}/>
+                <input
+                  autoFocus
+                  value={filterQuery}
+                  onChange={e => setFilterQuery(e.target.value)}
+                  placeholder="Search"
+                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: t.fg, fontFamily: "inherit" }}
+                />
+              </div>
+              <div style={{ padding: 4 }}>
+                {([1, 2] as const).map(g => {
+                  const items = FILTER_MENU.filter(o => o.group === g && o.label.toLowerCase().includes(filterQuery.toLowerCase()))
+                  if (!items.length) return null
+                  return (
+                    <div key={g}>
+                      {g === 2 && <div style={{ height: 1, background: t.border, margin: "4px 0" }}/>}
+                      {items.map(o => (
+                        <button key={o.label} onClick={() => setFilterOpen(false)}
+                          style={{ ...s.dropdownItem(false), display: "flex", alignItems: "center", gap: 10, justifyContent: "flex-start" }}>
+                          <span style={{ color: t.mutedFg, display: "flex", flexShrink: 0 }}>{o.icon}</span>
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </DropdownWrapper>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const MW_SCHEDULE: Record<number, Array<{ phase: string; project: string; client: string; color: string; hours: number }>> = {
+  0: [{ phase: "Design",    project: "Sneaker Store", client: "Nike Labs", color: "#f59e0b", hours: 8 }],
+  2: [{ phase: "New phase", project: "Build a truck", client: "Acme Co",   color: "#3b82f6", hours: 4 }],
+  4: [{ phase: "Proposal",  project: "Pitching",      client: "Sutrix",    color: "#8b5cf6", hours: 6 }],
+}
+const MW_PREV_SCHEDULE: Record<number, Array<{ phase: string; project: string; client: string; color: string; hours: number }>> = {
+  0: [{ phase: "New phase", project: "Build a truck", client: "Acme Co",   color: "#3b82f6", hours: 4 }],
+  1: [{ phase: "New phase", project: "Build a truck", client: "Acme Co",   color: "#3b82f6", hours: 4 }],
+  2: [{ phase: "Design",    project: "Sneaker Store", client: "Nike Labs",  color: "#f59e0b", hours: 8 }],
+  3: [{ phase: "Design",    project: "Sneaker Store", client: "Nike Labs",  color: "#f59e0b", hours: 4 }],
+  4: [{ phase: "Proposal",  project: "Pitching",      client: "Sutrix",     color: "#8b5cf6", hours: 6 }],
+}
+
+function MyWorkSchedule({ weekOffset }: { weekOffset: number }) {
+  const TODAY = new Date(2026, 4, 11) // Mon May 11 2026
+  const [logged, setLogged] = useState<Set<string>>(new Set())
+
+  const weekStart = new Date(TODAY)
+  weekStart.setDate(TODAY.getDate() + weekOffset * 7)
+  const days = Array.from({ length: 5 }, (_, i) => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + i); return d })
+
+  const isToday = (d: Date) => d.toDateString() === TODAY.toDateString()
+  const isPast  = (d: Date) => d < TODAY && !isToday(d)
+  const blocksFor = (dayIdx: number) => weekOffset === 0 ? (MW_SCHEDULE[dayIdx] ?? []) : weekOffset < 0 ? (MW_PREV_SCHEDULE[dayIdx] ?? []) : []
+
+  const DAY_ABBREVS = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+  const HR = 68 // px per scheduled hour
+  const BLUE = "#2E5FE8"
+
+  return (
+    <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+
+      {/* ── Schedule panel — 2/3 ─────────────────────────────── */}
+      <div style={{ flex: 2, minWidth: 320, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+        {/* Day grid */}
+        <div style={{ flex: 1, display: "flex", overflow: "auto" }}>
+          {days.map((day, dayIdx) => {
+            const _isToday = isToday(day)
+            const _isPast  = isPast(day) || weekOffset < 0
+            const blocks   = blocksFor(dayIdx)
+            return (
+              <div key={dayIdx} style={{ flex: 1, minWidth: 60, display: "flex", flexDirection: "column", borderRight: dayIdx < 4 ? `1px solid ${t.border}` : "none", background: _isToday ? t.fgAlpha03 : "transparent", position: "relative" }}>
+
+                {/* Today: left accent line */}
+                {_isToday && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 2, background: BLUE, zIndex: 2, pointerEvents: "none" as const }}/>}
+
+                {/* Column header */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "10px 0 8px", borderBottom: `1px solid ${_isToday ? BLUE : t.border}`, flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, fontWeight: 500, color: _isToday ? BLUE : t.secondaryFg, marginBottom: 5 }}>
+                    {DAY_ABBREVS[dayIdx]}
+                  </span>
+                  <div style={{ width: 26, height: 26, borderRadius: 13, background: _isToday ? BLUE : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 12, fontWeight: _isToday ? 600 : 400, color: _isToday ? "#fff" : t.fg }}>
+                      {day.getDate()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Blocks */}
+                <div style={{ flex: 1, padding: "5px 4px 0", display: "flex", flexDirection: "column", gap: 3 }}>
+                  {blocks.map((blk, bi) => {
+                    const key = `${weekOffset}-${dayIdx}-${bi}`
+                    const isLogged = logged.has(key)
+                    const blockH   = blk.hours * HR
+
+                    return (
+                      <div key={bi} style={{
+                        height: blockH,
+                        borderRadius: 7,
+                        borderLeft: `3px solid ${blk.color}`,
+                        background: `${blk.color}1a`,
+                        padding: "7px 8px 6px 9px",
+                        display: "flex",
+                        flexDirection: "column",
+                        overflow: "hidden",
+                        flexShrink: 0,
+                        position: "relative",
+                        opacity: _isPast ? 0.7 : 1,
+                      }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: t.fg, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                          {blk.phase}
+                        </span>
+                        <span style={{ fontSize: 11, color: t.secondaryFg, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                          {blk.project}
+                        </span>
+                        <span style={{ fontSize: 10, color: t.mutedFg, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                          {blk.client}
+                        </span>
+
+                        {/* Past: log footer */}
+                        {_isPast && (
+                          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px 5px 10px", borderTop: `1px solid ${t.border}` }}>
+                            <span style={{ fontSize: 10, color: t.mutedFg, fontVariantNumeric: "tabular-nums" as const }}>
+                              {String(blk.hours).padStart(2, "0")}:00
+                            </span>
+                            {isLogged ? (
+                              <span style={{ fontSize: 10, fontWeight: 500, color: blk.color }}>✓ Logged</span>
+                            ) : (
+                              <HoverBtn
+                                onClick={() => setLogged(prev => new Set([...prev, key]))}
+                                style={{ ...s.outlineBtn, height: 18, padding: "0 6px", fontSize: 10, borderRadius: 4 }}>
+                                Log
+                              </HoverBtn>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Right panel — 1/3, empty for now ────────────────── */}
+      <div style={{ flex: 1, background: t.bg }}/>
+    </div>
+  )
+}
+
+function MyWorkView({ tabOrder, setTabOrder }: { tabOrder?: string[]; setTabOrder?: (next: string[]) => void }) {
+  const [activeTab, setActiveTab] = useState(tabOrder?.[0] ?? "my-work")
+  const [weekOffset, setWeekOffset] = useState(0)
+  return (
+    <div style={{ display: "flex", flex: 1, flexDirection: "column", background: t.bg, minHeight: 0 }}>
+      <MyWorkHeader activeTab={activeTab} setActiveTab={setActiveTab} tabOrder={tabOrder} setTabOrder={setTabOrder} weekOffset={weekOffset} setWeekOffset={setWeekOffset}/>
+      <MyWorkSchedule weekOffset={weekOffset}/>
+    </div>
+  )
+}
+
+function DashboardView({ breadcrumb, savedViews, setSavedViews, tabOrder, setTabOrder }: any) {
+  const [activeTab, setActiveTab] = useState<string>(tabOrder?.[0] ?? "people")
   const office = (breadcrumb?.[0] && breadcrumb[0] !== "Dashboard") ? breadcrumb[0] : "Global"
   const effectiveTab = savedViews.find((v: SavedView) => v.id === activeTab)?.baseTab ?? (activeTab as "finance"|"people")
   return (
     <div style={{ display: "flex", flex: 1, flexDirection: "column", background: t.bg, minHeight: 0 }}>
-      <DashboardHeader activeTab={activeTab} setActiveTab={setActiveTab} savedViews={savedViews} setSavedViews={setSavedViews}/>
+      <DashboardHeader activeTab={activeTab} setActiveTab={setActiveTab} savedViews={savedViews} setSavedViews={setSavedViews} tabOrder={tabOrder ?? ["people", "finance"]} setTabOrder={setTabOrder}/>
       {effectiveTab === "people" ? <PeopleOpsDashboard key={office} office={office}/> : <ProjectFinanceDashboard key={office} office={office}/>}
     </div>
   )
@@ -4668,27 +4992,205 @@ function ScheduleView({ breadcrumb }: any) {
   )
 }
 
-function ProjectPlanView({ breadcrumb }: any) {
+const PP_QUARTER_DATA: Record<string, { label: string; year: string; months: string[]; monthDays: number[]; startStr: string; endStr: string }> = {
+  q3: { label: "Q3", year: "2026", months: ["July", "August", "September"], monthDays: [31, 31, 30], startStr: "01 Jul 2026", endStr: "30 Sep 2026" },
+  q4: { label: "Q4", year: "2026", months: ["October", "November", "December"], monthDays: [31, 30, 31], startStr: "01 Oct 2026", endStr: "31 Dec 2026" },
+}
+
+
+function ProjectPlanHeader({ activeQuarter, setActiveQuarter, quarterOffset, setQuarterOffset, tabOrder, setTabOrder }: { activeQuarter: string; setActiveQuarter: (q: string) => void; quarterOffset: number; setQuarterOffset: React.Dispatch<React.SetStateAction<number>>; tabOrder: string[]; setTabOrder: (n: string[]) => void }) {
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [filterQuery, setFilterQuery] = useState("")
+  const qData = PP_QUARTER_DATA[activeQuarter] ?? PP_QUARTER_DATA.q3
+  const quarterLabel = quarterOffset === 0 ? "This quarter" : quarterOffset === -1 ? "Last quarter" : quarterOffset === 1 ? "Next quarter" : qData.label
+  const rangeStr = `${qData.startStr} – ${qData.endStr}`
   return (
-    <ViewWrapper breadcrumb={breadcrumb}>
-      <svg width="467" height="284" viewBox="0 0 467 284" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <g clipPath="url(#pp-clip)"><GridBg/>
-          <path d="M298.558 116.042V154.48L281.813 164.143V125.706L298.558 116.042Z" stroke={t.fgAlpha70} strokeWidth="0.721154" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M252.968 141.369V149.72L281.814 164.143V125.706L270.65 120.124V132.153L269.713 132.701L253.905 141.831L252.968 141.369Z" stroke={t.fgAlpha70} strokeWidth="0.721154" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M225.997 93.8883V125.908L241.805 116.792L242.742 116.244V84.2249L225.997 93.8883Z" stroke={t.fgAlpha70} strokeWidth="0.721154" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M253.905 109.797V141.831L269.712 132.701L270.65 132.153V100.134L253.905 109.797Z" stroke={t.fgAlpha70} strokeWidth="0.721154" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M225.06 125.446V127.407L252.969 141.369L253.906 141.83V109.797L242.742 104.215V116.244L241.805 116.792L225.998 125.907L225.06 125.446Z" stroke={t.fgAlpha70} strokeWidth="0.721154" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M197.151 79.4653L213.896 87.8451L225.997 93.8884L242.742 84.2249L213.896 69.8019L197.151 79.4653Z" stroke={t.fgAlpha70} strokeWidth="0.721154" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M197.152 79.4655V91.4944L213.897 99.8741L214.834 100.336V120.326L225.06 125.446L225.998 125.908V93.8885L213.897 87.8454L197.152 79.4655Z" stroke={t.fgAlpha70} strokeWidth="0.721154" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M198.089 109.999V212.475L214.834 202.811V100.335L213.896 100.883L198.089 109.999Z" stroke={t.fgAlpha70} strokeWidth="0.721154" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M169.243 95.5759V198.052L198.09 212.475V109.999L197.152 109.537L185.989 103.956L169.243 95.5759Z" stroke={t.fgAlpha70} strokeWidth="0.721154" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M169.242 95.5759L185.988 103.956L197.151 109.537L198.089 109.999L213.896 100.883L214.834 100.335L213.896 99.874L197.151 91.4942L185.988 85.9123L169.242 95.5759Z" stroke={t.fgAlpha70} strokeWidth="0.721154" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M242.741 86.1862V104.215L253.905 109.797L270.65 100.133L242.741 86.1862Z" stroke={t.fgAlpha70} strokeWidth="0.721154" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M270.65 102.095V120.124L281.813 125.706L298.558 116.042L270.65 102.095Z" stroke={t.fgAlpha70} strokeWidth="0.721154" strokeLinecap="round" strokeLinejoin="round"/>
-        </g>
-        <defs><clipPath id="pp-clip"><rect width="467" height="284" fill="white"/></clipPath></defs>
-      </svg>
-    </ViewWrapper>
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Project plan</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <DraggableTabs order={tabOrder} onReorder={setTabOrder}>
+              {id => (
+                <RadiusTab active={activeQuarter === id} onClick={() => setActiveQuarter(id)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                  <Circle size={10} strokeWidth={0.9} style={{ fill: activeQuarter === id ? t.fg : "none" }}/>{PP_QUARTER_DATA[id]?.label ?? id.toUpperCase()}
+                </RadiusTab>
+              )}
+            </DraggableTabs>
+            <SaveViewBtn active={false}/>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <HoverBtn style={{ ...s.outlineBtn, gap: 4 }}>
+            Teams<ChevronDown size={13} strokeWidth={0.9}/>
+          </HoverBtn>
+          <HoverBtn style={{ ...s.outlineBtn, gap: 4 }}>
+            Months<ChevronDown size={13} strokeWidth={0.9}/>
+          </HoverBtn>
+          <button style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}>
+            <Plus size={14} strokeWidth={0.9}/>
+          </button>
+        </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 24px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+          <HoverBtn onClick={() => setQuarterOffset(o => o - 1)} style={s.secIconBtn}><ChevronLeft size={14} strokeWidth={0.9}/></HoverBtn>
+          <HoverBtn onClick={() => setQuarterOffset(o => o + 1)} style={s.secIconBtn}><ChevronRight size={14} strokeWidth={0.9}/></HoverBtn>
+        </div>
+        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14, flexShrink: 0, whiteSpace: "nowrap" as const }}>
+          <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>{quarterLabel}</span>
+          {rangeStr}
+          <ChevronDown size={12} strokeWidth={0.9}/>
+        </HoverBtn>
+        <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
+          <DropdownWrapper open={filterOpen} setOpen={(v: boolean) => { setFilterOpen(v); if (!v) setFilterQuery("") }}
+            trigger={
+              <HoverBtn onClick={() => setFilterOpen(o => !o)} style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4, flexShrink: 0 }}>
+                <ListFilter size={11} strokeWidth={0.9}/>Filter
+              </HoverBtn>
+            }>
+            <div style={{ ...s.dropdown, width: 220, padding: 0, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: `1px solid ${t.border}` }}>
+                <Search size={13} strokeWidth={0.9} color={t.mutedFg} style={{ flexShrink: 0 }}/>
+                <input autoFocus value={filterQuery} onChange={e => setFilterQuery(e.target.value)} placeholder="Search"
+                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: t.fg, fontFamily: "inherit" }}/>
+              </div>
+              <div style={{ padding: 4 }}>
+                {([1, 2] as const).map(g => {
+                  const items = FILTER_MENU.filter(o => o.group === g && o.label.toLowerCase().includes(filterQuery.toLowerCase()))
+                  if (!items.length) return null
+                  return (
+                    <div key={g}>
+                      {g === 2 && <div style={{ height: 1, background: t.border, margin: "4px 0" }}/>}
+                      {items.map(o => (
+                        <button key={o.label} onClick={() => setFilterOpen(false)}
+                          style={{ ...s.dropdownItem(false), display: "flex", alignItems: "center", gap: 10, justifyContent: "flex-start" }}>
+                          <span style={{ color: t.mutedFg, display: "flex", flexShrink: 0 }}>{o.icon}</span>
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </DropdownWrapper>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProjectPlanGantt({ activeQuarter }: { activeQuarter: string }) {
+  const qData = PP_QUARTER_DATA[activeQuarter] ?? PP_QUARTER_DATA.q3
+  const totalDays = qData.monthDays.reduce((a, b) => a + b, 0)
+  const d1 = `${(qData.monthDays[0] / totalDays) * 100}%`
+  const d2 = `${((qData.monthDays[0] + qData.monthDays[1]) / totalDays) * 100}%`
+
+  // Three continuous vertical dividers: left edge + two month boundaries
+  const Dividers = () => (
+    <>
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: 0,   width: 1, background: t.border, pointerEvents: "none" }}/>
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: d1,  width: 1, background: t.border, pointerEvents: "none" }}/>
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: d2,  width: 1, background: t.border, pointerEvents: "none" }}/>
+    </>
+  )
+
+  return (
+    <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+
+      {/* Year / quarter label */}
+      <div style={{ padding: "6px 16px 4px", flexShrink: 0, position: "sticky", top: 0, background: t.bg, zIndex: 3, display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 11, fontWeight: 500, color: t.fg }}>{qData.year}</span>
+        <span style={{ fontSize: 11, fontWeight: 500, color: t.mutedFg }}>{qData.label}</span>
+      </div>
+
+      {/* Month headers */}
+      <div style={{ position: "relative", display: "flex", flexShrink: 0, background: t.bg, zIndex: 2 }}>
+        <Dividers/>
+        {qData.months.map((month, i) => (
+          <div key={month} style={{ flex: qData.monthDays[i], padding: "5px 16px 6px", position: "relative", zIndex: 1 }}>
+            <span style={{ fontSize: 11, color: t.secondaryFg }}>{month}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Group row — pill background, dividers pass through */}
+      <div style={{ position: "relative", display: "flex", alignItems: "center", height: 40, flexShrink: 0 }}>
+        <Dividers/>
+        {/* Inset pill background */}
+        <div style={{ position: "absolute", top: 6, bottom: 6, left: 8, right: 8, borderRadius: 8, background: t.fgAlpha06, pointerEvents: "none" }}/>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 10px", flex: 1, position: "relative", zIndex: 1 }}>
+          <button style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: "50%", border: `1px solid ${t.border}`, background: t.bg, cursor: "pointer", flexShrink: 0, padding: 0 }}>
+            <Plus size={9} strokeWidth={1.5} style={{ color: t.secondaryFg }}/>
+          </button>
+          <span style={{ fontSize: 12, fontWeight: 500, color: t.fg }}>Core team</span>
+          <span style={{ fontSize: 12, color: t.mutedFg }}>/ 3 projects</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, height: 20, padding: "0 6px 0 4px", borderRadius: 20, background: t.bg, border: `1px solid ${t.border}`, fontSize: 11, color: t.secondaryFg, marginLeft: 2 }}>
+            Owner
+            <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#9333ea", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "#fff", fontWeight: 600, marginLeft: 2 }}>VA</div>
+          </div>
+        </div>
+        <div style={{ padding: "0 12px", position: "relative", zIndex: 1 }}>
+          <ChevronRight size={13} strokeWidth={0.9} style={{ color: t.secondaryFg }}/>
+        </div>
+      </div>
+
+      {/* Project row — card fills July column */}
+      <div style={{ position: "relative", minHeight: 148, flexShrink: 0 }}>
+        <Dividers/>
+        <div style={{
+          position: "absolute", zIndex: 1,
+          left: 8, width: `calc(${d1} - 14px)`,
+          top: 8, bottom: 8,
+          borderRadius: 8,
+          background: t.fgAlpha06,
+          border: `1px solid ${t.border}`,
+          padding: "12px 14px",
+          display: "flex", flexDirection: "column",
+        }}>
+          {/* Title */}
+          <span style={{ fontSize: 13, fontWeight: 500, color: t.fg, marginBottom: 6 }}>Timesheet approvals</span>
+          {/* Description */}
+          <span style={{ fontSize: 11, color: t.secondaryFg, lineHeight: "15px", flex: 1 }}>
+            Outcome: Admins and Managers with edit people rights can view timesheets by week or month and mark them as approved or rejected
+          </span>
+          {/* Bottom row */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+            <span style={{ fontSize: 11, color: t.secondaryFg, textDecoration: "underline", cursor: "pointer" }}>Link to linear</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ display: "flex" }}>
+                {["#f59e0b","#6366f1","#10b981","#9333ea"].map((c, i) => (
+                  <div key={i} style={{ width: 20, height: 20, borderRadius: "50%", background: c, border: `2px solid ${t.bg}`, marginLeft: i > 0 ? -5 : 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, color: "#fff", fontWeight: 700, flexShrink: 0 }}>V</div>
+                ))}
+              </div>
+              <button style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", border: `1px solid ${t.border}`, background: "transparent", cursor: "pointer", padding: 0, color: t.secondaryFg }}>
+                <Maximize2 size={10} strokeWidth={1.5}/>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Empty remaining area */}
+      <div style={{ position: "relative", flex: 1 }}>
+        <Dividers/>
+      </div>
+
+    </div>
+  )
+}
+
+function ProjectPlanView({ breadcrumb }: any) {
+  const [activeQuarter, setActiveQuarter] = useState("q3")
+  const [quarterOffset, setQuarterOffset] = useState(0)
+  const [tabOrder, setTabOrder] = useState(["q3", "q4"])
+  return (
+    <div style={{ display: "flex", flex: 1, flexDirection: "column", background: t.bg, minHeight: 0 }}>
+      <ProjectPlanHeader activeQuarter={activeQuarter} setActiveQuarter={setActiveQuarter} quarterOffset={quarterOffset} setQuarterOffset={setQuarterOffset} tabOrder={tabOrder} setTabOrder={setTabOrder}/>
+      <ProjectPlanGantt activeQuarter={activeQuarter}/>
+    </div>
   )
 }
 
@@ -4710,7 +5212,7 @@ function FilterChip({ category, operator, value, onClear }: any) {
   )
 }
 
-function ReportHeader({ dateOffset, setDateOffset, reportEntity, setReportEntity, peopleCount, projectsCount }: { dateOffset: number; setDateOffset: (fn: (o: number) => number) => void; reportEntity: "people" | "projects"; setReportEntity: (v: "people" | "projects") => void; peopleCount: number; projectsCount: number }) {
+function ReportHeader({ dateOffset, setDateOffset, reportEntity, setReportEntity, peopleCount, projectsCount, tabOrder, setTabOrder }: { dateOffset: number; setDateOffset: (fn: (o: number) => number) => void; reportEntity: "people" | "projects"; setReportEntity: (v: "people" | "projects") => void; peopleCount: number; projectsCount: number; tabOrder?: string[]; setTabOrder?: (next: string[]) => void }) {
   const now = new Date()
   const base = new Date(now.getFullYear(), now.getMonth() + dateOffset, 1)
   const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate()
@@ -4722,11 +5224,18 @@ function ReportHeader({ dateOffset, setDateOffset, reportEntity, setReportEntity
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Report</h1>
-          {([["people", `${peopleCount} People`], ["projects", `${projectsCount} Projects`]] as const).map(([v, l]) => (
-            <RadiusTab key={v} active={reportEntity === v} onClick={() => setReportEntity(v)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-              <Circle size={10} strokeWidth={0.9} style={{ fill: reportEntity === v ? t.fg : "none" }}/>{l}
-            </RadiusTab>
-          ))}
+          {(() => {
+            const LABELS: Record<string, string> = { people: `${peopleCount} People`, projects: `${projectsCount} Projects` }
+            return (
+              <DraggableTabs order={tabOrder ?? ["people", "projects"]} onReorder={setTabOrder ?? (() => {})}>
+                {id => (
+                  <RadiusTab active={reportEntity === id} onClick={() => setReportEntity(id as any)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                    <Circle size={10} strokeWidth={0.9} style={{ fill: reportEntity === id ? t.fg : "none" }}/>{LABELS[id]}
+                  </RadiusTab>
+                )}
+              </DraggableTabs>
+            )
+          })()}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <HoverBtn style={{ ...s.outlineBtn, gap: 4, padding: "0 8px 0 10px" }}>
@@ -4772,10 +5281,10 @@ function ReportHeader({ dateOffset, setDateOffset, reportEntity, setReportEntity
 
 const REPORT_PHASE_POOL = ["Build", "Context Building", "Discovery", "Outcomes / Decision", "Product Requirements", "Technical Design", "Design", "Development", "Testing", "Deployment", "Handoff", "Planning", "Research", "Prototype", "Review"]
 
-function ReportView({ breadcrumb, people, roles, departments, projects }: any) {
+function ReportView({ breadcrumb, people, roles, departments, projects, tabOrder, setTabOrder }: any) {
   const [dateOffset, setDateOffset] = useState(0)
   const [subTab, setSubTab] = useState("people")
-  const [reportEntity, setReportEntity] = useState<"people" | "projects">("people")
+  const [reportEntity, setReportEntity] = useState<"people" | "projects">((tabOrder?.[0] as any) ?? "people")
   const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set())
   const [projTab, setProjTab] = useState("projects")
 
@@ -4952,7 +5461,7 @@ function ReportView({ breadcrumb, people, roles, departments, projects }: any) {
 
   return (
     <div style={{ display: "flex", flex: 1, flexDirection: "column", background: t.bg, overflow: "hidden" }}>
-      <ReportHeader dateOffset={dateOffset} setDateOffset={setDateOffset} reportEntity={reportEntity} setReportEntity={setReportEntity} peopleCount={people.length} projectsCount={projects?.length ?? 0}/>
+      <ReportHeader dateOffset={dateOffset} setDateOffset={setDateOffset} reportEntity={reportEntity} setReportEntity={setReportEntity} peopleCount={people.length} projectsCount={projects?.length ?? 0} tabOrder={tabOrder} setTabOrder={setTabOrder}/>
       <div style={{ display: "flex", alignItems: "center", padding: "6px 24px 8px" }}>
         {reportEntity === "projects" ? (
           <Tabs active={projTab} onChange={setProjTab} tabs={[
@@ -6661,7 +7170,7 @@ const EXPERIENCE_INDUSTRIES = [
 type SGNode = { id: string, type: "category" | "skill" | "person", label: string, sub: string, r: number, x: number, y: number, fx?: number | null, fy?: number | null }
 type SGLink = { source: string | SGNode, target: string | SGNode }
 
-function SkillsGraphView({ people: allEmployees, contractors: allContractors, roles }: any) {
+function SkillsGraphView({ people: allEmployees, contractors: allContractors, roles, modeOrder, setModeOrder, peopleOrder, setPeopleOrder }: any) {
   const [view, setView] = useState<"categories" | "skills" | "people" | "person-skills">("categories")
   const [selCat, setSelCat] = useState<string | null>(null)
   const [selSkill, setSelSkill] = useState<string | null>(null)
@@ -6670,8 +7179,8 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
   const [hoveredAt, setHoveredAt] = useState(0)
   const [transitionStart, setTransitionStart] = useState(0)
   const [selectedOffices, setSelectedOffices] = useState([...ALL_OFFICES])
-  const [graphMode, setGraphMode] = useState("skills")
-  const [peopleFilter, setPeopleFilter] = useState("employees")
+  const [graphMode, setGraphMode] = useState(modeOrder?.[0] ?? "skills")
+  const [peopleFilter, setPeopleFilter] = useState(peopleOrder?.[0] ?? "employees")
   const [searchQuery, setSearchQuery] = useState("")
   const [profilePerson, setProfilePerson] = useState<any | null>(null)
   const peopleType = graphMode // alias used throughout experience/skills branching
@@ -7114,17 +7623,31 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
       <div style={{ display: "flex", alignItems: "center", padding: "0 24px 12px", gap: 4 }}>
         <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
         <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
-        {[["skills","Skills"],["experience","Experience"]].map(([v,l]) => (
-          <RadiusTab key={v} active={graphMode === v} onClick={() => { setGraphMode(v); setView("categories"); setSelCat(null); setSelSkill(null); setSelPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-            <Circle size={10} strokeWidth={0.9} style={{ fill: graphMode === v ? t.fg : "none" }}/>{l}
-          </RadiusTab>
-        ))}
+        {(() => {
+          const LABELS: Record<string, string> = { skills: "Skills", experience: "Experience" }
+          return (
+            <DraggableTabs order={modeOrder ?? ["skills", "experience"]} onReorder={setModeOrder ?? (() => {})}>
+              {id => (
+                <RadiusTab active={graphMode === id} onClick={() => { setGraphMode(id); setView("categories"); setSelCat(null); setSelSkill(null); setSelPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                  <Circle size={10} strokeWidth={0.9} style={{ fill: graphMode === id ? t.fg : "none" }}/>{LABELS[id]}
+                </RadiusTab>
+              )}
+            </DraggableTabs>
+          )
+        })()}
         <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
-        {[["employees","Employees"],["contractors","Contractors"]].map(([v,l]) => (
-          <RadiusTab key={v} active={peopleFilter === v} onClick={() => { setPeopleFilter(v) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-            <Circle size={10} strokeWidth={0.9} style={{ fill: peopleFilter === v ? t.fg : "none" }}/>{l}
-          </RadiusTab>
-        ))}
+        {(() => {
+          const LABELS: Record<string, string> = { employees: "Employees", contractors: "Contractors" }
+          return (
+            <DraggableTabs order={peopleOrder ?? ["employees", "contractors"]} onReorder={setPeopleOrder ?? (() => {})}>
+              {id => (
+                <RadiusTab active={peopleFilter === id} onClick={() => setPeopleFilter(id)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                  <Circle size={10} strokeWidth={0.9} style={{ fill: peopleFilter === id ? t.fg : "none" }}/>{LABELS[id]}
+                </RadiusTab>
+              )}
+            </DraggableTabs>
+          )
+        })()}
       </div>
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
       <div ref={containerRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
@@ -7336,8 +7859,8 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
   )
 }
 
-function OrgStructurePage({ people, contractors, departments, onDepartmentsChange, deliveryTeams, onDeliveryTeamsChange, groups, onGroupsChange, roles, deptPeopleCounts, onNavigateToPeople }: any) {
-  const [tab, setTab] = useState("offices")
+function OrgStructurePage({ people, contractors, departments, onDepartmentsChange, deliveryTeams, onDeliveryTeamsChange, groups, onGroupsChange, roles, deptPeopleCounts, onNavigateToPeople, groupOrder, setGroupOrder, teamOrder, setTeamOrder }: any) {
+  const [tab, setTab] = useState(groupOrder?.[0] ?? "offices")
   const [selectedIdx, setSelectedIdx] = useState<number|null>(null)
   const [showModal, setShowModal] = useState(false)
   const [deliveryTeamMode, setDeliveryTeamMode] = useState<"single"|"multiple">("single")
@@ -7388,17 +7911,31 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
         <SectionHeader count={tabCount} label={tabLabel} onAdd={(tab !== "offices") ? () => setShowModal(true) : undefined} actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
         <div style={{ display: "flex", alignItems: "center", padding: "0 24px 4px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {[["offices","Offices"],["departments","Departments"],["tags","Tags"]].map(([v,l]) => (
-              <RadiusTab key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-                <Circle size={10} strokeWidth={0.9} style={{ fill: tab === v ? t.fg : "none" }}/>{l}
-              </RadiusTab>
-            ))}
+            {(() => {
+              const LABELS: Record<string, string> = { offices: "Offices", departments: "Departments", tags: "Tags" }
+              return (
+                <DraggableTabs order={groupOrder ?? ["offices", "departments", "tags"]} onReorder={setGroupOrder ?? (() => {})}>
+                  {id => (
+                    <RadiusTab active={tab === id} onClick={() => { setTab(id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                      <Circle size={10} strokeWidth={0.9} style={{ fill: tab === id ? t.fg : "none" }}/>{LABELS[id]}
+                    </RadiusTab>
+                  )}
+                </DraggableTabs>
+              )
+            })()}
             <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 6px" }}/>
-            {[["delivery-teams","Delivery teams"],["groups","Groups"]].map(([v,l]) => (
-              <RadiusTab key={v} active={tab === v} onClick={() => { setTab(v); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-                <Circle size={10} strokeWidth={0.9} style={{ fill: tab === v ? t.fg : "none" }}/>{l}
-              </RadiusTab>
-            ))}
+            {(() => {
+              const LABELS: Record<string, string> = { "delivery-teams": "Delivery teams", groups: "Groups" }
+              return (
+                <DraggableTabs order={teamOrder ?? ["delivery-teams", "groups"]} onReorder={setTeamOrder ?? (() => {})}>
+                  {id => (
+                    <RadiusTab active={tab === id} onClick={() => { setTab(id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                      <Circle size={10} strokeWidth={0.9} style={{ fill: tab === id ? t.fg : "none" }}/>{LABELS[id]}
+                    </RadiusTab>
+                  )}
+                </DraggableTabs>
+              )
+            })()}
             {customGroupTypes.map(cg => (
               <RadiusTab key={cg.id} active={tab === cg.id} onClick={() => { setTab(cg.id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
                 <Circle size={10} strokeWidth={0.9} style={{ fill: tab === cg.id ? t.fg : "none" }}/>{cg.name}
@@ -7674,6 +8211,15 @@ export default function App() {
   const [savedDashboardCards, setSavedDashboardCards] = useState<string[]>([])
   const [showFloatAgent, setShowFloatAgent] = useState(false)
   const [savedViews, setSavedViews] = useState<SavedView[]>([])
+  const [dashboardTabOrder, setDashboardTabOrder] = useState<string[]>(["people", "finance"])
+  const [ptTabOrder, setPtTabOrder] = useState<string[]>(["all", "recognised"])
+  const [peopleViewOrder, setPeopleViewOrder] = useState<string[]>(["employees", "all", "contractors"])
+  const [myWorkTabOrder, setMyWorkTabOrder] = useState<string[]>(["my-work", "my-team"])
+  const [reportTabOrder, setReportTabOrder] = useState<string[]>(["people", "projects"])
+  const [skillsModeOrder, setSkillsModeOrder] = useState<string[]>(["skills", "experience"])
+  const [skillsPeopleOrder, setSkillsPeopleOrder] = useState<string[]>(["employees", "contractors"])
+  const [orgGroupOrder, setOrgGroupOrder] = useState<string[]>(["offices", "departments", "tags"])
+  const [orgTeamOrder, setOrgTeamOrder] = useState<string[]>(["delivery-teams", "groups"])
 
   const deptPeopleCounts: Record<number, number> = {}
   people.forEach((p: any) => { deptPeopleCounts[p.departmentId] = (deptPeopleCounts[p.departmentId] || 0) + 1 })
@@ -7683,10 +8229,10 @@ export default function App() {
   s = getStyles(t)
 
   function renderMain() {
-    if (activeItem === "Company") return <OrgStructurePage people={people} contractors={contractors} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} onDeliveryTeamsChange={setDeliveryTeams} groups={groups} onGroupsChange={setGroups} roles={roles} deptPeopleCounts={deptPeopleCounts} onNavigateToPeople={(o: string) => { setFilteredOfficeForPeople(o); setInitialPeopleView(null); setActiveItem("People"); setBreadcrumb(["Data studio", "People"]) }}/>
+    if (activeItem === "Company") return <OrgStructurePage people={people} contractors={contractors} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} onDeliveryTeamsChange={setDeliveryTeams} groups={groups} onGroupsChange={setGroups} roles={roles} deptPeopleCounts={deptPeopleCounts} onNavigateToPeople={(o: string) => { setFilteredOfficeForPeople(o); setInitialPeopleView(null); setActiveItem("People"); setBreadcrumb(["Data studio", "People"]) }} groupOrder={orgGroupOrder} setGroupOrder={setOrgGroupOrder} teamOrder={orgTeamOrder} setTeamOrder={setOrgTeamOrder}/>
     if (activeItem === "Roles") return <RolesAndRates roles={roles} onRolesChange={setRoles} people={people} departments={departments} onNavigateToPeopleByRole={(role: string) => { setFilteredRoleForPeople(role); setFilteredBusinessUnitForPeople(null); setActiveItem("People"); setBreadcrumb(["People"]) }} version={version}/>
-    if (activeItem === "People") return <People roles={roles} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} groups={groups} people={people} onPeopleChange={setPeople} contractors={contractors} onContractorsChange={setContractors} deptPeopleCounts={deptPeopleCounts} filteredBusinessUnit={filteredBusinessUnitForPeople} onFilterClear={() => setFilteredBusinessUnitForPeople(null)} filteredRole={filteredRoleForPeople} onRoleFilterClear={() => setFilteredRoleForPeople(null)} filteredOffice={filteredOfficeForPeople} onOfficeFilterClear={() => setFilteredOfficeForPeople(null)} initialView={initialPeopleView} onInitialViewConsumed={() => setInitialPeopleView(null)} version={version}/>
-    if (activeItem === "Project tracker") return <ProjectTracker projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull} savedViews={savedViews} setSavedViews={setSavedViews}/>
+    if (activeItem === "People") return <People roles={roles} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} groups={groups} people={people} onPeopleChange={setPeople} contractors={contractors} onContractorsChange={setContractors} deptPeopleCounts={deptPeopleCounts} filteredBusinessUnit={filteredBusinessUnitForPeople} onFilterClear={() => setFilteredBusinessUnitForPeople(null)} filteredRole={filteredRoleForPeople} onRoleFilterClear={() => setFilteredRoleForPeople(null)} filteredOffice={filteredOfficeForPeople} onOfficeFilterClear={() => setFilteredOfficeForPeople(null)} initialView={initialPeopleView} onInitialViewConsumed={() => setInitialPeopleView(null)} version={version} viewOrder={peopleViewOrder} setViewOrder={setPeopleViewOrder}/>
+    if (activeItem === "Project tracker") return <ProjectTracker projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull} savedViews={savedViews} setSavedViews={setSavedViews} ptTabOrder={ptTabOrder} setPtTabOrder={setPtTabOrder}/>
     if (activeItem === "Projects") return <ProjectsDataHub visibleItems={visibleDataHubItems} projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull} filteredBusinessUnit={filteredBusinessUnit} onFilterClear={() => setFilteredBusinessUnit(null)} filteredClient={projectsClientFilter} onClientFilterClear={() => setProjectsClientFilter(null)} filteredRateCard={projectsRateCardFilter} onRateCardFilterClear={() => setProjectsRateCardFilter(null)} version={version}/>
     if (activeItem === "Clients") return <Clients roles={roles} people={people} clients={clientsFull} onClientsChange={setClientsFull} projects={projects} onNavigateToRateCards={(name: string) => { setRateCardFilter(name); setActiveItem("Rate cards") }} filterClients={clientsFilter} onClearClientsFilter={() => setClientsFilter(null)} onNavigateToProjects={(name: string) => { setProjectsClientFilter(name); setActiveItem("Projects") }} version={version}/>
     if (activeItem === "Rate cards") return <RateCards roles={roles} clients={clientsFull} onClientsChange={setClientsFull} filterClient={rateCardFilter} onClearFilter={() => setRateCardFilter(null)} onNavigateToClients={(names: string[]) => { setClientsFilter(names); setActiveItem("Clients") }} projects={projects} onNavigateToProjects={(clientName: string, rateCardName: string) => { setProjectsClientFilter(null); setProjectsRateCardFilter({ clientName, rateCardName }); setActiveItem("Projects"); setBreadcrumb(["Data studio", "Projects"]) }} version={version}/>
@@ -7694,12 +8240,13 @@ export default function App() {
     if (activeItem === "Activity log") return <ActivityLog/>
     if (activeItem === "People graph") return <TalentGraphView people={people} roles={roles} departments={departments}/>
     if (activeItem === "Project graph") return <ProjectGraphView projects={projects} roles={roles} people={people} clientsFull={clientsFull}/>
-    if (activeItem === "Skills graph") return <SkillsGraphView people={people} roles={roles}/>
+    if (activeItem === "Skills graph") return <SkillsGraphView people={people} roles={roles} modeOrder={skillsModeOrder} setModeOrder={setSkillsModeOrder} peopleOrder={skillsPeopleOrder} setPeopleOrder={setSkillsPeopleOrder}/>
     if (activeItem === "Float Agent") return <FloatAgentView projects={projects} clientsFull={clientsFull} people={people} onSaveDashboard={cards => { setSavedDashboardCards(cards); setActiveItem("Saved Dashboard"); setBreadcrumb(["Float Agent", "Saved Dashboard"]) }}/>
     if (activeItem === "Saved Dashboard") return <SavedDashboardView cards={savedDashboardCards} projects={projects} clientsFull={clientsFull} people={people}/>
     if (activeItem === "Settings") return <SettingsPage key={settingsOfficeTarget ?? "__org__"} t={t} s={s} locations={LOCATIONS_INIT} officeTarget={settingsOfficeTarget} onBack={() => { setActiveItem("Dashboard"); setBreadcrumb(["Global", "Dashboard"]); setSettingsOfficeTarget(null) }}/>
-    if (activeItem === "Dashboard") return <DashboardView breadcrumb={breadcrumb} savedViews={savedViews} setSavedViews={setSavedViews}/>
-    if (activeItem === "Report") return <ReportView breadcrumb={breadcrumb} people={people} roles={roles} departments={departments} projects={projects}/>
+    if (activeItem === "My work") return <MyWorkView tabOrder={myWorkTabOrder} setTabOrder={setMyWorkTabOrder}/>
+    if (activeItem === "Dashboard") return <DashboardView breadcrumb={breadcrumb} savedViews={savedViews} setSavedViews={setSavedViews} tabOrder={dashboardTabOrder} setTabOrder={setDashboardTabOrder}/>
+    if (activeItem === "Report") return <ReportView breadcrumb={breadcrumb} people={people} roles={roles} departments={departments} projects={projects} tabOrder={reportTabOrder} setTabOrder={setReportTabOrder}/>
     if (activeItem === "Schedule") return <ScheduleView breadcrumb={breadcrumb}/>
     if (activeItem === "Project plan") return <ProjectPlanView breadcrumb={breadcrumb}/>
     if (activeItem === "My time") return <MyTimeView breadcrumb={breadcrumb}/>
