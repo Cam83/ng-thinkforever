@@ -1819,9 +1819,10 @@ function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBre
           <Collapsible expanded={showFullNav && graphExp}>
             <div style={{ marginLeft: 18, marginTop: 8, borderLeft: `1px solid rgba(168,168,168,0.25)` }}>
               {([
-                { name: "Skills graph",  icon: <Star size={14} strokeWidth={0.9}/> },
-                { name: "People graph",  icon: <Share2 size={14} strokeWidth={0.9}/> },
-                { name: "Project graph", icon: <GitFork size={14} strokeWidth={0.9}/> },
+                { name: "Company graph",   icon: <Star size={14} strokeWidth={0.9}/> },
+                { name: "People graph",   icon: <Share2 size={14} strokeWidth={0.9}/> },
+                { name: "Project graph",  icon: <GitFork size={14} strokeWidth={0.9}/> },
+                { name: "Pipeline graph", icon: <Activity size={14} strokeWidth={0.9}/> },
               ] as const).map(item => (
                 <HoverBtn key={item.name} onClick={() => setActive(item.name, ["Talent graph", item.name])}
                   style={{ ...navItemStyle(activeItem === item.name), paddingTop: 6, paddingBottom: 6, paddingRight: 8, paddingLeft: 16 }}>
@@ -6249,7 +6250,7 @@ const TALENT_CATS = ["fashion", "sport", "tech", "auto", "retail", "finance"]
 type TGNode = { id: number, name: string, initials: string, role: string, dept: string, x: number, y: number, fx?: number | null, fy?: number | null }
 type TGLink = { source: number | TGNode, target: number | TGNode, strength: number }
 
-function TalentGraphView({ people, roles, departments }: any) {
+function TalentGraphView({ people, roles, departments, projects }: any) {
   const [view, setView] = useState<"departments" | "people" | "person">("departments")
   const [selDeptIdx, setSelDeptIdx] = useState<number | null>(null)
   const [detailIdx, setDetailIdx] = useState<number | null>(null)
@@ -6314,10 +6315,12 @@ function TalentGraphView({ people, roles, departments }: any) {
         const initials = p.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
         const angle = (i / Math.max(deptPeople.length, 1)) * Math.PI * 2
         const r0 = Math.min(w, h) * 0.3
-        return { id: `person-${p.idx}`, type: "person" as const, label: initials, sub: roles[p.roleId]?.name ?? "", r: 22, x: w / 2 + Math.cos(angle) * r0, y: h / 2 + Math.sin(angle) * r0 }
+        const score = (p.deliveryTeamIds?.length ?? 0) * 2 + (p.groupIds?.length ?? 0)
+        const color = score >= 4 ? HEALTH_COLOR["on-track"] : score >= 2 ? HEALTH_COLOR["at-risk"] : "#6b7280"
+        return { id: `person-${p.idx}`, type: "person" as const, label: initials, sub: roles[p.roleId]?.name ?? "", r: 22, x: w / 2 + Math.cos(angle) * r0, y: h / 2 + Math.sin(angle) * r0, color }
       })
       nodes = [centerNode, ...personNodes]
-      links = personNodes.map(n => ({ source: `dept-${selDeptIdx}`, target: n.id }))
+      links = personNodes.map(n => ({ source: `dept-${selDeptIdx}`, target: n.id, color: n.color }))
     }
 
     nodesRef.current = nodes
@@ -6452,7 +6455,7 @@ function TalentGraphView({ people, roles, departments }: any) {
               if (!src.x || !tg.x) return null
               const isHov = hovered === tg.id || hovered === src.id
               return <line key={i} x1={src.x} y1={src.y} x2={tg.x} y2={tg.y}
-                stroke={t.fg} strokeWidth={isHov ? 2 : 1} opacity={isHov ? 0.5 : 0.2}
+                stroke={lk.color ?? t.fg} strokeWidth={isHov ? 2 : 1} opacity={isHov ? 0.6 : 0.3}
                 style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}/>
             })}
 
@@ -6485,6 +6488,7 @@ function TalentGraphView({ people, roles, departments }: any) {
                     animationDelay: `${-ni * 0.9}s`,
                   } : {}}>
                     {isCenterNode && <circle cx={0} cy={0} r={n.r + 8} fill="none" stroke={t.fg} strokeWidth={0.5} opacity={0.2}/>}
+                    {!isCenterNode && n.color && <circle cx={0} cy={0} r={n.r + 3} fill="none" stroke={n.color} strokeWidth={1.5} opacity={0.85}/>}
                     <circle cx={0} cy={0} r={n.r}
                       fill={t.fg} fillOpacity={fillOpacity}
                       stroke={t.fg} strokeOpacity={strokeOpacity} strokeWidth={0.9}
@@ -6543,6 +6547,7 @@ function TalentGraphView({ people, roles, departments }: any) {
               roles={roles}
               departments={departments}
               edgeDefs={edgeDefs}
+              projects={projects}
               onBack={() => { setView("people"); setDetailIdx(null) }}
             />
           </div>
@@ -6552,22 +6557,56 @@ function TalentGraphView({ people, roles, departments }: any) {
   )
 }
 
-function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, onBack }: any) {
+function getTeamProjectIndices(teamId: number, projects: any[]): number[] {
+  if (!projects?.length) return []
+  let s = ((teamId + 1) * 1234567891) & 0x7fffffff
+  const count = 4 + (s % 3) // 4–6 projects per team
+  const indices: number[] = []
+  const seen = new Set<number>()
+  while (seen.size < Math.min(count, projects.length)) {
+    s = (s * 1103515245 + 12345) & 0x7fffffff
+    const idx = s % projects.length
+    if (!seen.has(idx)) { seen.add(idx); indices.push(idx) }
+  }
+  return indices
+}
+
+function getPersonProjectIndices(name: string, deliveryTeamIds: number[], projects: any[]): number[] {
+  if (!projects?.length) return []
+  // Every delivery team the person belongs to contributes its project set
+  const pool = new Set<number>()
+  deliveryTeamIds.forEach(tid => getTeamProjectIndices(tid, projects).forEach(i => pool.add(i)))
+  // Add 1–2 solo projects seeded from the person's name for variety
+  let s = name.split("").reduce((a: number, c: string) => (a * 31 + c.charCodeAt(0)) & 0x7fffffff, 0)
+  let added = 0
+  while (added < 2 && pool.size < projects.length) {
+    s = (s * 1103515245 + 12345) & 0x7fffffff
+    const idx = s % projects.length
+    if (!pool.has(idx)) { pool.add(idx); added++ }
+  }
+  return Array.from(pool)
+}
+
+function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, projects, onBack }: any) {
   const person = people[personIdx]
   const roleName = roles[person.roleId]?.name ?? ""
   const roleData = ROLE_SKILLS_EXTENDED[roleName] ?? { category: "", skills: [] }
   const deptName = departments[person.departmentId]?.name ?? ""
   const initials = person.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
 
-  const connectionIds: number[] = edgeDefs
+  const connectionEdges = edgeDefs
     .filter((e: any) => e.source === personIdx || e.target === personIdx)
-    .map((e: any) => e.source === personIdx ? e.target : e.source)
-  const connections = connectionIds.slice(0, 8).map((id: number) => ({
-    id,
-    name: people[id]?.name ?? "",
-    initials: (people[id]?.name ?? "").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
-    role: roles[people[id]?.roleId]?.name ?? "",
-  }))
+    .sort((a: any, b: any) => b.strength - a.strength)
+  const connections = connectionEdges.slice(0, 8).map((e: any) => {
+    const id = e.source === personIdx ? e.target : e.source
+    return {
+      id,
+      strength: e.strength as number,
+      name: people[id]?.name ?? "",
+      initials: (people[id]?.name ?? "").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
+      role: roles[people[id]?.roleId]?.name ?? "",
+    }
+  })
 
   // Deterministic skill levels 1–5 and worked-with counts 1–8
   const skillLevels: Record<string, number> = {}
@@ -6582,7 +6621,7 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
     connCounts[c.id] = 1 + (h % 8)
   })
 
-  // Deterministic client assignment (same algorithm as SkillsGraphView)
+  // Deterministic client assignment (same algorithm as CompanyGraphView)
   const allClients = EXPERIENCE_INDUSTRIES.flatMap(ind => ind.clients)
   let seed = person.name.split("").reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0)
   const clientCount = 2 + (seed % 3)
@@ -6606,6 +6645,21 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
   const rafRef = useRef<number | null>(null)
   const [, setTick] = useState(0)
   const [hovered, setHovered] = useState<string | null>(null)
+  const [drillState, setDrillState] = useState<null | { type: "colleague", idx: number } | { type: "skill", skill: string }>(null)
+
+  const drillProjIdxs = useMemo(() => {
+    if (!drillState || !projects?.length) return [] as number[]
+    const personProjIdxs = getPersonProjectIndices(person.name, person.deliveryTeamIds ?? [], projects)
+    if (drillState.type === "colleague") {
+      const colleague = people[drillState.idx]
+      const colleagueProjIdxs = getPersonProjectIndices(colleague?.name ?? "", colleague?.deliveryTeamIds ?? [], projects)
+      const shared = personProjIdxs.filter((i: number) => colleagueProjIdxs.includes(i))
+      return shared.length > 0 ? shared.slice(0, 6) : personProjIdxs.slice(0, 2)
+    }
+    let sh = drillState.skill.split("").reduce((a: number, c: string) => (a * 31 + c.charCodeAt(0)) & 0x7fffffff, 0)
+    const filtered = personProjIdxs.filter((_: number, i: number) => (sh + i) % 2 !== 0).slice(0, 5)
+    return filtered.length > 0 ? filtered : personProjIdxs.slice(0, 3)
+  }, [drillState, person.name, person.deliveryTeamIds, projects, people])
 
   useEffect(() => {
     const el = containerRef.current
@@ -6621,40 +6675,83 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
     simRef.current?.stop()
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
 
-    const centerNode: SGNode = { id: person.name, type: "person", label: initials, sub: roleName, r: 46, x: w / 2, y: h / 2, fx: w / 2, fy: h / 2 }
+    let nodes: SGNode[] = []
+    let links: SGLink[] = []
 
-    const skillNodes: SGNode[] = roleData.skills.map((skill: string) => {
-      const level = skillLevels[skill]
-      const r = 14 + (level - 1) * 3.8
-      return { id: `skill-${skill}`, type: "skill" as const, label: skill, sub: String(level), r, x: w * 0.3 + (Math.random() - 0.5) * 80, y: h / 2 + (Math.random() - 0.5) * 120 }
-    })
-
-    const connectionNodes: SGNode[] = connections.map((c: any) => {
-      const count = connCounts[c.id]
-      const r = 17 + (count - 1) * 2.4
-      return { id: `conn-${c.id}`, type: "person" as const, label: c.initials, sub: c.role, r, x: w * 0.7 + (Math.random() - 0.5) * 80, y: h / 2 + (Math.random() - 0.5) * 120 }
-    })
-
-    const nodes = [centerNode, ...skillNodes, ...connectionNodes]
-    const links: SGLink[] = [
-      ...skillNodes.map(n => ({ source: person.name, target: n.id })),
-      ...connectionNodes.map(n => ({ source: person.name, target: n.id })),
-    ]
+    if (!drillState) {
+      const centerNode: SGNode = { id: person.name, type: "person", label: initials, sub: roleName, r: 46, x: w / 2, y: h / 2, fx: w / 2, fy: h / 2 }
+      const skillNodes: SGNode[] = roleData.skills.map((skill: string) => {
+        const level = skillLevels[skill]
+        const r = 14 + (level - 1) * 3.8
+        const color = level >= 4 ? HEALTH_COLOR["on-track"] : level >= 2 ? HEALTH_COLOR["at-risk"] : "#6b7280"
+        return { id: `skill-${skill}`, type: "skill" as const, label: skill, sub: String(level), r, x: w * 0.24 + (Math.random() - 0.5) * 50, y: h / 2 + (Math.random() - 0.5) * 120, color }
+      })
+      const connectionNodes: SGNode[] = connections.map((c: any) => {
+        const count = connCounts[c.id]
+        const r = 17 + (count - 1) * 2.4
+        const color = c.strength >= 7 ? HEALTH_COLOR["on-track"] : c.strength >= 4 ? HEALTH_COLOR["at-risk"] : "#6b7280"
+        return { id: `conn-${c.id}`, type: "person" as const, label: c.initials, sub: c.role, r, x: w * 0.76 + (Math.random() - 0.5) * 50, y: h / 2 + (Math.random() - 0.5) * 120, color }
+      })
+      nodes = [centerNode, ...skillNodes, ...connectionNodes]
+      links = [
+        ...skillNodes.map(n => ({ source: person.name, target: n.id, color: n.color })),
+        ...connectionNodes.map(n => ({ source: person.name, target: n.id, color: n.color })),
+      ]
+    } else if (drillState.type === "colleague") {
+      const colleague = people[drillState.idx]
+      const cInit = (colleague?.name ?? "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+      const cEdge = connectionEdges.find((e: any) => (e.source === personIdx ? e.target : e.source) === drillState.idx)
+      const cStrength = cEdge?.strength ?? 1
+      const cColor = cStrength >= 7 ? HEALTH_COLOR["on-track"] : cStrength >= 4 ? HEALTH_COLOR["at-risk"] : "#6b7280"
+      const centerNode: SGNode = { id: person.name, type: "person", label: initials, sub: roleName, r: 36, x: w * 0.3, y: h / 2, fx: w * 0.3, fy: h / 2 }
+      const colleagueNode: SGNode = { id: `conn-${drillState.idx}`, type: "person", label: cInit, sub: roles[colleague?.roleId]?.name ?? "", r: 30, x: w * 0.7, y: h / 2, fx: w * 0.7, fy: h / 2, color: cColor }
+      const projectNodes: SGNode[] = drillProjIdxs.map((pIdx: number, i: number) => {
+        const proj = projects[pIdx]
+        const hcolor = HEALTH_COLOR[proj?.health] ?? "#6b7280"
+        const spread = drillProjIdxs.length === 1 ? 0 : (i / (drillProjIdxs.length - 1) - 0.5) * h * 0.5
+        return { id: `proj-${pIdx}`, type: "category" as const, label: (proj?.name ?? "").split(" ").slice(0, 4).join(" "), sub: proj?.unit ?? "", r: 44, x: w / 2, y: h / 2 + spread, color: hcolor }
+      })
+      nodes = [centerNode, colleagueNode, ...projectNodes]
+      links = [
+        ...projectNodes.map(n => ({ source: person.name, target: n.id, color: n.color })),
+        ...projectNodes.map(n => ({ source: `conn-${drillState.idx}`, target: n.id, color: n.color })),
+      ]
+    } else if (drillState.type === "skill") {
+      const skill = drillState.skill
+      const level = skillLevels[skill] ?? 1
+      const skillColor = level >= 4 ? HEALTH_COLOR["on-track"] : level >= 2 ? HEALTH_COLOR["at-risk"] : "#6b7280"
+      const centerNode: SGNode = { id: person.name, type: "person", label: initials, sub: roleName, r: 36, x: w * 0.3, y: h / 2, fx: w * 0.3, fy: h / 2 }
+      const skillNode: SGNode = { id: `skill-${skill}`, type: "skill", label: skill, sub: `L${level}`, r: 26, x: w * 0.7, y: h / 2, fx: w * 0.7, fy: h / 2, color: skillColor }
+      const projectNodes: SGNode[] = drillProjIdxs.map((pIdx: number, i: number) => {
+        const proj = projects[pIdx]
+        const hcolor = HEALTH_COLOR[proj?.health] ?? "#6b7280"
+        const spread = drillProjIdxs.length === 1 ? 0 : (i / (drillProjIdxs.length - 1) - 0.5) * h * 0.5
+        return { id: `proj-${pIdx}`, type: "category" as const, label: (proj?.name ?? "").split(" ").slice(0, 4).join(" "), sub: proj?.unit ?? "", r: 44, x: w / 2, y: h / 2 + spread, color: hcolor }
+      })
+      nodes = [centerNode, skillNode, ...projectNodes]
+      links = [
+        ...projectNodes.map(n => ({ source: person.name, target: n.id, color: n.color })),
+        ...projectNodes.map(n => ({ source: `skill-${skill}`, target: n.id, color: n.color })),
+      ]
+    }
 
     nodesRef.current = nodes
     linksRef.current = links
 
+    const isDrill = !!drillState
     const sim = forceSimulation<SGNode>(nodes)
       .force("link", forceLink<SGNode, SGLink>(links).id((d: any) => d.id)
-        .distance((d: any) => { const tgt = d.target as SGNode; return 46 + tgt.r + 66 })
-        .strength(0.5))
-      .force("charge", forceManyBody().strength(-192))
-      .force("x", forceX<SGNode>((d) => {
-        if (d.id === person.name) return w / 2
-        return (d.id as string).startsWith("skill-") ? w * 0.27 : w * 0.73
-      }).strength(0.38))
-      .force("y", forceY<SGNode>(h / 2).strength(0.1))
-      .force("collide", forceCollide<SGNode>((d) => d.r + 12))
+        .distance(() => isDrill ? 160 : 120)
+        .strength(isDrill ? 0.4 : 0.5))
+      .force("charge", forceManyBody().strength(isDrill ? -60 : -192))
+      .force("x", isDrill
+        ? forceX<SGNode>(w / 2).strength(0.35)
+        : forceX<SGNode>((d) => {
+            if (d.id === person.name) return w / 2
+            return (d.id as string).startsWith("skill-") ? w * 0.22 : w * 0.78
+          }).strength(0.7))
+      .force("y", forceY<SGNode>(h / 2).strength(isDrill ? 0.08 : 0.1))
+      .force("collide", forceCollide<SGNode>((d) => d.r + (isDrill ? 20 : 12)))
 
     simRef.current = sim
     sim.stop().tick(800)
@@ -6665,7 +6762,7 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
     rafRef.current = requestAnimationFrame(loop)
 
     return () => { sim.stop(); if (rafRef.current) cancelAnimationFrame(rafRef.current) }
-  }, [person.name, dims.w, dims.h])
+  }, [person.name, dims.w, dims.h, drillState, drillProjIdxs])
 
   const nodes = nodesRef.current
   const links = linksRef.current
@@ -6675,13 +6772,29 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
       {/* Graph */}
       <div ref={containerRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: 16, left: 16, zIndex: 10, display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={onBack}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.card, color: t.fg, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-sans), sans-serif" }}>
-            <ChevronLeft size={14} strokeWidth={0.9}/> All people
-          </button>
-          <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>
-            {roleData.skills.length} skills · {connections.length} worked with
-          </span>
+          {drillState ? (
+            <>
+              <button onClick={() => setDrillState(null)}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.card, color: t.fg, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-sans), sans-serif" }}>
+                <ChevronLeft size={14} strokeWidth={0.9}/> {person.name.split(" ")[0]}
+              </button>
+              <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>
+                {drillState.type === "colleague"
+                  ? `Projects with ${people[drillState.idx]?.name?.split(" ")[0] ?? ""}`
+                  : `${drillState.skill} projects`}
+              </span>
+            </>
+          ) : (
+            <>
+              <button onClick={onBack}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.card, color: t.fg, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-sans), sans-serif" }}>
+                <ChevronLeft size={14} strokeWidth={0.9}/> All people
+              </button>
+              <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>
+                {roleData.skills.length} skills · {connections.length} worked with
+              </span>
+            </>
+          )}
         </div>
 
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
@@ -6693,31 +6806,60 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
           </defs>
 
           {/* Column labels */}
-          <text x="14%" y={60} textAnchor="middle" fill={t.fg} fillOpacity={0.28} fontSize={12} fontFamily="var(--font-sans), sans-serif">skills</text>
-          <text x="86%" y={60} textAnchor="middle" fill={t.fg} fillOpacity={0.28} fontSize={12} fontFamily="var(--font-sans), sans-serif">worked with</text>
+          {drillState ? (
+            <>
+              <text x="18%" y={60} textAnchor="middle" fill={t.fg} fillOpacity={0.28} fontSize={12} fontFamily="var(--font-sans), sans-serif">{person.name.split(" ")[0]}</text>
+              <text x="50%" y={40} textAnchor="middle" fill={t.fg} fillOpacity={0.18} fontSize={11} fontFamily="var(--font-sans), sans-serif">projects</text>
+              <text x="82%" y={60} textAnchor="middle" fill={t.fg} fillOpacity={0.28} fontSize={12} fontFamily="var(--font-sans), sans-serif">{drillState.type === "colleague" ? (people[drillState.idx]?.name ?? "").split(" ")[0] : drillState.skill}</text>
+            </>
+          ) : (
+            <>
+              <text x="14%" y={60} textAnchor="middle" fill={t.fg} fillOpacity={0.28} fontSize={12} fontFamily="var(--font-sans), sans-serif">skills</text>
+              <text x="86%" y={60} textAnchor="middle" fill={t.fg} fillOpacity={0.28} fontSize={12} fontFamily="var(--font-sans), sans-serif">worked with</text>
+            </>
+          )}
 
           {links.map((lk, i) => {
             const src = lk.source as SGNode, tgt = lk.target as SGNode
             if (!src.x || !tgt.x) return null
             return <line key={i} x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
-              stroke={t.fg} strokeWidth={0.8} opacity={0.18}/>
+              stroke={lk.color ?? t.fg} strokeWidth={0.8} opacity={0.28}/>
           })}
 
           {nodes.map((n) => {
             const isCenter = n.id === person.name
             const isSkill = (n.id as string).startsWith("skill-")
+            const isProj = (n.id as string).startsWith("proj-")
             const isHov = hovered === n.id
             const fontSize = isCenter ? 13 : isSkill ? Math.max(8, Math.min(10, n.r - 4)) : Math.max(9, Math.min(11, n.r - 6))
+            const clickable = !drillState && !isCenter
             return (
               <g key={n.id} transform={`translate(${n.x ?? 0},${n.y ?? 0})`}
-                onMouseEnter={() => setHovered(n.id)} onMouseLeave={() => setHovered(null)}>
+                onMouseEnter={() => setHovered(n.id)} onMouseLeave={() => setHovered(null)}
+                style={{ cursor: clickable ? "pointer" : "default" }}
+                onClick={() => {
+                  if (drillState || isCenter || isProj) return
+                  if (isSkill) setDrillState({ type: "skill", skill: (n.id as string).replace("skill-", "") })
+                  else { const idx = parseInt((n.id as string).replace("conn-", "")); if (!isNaN(idx)) setDrillState({ type: "colleague", idx }) }
+                }}>
                 {isCenter && <circle cx={0} cy={0} r={n.r + 10} fill="none" stroke={t.fg} strokeWidth={0.5} opacity={0.12}/>}
+                {!isCenter && n.color && <circle cx={0} cy={0} r={n.r + 3} fill="none" stroke={n.color} strokeWidth={1.5} opacity={0.85}/>}
                 <circle cx={0} cy={0} r={n.r}
                   fill={t.fg} fillOpacity={isCenter ? 0.12 : isHov ? 0.11 : 0.055}
                   stroke={t.fg} strokeOpacity={isCenter ? 0.9 : isHov ? 0.8 : 0.32} strokeWidth={0.8}
                   filter={isCenter || isHov ? "url(#tg-glow)" : undefined}
                   style={{ transition: "fill-opacity 0.2s, stroke-opacity 0.2s" }}/>
-                {isSkill ? (
+                {isProj ? (
+                  (() => {
+                    const words = n.label.split(" ")
+                    const line1 = words.slice(0, 2).join(" ")
+                    const line2 = words.slice(2).join(" ")
+                    return <>
+                      <text x={0} y={line2 ? -6 : 4} textAnchor="middle" fill={t.fg} fillOpacity={isHov ? 0.95 : 0.85} fontSize={10} fontWeight={500} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{line1}</text>
+                      {line2 && <text x={0} y={9} textAnchor="middle" fill={t.fg} fillOpacity={isHov ? 0.8 : 0.65} fontSize={9} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{line2}</text>}
+                    </>
+                  })()
+                ) : isSkill ? (
                   <text x={0} y={fontSize / 2 - 1} textAnchor="middle" fill={t.fg} fillOpacity={isHov ? 0.9 : 0.6} fontSize={fontSize} fontFamily="var(--font-sans), sans-serif" style={{ pointerEvents: "none" as const }}>{n.label}</text>
                 ) : isCenter ? (
                   <>
@@ -6738,54 +6880,667 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
 
       {/* Sidebar */}
       <div style={{ width: 280, borderLeft: `1px solid ${t.border}`, padding: 20, overflowY: "auto" as const, flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, paddingBottom: 20, borderBottom: `1px solid ${t.border}` }}>
-          <div style={{ width: 44, height: 44, borderRadius: "50%", background: t.fgAlpha10, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{initials}</div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{person.name}</div>
-            <div style={{ fontSize: 12, color: t.mutedFg, marginTop: 2, fontFamily: "var(--font-sans), sans-serif" }}>{roleName}</div>
-            <div style={{ fontSize: 11, color: t.mutedFg, marginTop: 2, fontFamily: "var(--font-sans), sans-serif" }}>{deptName}{person.office ? ` · ${person.office}` : ""}</div>
-          </div>
-        </div>
+        {drillState ? (
+          // Drill mode sidebar
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${t.border}` }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: t.fgAlpha10, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{initials}</div>
+              {drillState.type === "colleague" ? (
+                <>
+                  <span style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>×</span>
+                  {(() => {
+                    const colleague = people[drillState.idx]
+                    const cInit = (colleague?.name ?? "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+                    const cEdge = connectionEdges.find((e: any) => (e.source === personIdx ? e.target : e.source) === drillState.idx)
+                    const cStrength = cEdge?.strength ?? 1
+                    const ringColor = cStrength >= 7 ? HEALTH_COLOR["on-track"] : cStrength >= 4 ? HEALTH_COLOR["at-risk"] : "#6b7280"
+                    return <div style={{ width: 36, height: 36, borderRadius: "50%", background: t.fgAlpha10, border: `1.5px solid ${ringColor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{cInit}</div>
+                  })()}
+                </>
+              ) : (
+                <span style={{ fontSize: 13, fontWeight: 500, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{drillState.skill}</span>
+              )}
+            </div>
+            <div style={{ ...s.caseTitle, marginBottom: 12 }}>
+              {drillState.type === "colleague"
+                ? `Projects together (${drillProjIdxs.length})`
+                : `Projects using ${drillState.skill} (${drillProjIdxs.length})`}
+            </div>
+            {drillProjIdxs.map((pIdx: number) => {
+              const proj = projects[pIdx]
+              if (!proj) return null
+              const hcolor = HEALTH_COLOR[proj.health] ?? "#6b7280"
+              return (
+                <div key={pIdx} style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.fgAlpha10 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: t.fg, lineHeight: 1.4, fontFamily: "var(--font-sans), sans-serif" }}>{proj.name}</div>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: hcolor, flexShrink: 0, marginTop: 4 }}/>
+                  </div>
+                  <div style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{proj.unit}</div>
+                </div>
+              )
+            })}
+          </>
+        ) : (
+          // Normal sidebar
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, paddingBottom: 20, borderBottom: `1px solid ${t.border}` }}>
+              <div style={{ width: 44, height: 44, borderRadius: "50%", background: t.fgAlpha10, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{initials}</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{person.name}</div>
+                <div style={{ fontSize: 12, color: t.mutedFg, marginTop: 2, fontFamily: "var(--font-sans), sans-serif" }}>{roleName}</div>
+                <div style={{ fontSize: 11, color: t.mutedFg, marginTop: 2, fontFamily: "var(--font-sans), sans-serif" }}>{deptName}{person.office ? ` · ${person.office}` : ""}</div>
+              </div>
+            </div>
 
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ ...s.caseTitle, marginBottom: 8 }}>Skills</div>
-          <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4 }}>
-            {roleData.skills.map((skill: string) => (
-              <span key={skill} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 99, border: `1px solid ${t.border}`, color: t.fg, background: t.fgAlpha10, fontFamily: "var(--font-sans), sans-serif" }}>{skill}</span>
-            ))}
-          </div>
-        </div>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ ...s.caseTitle, marginBottom: 8 }}>Skills</div>
+              <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4 }}>
+                {roleData.skills.map((skill: string) => (
+                  <span key={skill} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 99, border: `1px solid ${t.border}`, color: t.fg, background: t.fgAlpha10, fontFamily: "var(--font-sans), sans-serif" }}>{skill}</span>
+                ))}
+              </div>
+            </div>
 
-        {clientsByIndustry.length > 0 && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ ...s.caseTitle, marginBottom: 8 }}>Experience</div>
-            {clientsByIndustry.map(g => (
-              <div key={g.industry} style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 11, color: t.mutedFg, marginBottom: 5, fontFamily: "var(--font-sans), sans-serif" }}>{g.industry}</div>
-                <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4 }}>
-                  {g.clients.map((c: string) => (
-                    <span key={c} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 99, border: `1px solid ${t.border}`, color: t.fg, background: t.fgAlpha10, fontFamily: "var(--font-sans), sans-serif" }}>{c}</span>
-                  ))}
+            {clientsByIndustry.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ ...s.caseTitle, marginBottom: 8 }}>Experience</div>
+                {clientsByIndustry.map(g => (
+                  <div key={g.industry} style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, color: t.mutedFg, marginBottom: 5, fontFamily: "var(--font-sans), sans-serif" }}>{g.industry}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4 }}>
+                      {g.clients.map((c: string) => (
+                        <span key={c} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 99, border: `1px solid ${t.border}`, color: t.fg, background: t.fgAlpha10, fontFamily: "var(--font-sans), sans-serif" }}>{c}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {connections.length > 0 && (
+              <div>
+                <div style={{ ...s.caseTitle, marginBottom: 8 }}>Worked with ({connections.length})</div>
+                {connections.map((c: any) => {
+                  const ringColor = c.strength >= 7 ? HEALTH_COLOR["on-track"] : c.strength >= 4 ? HEALTH_COLOR["at-risk"] : "#6b7280"
+                  return (
+                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: "5px 0" }}>
+                      <div style={{ width: 26, height: 26, borderRadius: "50%", background: t.fgAlpha10, border: `1.5px solid ${ringColor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{c.initials}</div>
+                      <div>
+                        <div style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{c.name}</div>
+                        <div style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{c.role}</div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Pipeline Graph ──
+function getPipelineProjectCategoryIndices(proj: any): number[] {
+  // Maps project titles to SKILLS_CATEGORIES indices:
+  // 0=Design, 1=Engineering, 2=Marketing, 3=Strategy, 4=Content, 5=Production, 6=Analytics
+  const title = (proj.name ?? "").toLowerCase()
+  const cats: number[] = []
+  if (/brand|identity|visual|design|creative|heritage|luxury|fashion|collab|refresh|relaunch|label/i.test(title)) cats.push(0)
+  if (/digital|platform|interactive|tech|app|web|integration|rollout|network|flagship/i.test(title)) cats.push(1)
+  if (/campaign|launch|social|media|activation|festival|programme|athlete|anti-hero|super bowl|nhl/i.test(title)) cats.push(2)
+  if (/strategy|narrative|wellness|sustainability|activism|dtc|global|positioning/i.test(title)) cats.push(3)
+  if (/content|story|documentary|culture|music|series|editorial|comms|cocktail|equal play/i.test(title)) cats.push(4)
+  if (/production|video|film|photo|experience|event|made in america/i.test(title)) cats.push(5)
+  if (/data|analytics|reporting|performance|insights|measurement|speed/i.test(title)) cats.push(6)
+  if (cats.length < 2) {
+    let s = title.split("").reduce((a: number, c: string) => (a * 31 + c.charCodeAt(0)) & 0x7fffffff, 0)
+    while (cats.length < 2) {
+      s = (s * 1103515245 + 12345) & 0x7fffffff
+      const idx = s % 7
+      if (!cats.includes(idx)) cats.push(idx)
+    }
+  }
+  return cats.slice(0, 4)
+}
+
+function PipelineGraphView({ people, roles, projects }: any) {
+  const [hovered, setHovered] = useState<number | null>(null)
+  const [selected, setSelected] = useState<number | null>(null)
+  const [drilldown, setDrilldown] = useState<number | null>(null)
+  const [selectedSkill, setSelectedSkill] = useState<number | null>(null)
+  const [hoveredSkill, setHoveredSkill] = useState<number | null>(null)
+  const [quarterOffset, setQuarterOffset] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dims, setDims] = useState({ w: 800, h: 600 })
+
+  useEffect(() => {
+    const el = containerRef.current; if (!el) return
+    const ro = new ResizeObserver(([e]) => setDims({ w: e.contentRect.width, h: e.contentRect.height }))
+    ro.observe(el); return () => ro.disconnect()
+  }, [])
+
+  const pipelineProjects = useMemo(() =>
+    [...projects].sort((a: any, b: any) => (b.budget ?? 0) - (a.budget ?? 0)).slice(0, 12)
+  , [projects])
+
+  const categoryData = useMemo(() => SKILLS_CATEGORIES.map((cat, ci) => {
+    const supply = people.filter((p: any) =>
+      (ROLE_SKILLS_EXTENDED[roles[p.roleId]?.name ?? ""] ?? {}).category === cat.name
+    ).length
+    const demand = pipelineProjects.filter((proj: any) => getPipelineProjectCategoryIndices(proj).includes(ci)).length
+    const required = demand * 3
+    const ratio = supply / Math.max(demand, 1)
+    const coverageColor = demand === 0 ? "#6b7280"
+      : ratio >= 3 ? HEALTH_COLOR["on-track"]
+      : ratio >= 1 ? HEALTH_COLOR["at-risk"]
+      : HEALTH_COLOR["off-track"]
+    const budgetAtRisk = pipelineProjects
+      .filter((p: any) => getPipelineProjectCategoryIndices(p).includes(ci))
+      .reduce((sum: number, p: any) => sum + (p.budget ?? 0), 0)
+    return { cat, ci, supply, demand, required, ratio, coverageColor, budgetAtRisk }
+  }), [people, roles, pipelineProjects])
+
+  const radarLayout = useMemo(() => {
+    const { w, h } = dims
+    const cx = w / 2, cy = h / 2
+    const radius = Math.min(w * 0.36, h * 0.38)
+    const n = categoryData.length
+    const maxSupply = Math.max(...categoryData.map(cd => cd.supply), 1)
+    const maxDemand = Math.max(...categoryData.map(cd => cd.demand), 1)
+    const FLOOR = 0.38
+    const angleOf = (i: number) => -Math.PI / 2 + (i / n) * Math.PI * 2
+    const scale = (v: number, max: number) => (FLOOR + (1 - FLOOR) * (v / max)) * radius
+    const ptsScaled = (vals: number[], max: number) => vals.map((v, i) => {
+      const a = angleOf(i), r = scale(v, max)
+      return [cx + r * Math.cos(a), cy + r * Math.sin(a)] as [number, number]
+    })
+    const toPath = (pts: [number, number][]) =>
+      pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ") + "Z"
+    const axes = categoryData.map((cd, i) => {
+      const a = angleOf(i), cos = Math.cos(a), sin = Math.sin(a)
+      return { ...cd, angle: a, cos, sin,
+        outerX: cx + radius * cos, outerY: cy + radius * sin,
+        labelX: cx + (radius + 36) * cos, labelY: cy + (radius + 36) * sin,
+      }
+    })
+    const supplyPath = toPath(ptsScaled(categoryData.map(cd => cd.supply), maxSupply))
+    const demandPath = toPath(ptsScaled(categoryData.map(cd => cd.demand), maxDemand))
+    const rings = [0.25, 0.5, 0.75, 1].map(frac =>
+      toPath(ptsScaled(categoryData.map(() => frac * maxSupply), maxSupply))
+    )
+    return { cx, cy, radius, axes, supplyPath, demandPath, rings, maxSupply, maxDemand, FLOOR, scale }
+  }, [categoryData, dims])
+
+  const skillLevelData = useMemo(() => {
+    if (drilldown === null) return null
+    const cat = SKILLS_CATEGORIES[drilldown]
+    const allSkills = cat.skills
+    const supply = allSkills.map(skill =>
+      people.filter((p: any) =>
+        (ROLE_SKILLS_EXTENDED[roles[p.roleId]?.name ?? ""] ?? {}).skills?.includes(skill)
+      ).length
+    )
+    const relevantProjects = pipelineProjects.filter((proj: any) =>
+      getPipelineProjectCategoryIndices(proj).includes(drilldown)
+    )
+    const demand = allSkills.map((_, si) =>
+      relevantProjects.filter((proj: any) => {
+        let s = (proj.name ?? "").split("").reduce((a: number, c: string) => (a * 31 + c.charCodeAt(0)) & 0x7fffffff, 0)
+        const n = Math.min(3 + (s % 2), allSkills.length)
+        const idxs = allSkills.map((_, i) => i)
+        for (let k = idxs.length - 1; k > 0; k--) { s = (s * 1103515245 + 12345) & 0x7fffffff; const j = s % (k + 1); const tmp = idxs[k]; idxs[k] = idxs[j]; idxs[j] = tmp }
+        return idxs.slice(0, n).includes(si)
+      }).length
+    )
+    const scored = allSkills
+      .map((name, i) => ({ name, supply: supply[i], demand: demand[i] }))
+      .sort((a, b) => (b.supply + b.demand) - (a.supply + a.demand))
+      .slice(0, 8)
+    return { cat, skills: scored.map(s => s.name), supply: scored.map(s => s.supply), demand: scored.map(s => s.demand), relevantProjects }
+  }, [drilldown, people, roles, pipelineProjects])
+
+  const skillRadarLayout = useMemo(() => {
+    if (!skillLevelData) return null
+    const { w, h } = dims
+    const cx = w / 2, cy = h / 2
+    const radius = Math.min(w * 0.36, h * 0.38)
+    const n = skillLevelData.skills.length
+    const maxSupply = Math.max(...skillLevelData.supply, 1)
+    const maxDemand = Math.max(...skillLevelData.demand, 1)
+    const FLOOR = 0.38
+    const angleOf = (i: number) => -Math.PI / 2 + (i / n) * Math.PI * 2
+    const scale = (v: number, max: number) => (FLOOR + (1 - FLOOR) * (v / max)) * radius
+    const ptsScaled = (vals: number[], max: number) => vals.map((v, i) => {
+      const a = angleOf(i), r = scale(v, max)
+      return [cx + r * Math.cos(a), cy + r * Math.sin(a)] as [number, number]
+    })
+    const toPath = (pts: [number, number][]) =>
+      pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ") + "Z"
+    const axes = skillLevelData.skills.map((name, i) => {
+      const a = angleOf(i), cos = Math.cos(a), sin = Math.sin(a)
+      const ratio = skillLevelData.demand[i] === 0 ? null : skillLevelData.supply[i] / skillLevelData.demand[i]
+      const coverageColor = skillLevelData.demand[i] === 0 ? "#6b7280"
+        : (ratio ?? 0) >= 3 ? HEALTH_COLOR["on-track"]
+        : (ratio ?? 0) >= 1 ? HEALTH_COLOR["at-risk"]
+        : HEALTH_COLOR["off-track"]
+      return { name, i, supply: skillLevelData.supply[i], demand: skillLevelData.demand[i], coverageColor,
+        angle: a, cos, sin,
+        outerX: cx + radius * cos, outerY: cy + radius * sin,
+        labelX: cx + (radius + 36) * cos, labelY: cy + (radius + 36) * sin,
+      }
+    })
+    const supplyPath = toPath(ptsScaled(skillLevelData.supply, maxSupply))
+    const demandPath = toPath(ptsScaled(skillLevelData.demand, maxDemand))
+    const rings = [0.25, 0.5, 0.75, 1].map(frac =>
+      toPath(ptsScaled(skillLevelData.supply.map(() => frac * maxSupply), maxSupply))
+    )
+    return { cx, cy, radius, axes, supplyPath, demandPath, rings, maxSupply, scale }
+  }, [skillLevelData, dims])
+
+  const gaps = categoryData.filter(cd => cd.demand > 0 && cd.ratio < 1)
+  const thin = categoryData.filter(cd => cd.demand > 0 && cd.ratio >= 1 && cd.ratio < 3)
+  const fmtB = (n: number) => n >= 1000000 ? `$${(n / 1000000).toFixed(1)}M` : `$${(n / 1000).toFixed(0)}K`
+
+  function renderSidebar() {
+    // ── Level 2: skill drill-down ──
+    if (drilldown !== null && skillLevelData) {
+      const cat = skillLevelData.cat
+
+      if (selectedSkill !== null) {
+        const skillName = skillLevelData.skills[selectedSkill]
+        const skillSupply = skillLevelData.supply[selectedSkill]
+        const skillDemand = skillLevelData.demand[selectedSkill]
+        const peopleWithSkill = people.filter((p: any) =>
+          (ROLE_SKILLS_EXTENDED[roles[p.roleId]?.name ?? ""] ?? {}).skills?.includes(skillName)
+        )
+        const projsNeedingSkill = skillLevelData.relevantProjects.filter((proj: any) => {
+          let s = (proj.name ?? "").split("").reduce((a: number, c: string) => (a * 31 + c.charCodeAt(0)) & 0x7fffffff, 0)
+          const n = Math.min(3 + (s % 2), skillLevelData.skills.length)
+          const idxs = skillLevelData.skills.map((_, i) => i)
+          for (let k = idxs.length - 1; k > 0; k--) { s = (s * 1103515245 + 12345) & 0x7fffffff; const j = s % (k + 1); const tmp = idxs[k]; idxs[k] = idxs[j]; idxs[j] = tmp }
+          return idxs.slice(0, n).includes(selectedSkill!)
+        })
+        const coverageColor = skillDemand === 0 ? "#6b7280" : skillSupply >= skillDemand * 3 ? HEALTH_COLOR["on-track"] : skillSupply >= skillDemand ? HEALTH_COLOR["at-risk"] : HEALTH_COLOR["off-track"]
+        return (
+          <>
+            <button onClick={() => setSelectedSkill(null)}
+              style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", color: t.mutedFg, fontSize: 12, padding: "0 0 12px 0", fontFamily: "var(--font-sans), sans-serif" }}>
+              <ChevronLeft size={12} strokeWidth={0.9}/> {cat.name}
+            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: coverageColor, flexShrink: 0 }}/>
+              <div style={{ fontSize: 13, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{skillName}</div>
+            </div>
+            <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+              {([["people", String(skillSupply)], ["projects", String(skillDemand)]] as [string, string][]).map(([l, v]) => (
+                <div key={l}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{v}</div>
+                  <div style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{l}</div>
+                </div>
+              ))}
+            </div>
+            {peopleWithSkill.length > 0 && (
+              <>
+                <div style={{ ...s.caseTitle, marginBottom: 8 }}>Team members</div>
+                {peopleWithSkill.map((p: any) => (
+                  <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "3px 0" }}>
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: p.color ?? t.fgAlpha10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <span style={{ fontSize: 9, fontWeight: 600, color: "#fff", fontFamily: "var(--font-sans), sans-serif" }}>{p.initials ?? p.name?.slice(0,2)}</span>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                      <div style={{ fontSize: 10, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{roles[p.roleId]?.name ?? ""}</div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            {projsNeedingSkill.length > 0 && (
+              <>
+                <div style={{ borderTop: `1px solid ${t.border}`, margin: "12px 0" }}/>
+                <div style={{ ...s.caseTitle, marginBottom: 8 }}>Pipeline projects</div>
+                {projsNeedingSkill.map((proj: any, pi: number) => {
+                  const hcol = HEALTH_COLOR[proj.health as string] ?? "#6b7280"
+                  return (
+                    <div key={pi} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: "3px 0" }}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: hcol, flexShrink: 0 }}/>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{proj.name}</div>
+                        <div style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{proj.unit}</div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </>
+            )}
+          </>
+        )
+      }
+
+      // Category skill overview
+      const catCd = categoryData[drilldown]
+      return (
+        <>
+          <div style={{ ...s.caseTitle, marginBottom: 4 }}>{cat.name}</div>
+          <div style={{ fontSize: 11, color: t.mutedFg, marginBottom: 14, fontFamily: "var(--font-sans), sans-serif" }}>
+            {skillLevelData.relevantProjects.length} pipeline project{skillLevelData.relevantProjects.length !== 1 ? "s" : ""} · {catCd?.supply ?? 0} team members
+          </div>
+          <div style={{ ...s.caseTitle, marginBottom: 10 }}>Skill breakdown</div>
+          {skillLevelData.skills.map((name, i) => {
+            const sup = skillLevelData.supply[i], dem = skillLevelData.demand[i]
+            const ratio = dem === 0 ? null : sup / dem
+            const col = dem === 0 ? "#6b7280" : (ratio ?? 0) >= 3 ? HEALTH_COLOR["on-track"] : (ratio ?? 0) >= 1 ? HEALTH_COLOR["at-risk"] : HEALTH_COLOR["off-track"]
+            return (
+              <div key={i} onClick={() => setSelectedSkill(i)}
+                style={{ marginBottom: 10, cursor: "pointer", padding: "4px 6px", borderRadius: 6 }}
+                onMouseEnter={e => (e.currentTarget.style.background = t.fgAlpha10)}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: col, flexShrink: 0 }}/>
+                    <span style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{name}</span>
+                  </div>
+                  <span style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{sup} / {dem}</span>
+                </div>
+                <div style={{ height: 3, borderRadius: 2, background: t.border }}>
+                  <div style={{ height: 3, borderRadius: 2, background: col, width: dem > 0 ? `${Math.min(100, (sup / (dem * 3)) * 100)}%` : sup > 0 ? "30%" : "0%", transition: "width 0.3s" }}/>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            )
+          })}
+        </>
+      )
+    }
 
-        {connections.length > 0 && (
-          <div>
-            <div style={{ ...s.caseTitle, marginBottom: 8 }}>Worked with ({connections.length})</div>
-            {connections.map((c: any) => (
-              <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: "5px 0" }}>
-                <div style={{ width: 26, height: 26, borderRadius: "50%", background: t.fgAlpha10, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: t.fg, flexShrink: 0, fontFamily: "var(--font-sans), sans-serif" }}>{c.initials}</div>
+    // ── Level 1: category overview ──
+    const totalBudget = pipelineProjects.reduce((sum: number, p: any) => sum + (p.budget ?? 0), 0)
+    const wellMatched = categoryData.filter(cd => cd.demand > 0 && cd.ratio >= 3).length
+    return (
+      <>
+        <div style={{ ...s.caseTitle, marginBottom: 12 }}>Pipeline fit</div>
+        {([
+          ["Pipeline projects", pipelineProjects.length],
+          ["Total budget", fmtB(totalBudget)],
+          ["Well-matched skills", `${wellMatched} of ${SKILLS_CATEGORIES.length}`],
+          ["Skill gaps", gaps.length > 0 ? gaps.length : "None"],
+        ] as [string, any][]).map(([label, val]) => (
+          <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{label}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{val}</span>
+          </div>
+        ))}
+        <div style={{ borderTop: `1px solid ${t.border}`, margin: "16px 0" }}/>
+        <div style={{ ...s.caseTitle, marginBottom: 10 }}>Skill coverage</div>
+        {categoryData.map((cd, i) => (
+          <div key={i} onClick={() => { setDrilldown(i); setSelectedSkill(null) }}
+            style={{ marginBottom: 10, cursor: "pointer", padding: "4px 6px", borderRadius: 6 }}
+            onMouseEnter={e => (e.currentTarget.style.background = t.fgAlpha10)}
+            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: cd.coverageColor, flexShrink: 0 }}/>
+                <span style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{cd.cat.name}</span>
+              </div>
+              <span style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{cd.supply} / {cd.demand}</span>
+            </div>
+            <div style={{ height: 3, borderRadius: 2, background: t.border }}>
+              <div style={{ height: 3, borderRadius: 2, background: cd.coverageColor, width: cd.demand > 0 ? `${Math.min(100, (cd.ratio / 5) * 100)}%` : "0%", transition: "width 0.3s" }}/>
+            </div>
+          </div>
+        ))}
+        {gaps.length > 0 && (
+          <>
+            <div style={{ borderTop: `1px solid ${t.border}`, margin: "16px 0" }}/>
+            <div style={{ ...s.caseTitle, marginBottom: 8 }}>Gaps to address</div>
+            {gaps.map((cd, i) => (
+              <div key={i} onClick={() => { setDrilldown(cd.ci); setSelectedSkill(null) }}
+                style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, padding: "5px 8px", borderRadius: 6, cursor: "pointer", background: `${HEALTH_COLOR["off-track"]}12` }}
+                onMouseEnter={e => (e.currentTarget.style.background = `${HEALTH_COLOR["off-track"]}20`)}
+                onMouseLeave={e => (e.currentTarget.style.background = `${HEALTH_COLOR["off-track"]}12`)}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: HEALTH_COLOR["off-track"], flexShrink: 0, marginTop: 4 }}/>
                 <div>
-                  <div style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{c.name}</div>
-                  <div style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{c.role}</div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{cd.cat.name}</div>
+                  <div style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{cd.supply} people, {cd.demand} projects need this</div>
                 </div>
               </div>
             ))}
-          </div>
+          </>
         )}
+        {thin.length > 0 && (
+          <>
+            <div style={{ borderTop: `1px solid ${t.border}`, margin: "16px 0" }}/>
+            <div style={{ ...s.caseTitle, marginBottom: 8 }}>Thin coverage</div>
+            {thin.map((cd, i) => (
+              <div key={i} onClick={() => { setDrilldown(cd.ci); setSelectedSkill(null) }}
+                style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, cursor: "pointer", padding: "4px 6px", borderRadius: 6 }}
+                onMouseEnter={e => (e.currentTarget.style.background = t.fgAlpha10)}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: HEALTH_COLOR["at-risk"], flexShrink: 0, marginTop: 4 }}/>
+                <div style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{cd.cat.name} — {cd.supply} ppl / {cd.demand} projects</div>
+              </div>
+            ))}
+          </>
+        )}
+      </>
+    )
+  }
+
+  function renderRadar() {
+    const { cx, cy, radius, axes, supplyPath, demandPath, rings, maxSupply, scale } = radarLayout
+    return (
+      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} onClick={() => setSelected(null)}>
+        <defs>
+          <filter id="pg-glow">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        {rings.map((path, i) => (
+          <path key={i} d={path} fill="none"
+            stroke={t.fg} strokeOpacity={i === rings.length - 1 ? 0.1 : 0.06}
+            strokeWidth={1} strokeDasharray={i === rings.length - 1 ? undefined : "2 4"}/>
+        ))}
+
+        {axes.map((ax: any, i: number) => (
+          <line key={i} x1={cx} y1={cy} x2={ax.outerX} y2={ax.outerY}
+            stroke={t.fg} strokeOpacity={0.08} strokeWidth={1}/>
+        ))}
+
+        <path d={demandPath} fill="#6b7280" fillOpacity={0.06}
+          stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="5 3" strokeOpacity={0.45}/>
+
+        <path d={supplyPath} fill="#64748b" fillOpacity={0.14}
+          stroke="#94a3b8" strokeWidth={2} strokeOpacity={0.7}/>
+
+        {axes.map((ax: any, i: number) => {
+          const isHov = hovered === i, isSel = selected === i
+          const align = ax.labelX < cx - 10 ? "end" : ax.labelX > cx + 10 ? "start" : "middle"
+          const supplyR = scale(ax.supply, maxSupply)
+          const sdx = cx + supplyR * ax.cos, sdy = cy + supplyR * ax.sin
+          return (
+            <g key={i} style={{ cursor: "pointer" }}
+              onClick={e => { e.stopPropagation(); setDrilldown(i); setSelected(null); setSelectedSkill(null); setHoveredSkill(null) }}
+              onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
+              <line x1={cx} y1={cy} x2={ax.outerX} y2={ax.outerY}
+                stroke={ax.coverageColor} strokeWidth={14} strokeOpacity={isHov ? 0.08 : 0}
+                style={{ transition: "stroke-opacity 0.15s" }}/>
+              {ax.supply > 0
+                ? <circle cx={sdx} cy={sdy} r={isHov ? 5.5 : 4}
+                    fill={ax.coverageColor} opacity={isHov ? 1 : 0.8}
+                    style={{ transition: "r 0.15s, opacity 0.15s" }}/>
+                : <circle cx={cx} cy={cy} r={isHov ? 5 : 3.5}
+                    fill="none" stroke={ax.coverageColor} strokeWidth={1.5}
+                    opacity={isHov ? 0.9 : 0.5}
+                    style={{ transition: "r 0.15s" }}/>
+              }
+              <text x={ax.labelX} y={ax.labelY - 7} textAnchor={align}
+                dominantBaseline="middle" fill={t.fg}
+                fillOpacity={isHov ? 0.9 : 0.7}
+                fontSize={11} fontFamily="var(--font-sans), sans-serif"
+                style={{ transition: "fill-opacity 0.15s" }}>
+                {ax.cat.name}
+              </text>
+              <text x={ax.labelX} y={ax.labelY + 7} textAnchor={align}
+                dominantBaseline="middle"
+                fill={ax.coverageColor} fillOpacity={isHov ? 0.9 : 0.5}
+                fontSize={10} fontFamily="var(--font-sans), sans-serif"
+                style={{ transition: "fill-opacity 0.15s" }}>
+                {ax.supply > 0 ? `${ax.supply} people` : "no team"}
+              </text>
+            </g>
+          )
+        })}
+
+        <g transform={`translate(${dims.w - 150}, 16)`}>
+          <rect x={0} y={0} width={138} height={56} rx={6}
+            fill={t.card} fillOpacity={0.9} stroke={t.border} strokeWidth={1}/>
+          <line x1={12} y1={20} x2={28} y2={20} stroke="#94a3b8" strokeWidth={2} strokeOpacity={0.7}/>
+          <circle cx={20} cy={20} r={4} fill="#94a3b8" opacity={0.8}/>
+          <text x={34} y={24} fill={t.fg} fillOpacity={0.65} fontSize={10} fontFamily="var(--font-sans), sans-serif">Team capacity</text>
+          <line x1={12} y1={38} x2={28} y2={38} stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="5 3" strokeOpacity={0.6}/>
+          <text x={34} y={42} fill={t.fg} fillOpacity={0.65} fontSize={10} fontFamily="var(--font-sans), sans-serif">Pipeline demand</text>
+        </g>
+      </svg>
+    )
+  }
+
+  function renderSkillRadar() {
+    if (!skillRadarLayout || !skillLevelData) return null
+    const { cx, cy, radius, axes, supplyPath, demandPath, rings, maxSupply, scale } = skillRadarLayout
+    return (
+      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} onClick={() => setSelectedSkill(null)}>
+        <defs>
+          <filter id="pg-glow2">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        {rings.map((path, i) => (
+          <path key={i} d={path} fill="none"
+            stroke={t.fg} strokeOpacity={i === rings.length - 1 ? 0.1 : 0.06}
+            strokeWidth={1} strokeDasharray={i === rings.length - 1 ? undefined : "2 4"}/>
+        ))}
+        {axes.map((ax: any, i: number) => (
+          <line key={i} x1={cx} y1={cy} x2={ax.outerX} y2={ax.outerY}
+            stroke={t.fg} strokeOpacity={0.08} strokeWidth={1}/>
+        ))}
+
+        <path d={demandPath} fill="#6b7280" fillOpacity={0.06}
+          stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="5 3" strokeOpacity={0.45}/>
+        <path d={supplyPath} fill="#64748b" fillOpacity={0.14}
+          stroke="#94a3b8" strokeWidth={2} strokeOpacity={0.7}/>
+
+        {axes.map((ax: any, i: number) => {
+          const isHov = hoveredSkill === i, isSel = selectedSkill === i
+          const align = ax.labelX < cx - 10 ? "end" : ax.labelX > cx + 10 ? "start" : "middle"
+          const supplyR = scale(ax.supply, maxSupply)
+          const sdx = cx + supplyR * ax.cos, sdy = cy + supplyR * ax.sin
+          return (
+            <g key={i} style={{ cursor: "pointer" }}
+              onClick={e => { e.stopPropagation(); setSelectedSkill(isSel ? null : i) }}
+              onMouseEnter={() => setHoveredSkill(i)} onMouseLeave={() => setHoveredSkill(null)}>
+              <line x1={cx} y1={cy} x2={ax.outerX} y2={ax.outerY}
+                stroke={ax.coverageColor} strokeWidth={14} strokeOpacity={isHov || isSel ? 0.08 : 0}
+                style={{ transition: "stroke-opacity 0.15s" }}/>
+              {ax.supply > 0
+                ? <circle cx={sdx} cy={sdy} r={isHov || isSel ? 5.5 : 4}
+                    fill={ax.coverageColor} opacity={isHov || isSel ? 1 : 0.8}
+                    filter={isSel ? "url(#pg-glow2)" : undefined}
+                    style={{ transition: "r 0.15s, opacity 0.15s" }}/>
+                : <circle cx={cx} cy={cy} r={isHov || isSel ? 5 : 3.5}
+                    fill="none" stroke={ax.coverageColor} strokeWidth={1.5}
+                    opacity={isHov || isSel ? 0.9 : 0.5}
+                    style={{ transition: "r 0.15s" }}/>
+              }
+              <text x={ax.labelX} y={ax.labelY - 7} textAnchor={align}
+                dominantBaseline="middle" fill={t.fg}
+                fillOpacity={isSel ? 1 : isHov ? 0.9 : 0.7}
+                fontSize={11} fontWeight={isSel ? 600 : 400}
+                fontFamily="var(--font-sans), sans-serif"
+                style={{ transition: "fill-opacity 0.15s" }}>
+                {ax.name}
+              </text>
+              <text x={ax.labelX} y={ax.labelY + 7} textAnchor={align}
+                dominantBaseline="middle"
+                fill={ax.coverageColor} fillOpacity={isHov || isSel ? 0.9 : 0.5}
+                fontSize={10} fontFamily="var(--font-sans), sans-serif"
+                style={{ transition: "fill-opacity 0.15s" }}>
+                {ax.supply > 0 ? `${ax.supply} people` : "no team"}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+    )
+  }
+
+  const now = new Date()
+  const currentQ = Math.floor(now.getMonth() / 3)
+  const absQ = currentQ + quarterOffset
+  const qYear = now.getFullYear() + Math.floor(absQ / 4)
+  const qIndex = ((absQ % 4) + 4) % 4
+  const qStartMonth = qIndex * 3
+  const qStart = new Date(qYear, qStartMonth, 1)
+  const qEnd = new Date(qYear, qStartMonth + 3, 0)
+  const fmtD = (d: Date) => `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString("default", { month: "short" })} ${d.getFullYear()}`
+  const quarterLabel = quarterOffset === 0 ? "This quarter" : quarterOffset === -1 ? "Last quarter" : quarterOffset === 1 ? "Next quarter" : `Q${qIndex + 1} ${qYear}`
+  const rangeStr = `${fmtD(qStart)} – ${fmtD(qEnd)}`
+
+  return (
+    <div style={{ display: "flex", flex: 1, flexDirection: "column", height: "100%", overflow: "hidden", background: t.bg }}>
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {drilldown !== null ? (
+              <>
+                <HoverBtn onClick={() => { setDrilldown(null); setSelectedSkill(null); setHoveredSkill(null) }} style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.captionMutedFg, cursor: "pointer", fontSize: 14 }}>
+                  <ChevronLeft size={13} strokeWidth={0.9}/>
+                  <span style={{ fontFamily: "var(--font-lexend), sans-serif", fontWeight: 400 }}>Pipeline graph</span>
+                </HoverBtn>
+                <span style={{ color: t.captionMutedFg, fontSize: 14 }}>/</span>
+                <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>{SKILLS_CATEGORIES[drilldown].name}</h1>
+              </>
+            ) : (
+              <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Pipeline graph</h1>
+            )}
+          </div>
+          <button style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}>
+            <Plus size={14} strokeWidth={0.9}/>
+          </button>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 24px 12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+            <HoverBtn onClick={() => setQuarterOffset(o => o - 1)} style={s.secIconBtn}>
+              <ChevronLeft size={14} strokeWidth={0.9}/>
+            </HoverBtn>
+            <HoverBtn onClick={() => setQuarterOffset(o => o + 1)} style={s.secIconBtn}>
+              <ChevronRight size={14} strokeWidth={0.9}/>
+            </HoverBtn>
+          </div>
+          <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14, flexShrink: 0, whiteSpace: "nowrap" as const }}>
+            <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>{quarterLabel}</span>
+            {rangeStr}
+            <ChevronDown size={12} strokeWidth={0.9}/>
+          </HoverBtn>
+          <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
+          <FilterChip category="Project stage" operator="is any of" value="On track, +2" onClear={() => {}}/>
+          <HoverBtn style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4, flexShrink: 0 }}>
+            <Plus size={11} strokeWidth={0.9}/>Filter
+          </HoverBtn>
+        </div>
+      </div>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
+        <div ref={containerRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+          {drilldown !== null ? renderSkillRadar() : renderRadar()}
+        </div>
+        <div style={{ width: 260, borderLeft: `1px solid ${t.border}`, padding: 16, overflowY: "auto", flexShrink: 0 }}>
+          {renderSidebar()}
+        </div>
       </div>
     </div>
   )
@@ -6795,50 +7550,41 @@ function TalentPersonDetail({ personIdx, people, roles, departments, edgeDefs, o
 const STAGE_COLOR: Record<string, string> = { active: "#10b981", planning: "#f59e0b", "on-hold": "#ef4444", completed: "#6b7280" }
 const HEALTH_COLOR: Record<string, string> = { "on-track": "#10b981", "at-risk": "#f59e0b", "off-track": "#ef4444" }
 
-type PGNode = { id: number, name: string, initials: string, stage: string, health: string, budget: number, unit: string, clientId: number, ownerId: number, office: string, code: string, x: number, y: number, fx?: number | null, fy?: number | null }
-type PGLink = { source: number | PGNode, target: number | PGNode, strength: number }
+
 
 function ProjectGraphView({ projects, roles, people, clientsFull }: any) {
-  const nodeDefs = useMemo(() => projects.map((p: any, i: number) => {
-    const parts = p.name.trim().split(/\s+/)
-    const initials = ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? parts[0]?.[1] ?? "")).toUpperCase()
-    return { id: i, name: p.name, initials, stage: p.stage, health: p.health, budget: p.budget, unit: p.unit, clientId: p.clientId, ownerId: p.ownerId, office: p.office, code: p.code }
-  }), [projects])
+  const [view, setView] = useState<"clients" | "projects">("clients")
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
+  const [healthFilter, setHealthFilter] = useState<string | null>(null)
+  const [hovered, setHovered] = useState<string | null>(null)
+  const [hoveredAt, setHoveredAt] = useState(0)
+  const [transitionStart, setTransitionStart] = useState(0)
 
-  const edgeDefs = useMemo(() => {
-    const buRoles = new Map<string, Set<number>>()
-    BUSINESS_UNITS_FULL.forEach(bu => {
-      const s = new Set<number>(); bu.departments.forEach((d: any) => d.linkedRoles.forEach((lr: any) => s.add(lr.roleId))); buRoles.set(bu.name, s)
-    })
-    const result: { source: number, target: number, strength: number }[] = []
-    for (let i = 0; i < projects.length; i++) {
-      for (let j = i + 1; j < projects.length; j++) {
-        const a = projects[i], b = projects[j]; let score = 0
-        if (a.unit === b.unit) score += 4
-        if (a.clientId === b.clientId) score += 3
-        if (a.ownerId === b.ownerId) score += 3
-        const aR = buRoles.get(a.unit) ?? new Set(), bR = buRoles.get(b.unit) ?? new Set()
-        if ([...aR].filter(r => bR.has(r)).length >= 4) score += 2
-        if (score >= 3) result.push({ source: i, target: j, strength: Math.min(score, 10) })
-      }
-    }
-    return result
+  const fmt = (n: number) => n >= 1000000 ? `$${(n / 1000000).toFixed(1)}M` : `$${(n / 1000).toFixed(0)}K`
+
+  const clientBudgets = useMemo(() => {
+    const budgets: Record<number, number> = {}
+    projects.forEach((p: any) => { budgets[p.clientId] = (budgets[p.clientId] ?? 0) + (p.budget ?? 0) })
+    return budgets
   }, [projects])
 
-  const d3NodesRef = useRef<PGNode[]>([])
-  const d3LinksRef = useRef<PGLink[]>([])
-  const simRef = useRef<any>(null)
-  const frameRef = useRef(0)
-  const [, setRenderTick] = useState(0)
-  const svgRef = useRef<SVGSVGElement>(null)
+  const projectsByClient = useMemo(() => {
+    const map: Record<number, any[]> = {}
+    projects.forEach((p: any, i: number) => { if (!map[p.clientId]) map[p.clientId] = []; map[p.clientId].push({ ...p, idx: i }) })
+    return map
+  }, [projects])
+
+  const clientIds = useMemo(() =>
+    Object.keys(clientBudgets).map(Number).sort((a, b) => (clientBudgets[b] ?? 0) - (clientBudgets[a] ?? 0))
+  , [clientBudgets])
+
   const containerRef = useRef<HTMLDivElement>(null)
-  const [dims, setDims] = useState({ w: 680, h: 480 })
-  const dragRef = useRef<{ nodeId: number, startX: number, startY: number, moved: boolean } | null>(null)
-  const [zoom, setZoom] = useState(1)
-  const [selected, setSelected] = useState<number | null>(null)
-  const [agentInput, setAgentInput] = useState("")
-  const [agentFilter, setAgentFilter] = useState<{ response: string, matchIds: Set<number> } | null>(null)
-  const startLoopRef = useRef<() => void>(() => {})
+  const [dims, setDims] = useState({ w: 800, h: 600 })
+  const nodesRef = useRef<SGNode[]>([])
+  const linksRef = useRef<SGLink[]>([])
+  const simRef = useRef<any>(null)
+  const rafRef = useRef<number | null>(null)
+  const [, setTick] = useState(0)
 
   useEffect(() => {
     const el = containerRef.current; if (!el) return
@@ -6848,290 +7594,281 @@ function ProjectGraphView({ projects, roles, people, clientsFull }: any) {
 
   useEffect(() => {
     const { w, h } = dims
-    const r0 = Math.min(w, h) * 0.32
-    const d3Nodes: PGNode[] = nodeDefs.map((n: any, i: number) => ({
-      ...n, x: w / 2 + Math.cos((i / nodeDefs.length) * Math.PI * 2) * r0, y: h / 2 + Math.sin((i / nodeDefs.length) * Math.PI * 2) * r0,
-    }))
-    const d3Links: PGLink[] = edgeDefs.map((e: any) => ({ ...e }))
-    const sim = forceSimulation<PGNode>(d3Nodes)
-      .force("link", forceLink<PGNode, PGLink>(d3Links).id(d => d.id).distance(100).strength((d: any) => d.strength * 0.05))
-      .force("charge", forceManyBody().strength(-320))
-      .force("center", forceCenter(w / 2, h / 2).strength(0.8))
-      .force("collide", forceCollide(36))
-      .stop()
-    sim.tick(500)
-    d3NodesRef.current = d3Nodes; d3LinksRef.current = d3Links; simRef.current = sim
-    cancelAnimationFrame(frameRef.current); frameRef.current = 0; setRenderTick(c => c + 1)
-    function startLoop() {
-      if (frameRef.current) return
-      function loop() {
-        setRenderTick(c => c + 1)
-        if (sim.alpha() > sim.alphaMin()) { frameRef.current = requestAnimationFrame(loop) }
-        else { sim.stop(); frameRef.current = 0; setRenderTick(c => c + 1) }
-      }
-      frameRef.current = requestAnimationFrame(loop)
-    }
-    startLoopRef.current = startLoop
-    return () => { sim.stop(); cancelAnimationFrame(frameRef.current); frameRef.current = 0 }
-  }, [nodeDefs, edgeDefs, dims])
+    if (w < 10 || h < 10) return
+    simRef.current?.stop()
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
 
-  function onNodeMouseDown(e: React.MouseEvent, nodeId: number) { e.stopPropagation(); dragRef.current = { nodeId, startX: e.clientX, startY: e.clientY, moved: false } }
-  function onSvgMouseMove(e: React.MouseEvent<SVGSVGElement>) {
-    if (!dragRef.current) return
-    const { nodeId } = dragRef.current
-    const dx = e.clientX - dragRef.current.startX, dy = e.clientY - dragRef.current.startY
-    if (!dragRef.current.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
-      dragRef.current.moved = true
-      const n = d3NodesRef.current[nodeId]; if (n) { n.fx = n.x; n.fy = n.y }
-      simRef.current?.alphaTarget(0.3).restart(); startLoopRef.current()
-    }
-    if (!dragRef.current.moved) return
-    const rect = svgRef.current!.getBoundingClientRect()
-    const n = d3NodesRef.current[nodeId]; if (n) { n.fx = (e.clientX - rect.left) / zoom; n.fy = (e.clientY - rect.top) / zoom }
-    setRenderTick(c => c + 1)
-  }
-  function onNodeMouseUp(nodeId: number) {
-    if (!dragRef.current) return
-    if (!dragRef.current.moved) setSelected(s => s === nodeId ? null : nodeId)
-    else { const n = d3NodesRef.current[nodeId]; if (n) { n.fx = null; n.fy = null }; simRef.current?.alphaTarget(0) }
-    dragRef.current = null
-  }
-  function onSvgMouseUp() {
-    if (!dragRef.current) return
-    const n = d3NodesRef.current[dragRef.current.nodeId]; if (n) { n.fx = null; n.fy = null }
-    simRef.current?.alphaTarget(0); dragRef.current = null
-  }
+    const maxBudget = Math.max(...clientIds.map(ci => clientBudgets[ci] ?? 0), 1)
+    let nodes: SGNode[] = []
+    let links: SGLink[] = []
 
-  function runQuery(raw: string) {
-    const q = raw.toLowerCase().trim()
-    const match = (pred: (p: any) => boolean) => new Set<number>(projects.map((_: any, i: number) => i).filter((i: number) => pred(projects[i])))
-    // Stage
-    if (q.includes("active") && !q.includes("at")) { const ids = match(p => p.stage === "active"); setAgentFilter({ matchIds: ids, response: `${ids.size} active projects` }); return }
-    if (q.includes("planning")) { const ids = match(p => p.stage === "planning"); setAgentFilter({ matchIds: ids, response: `${ids.size} projects in planning` }); return }
-    if (q.includes("on hold") || q.includes("on-hold")) { const ids = match(p => p.stage === "on-hold"); setAgentFilter({ matchIds: ids, response: `${ids.size} projects on hold` }); return }
-    // Health
-    if (q.includes("at risk") || q.includes("at-risk")) { const ids = match(p => p.health === "at-risk"); setAgentFilter({ matchIds: ids, response: `${ids.size} at-risk projects` }); return }
-    if (q.includes("off track") || q.includes("off-track")) { const ids = match(p => p.health === "off-track"); setAgentFilter({ matchIds: ids, response: `${ids.size} off-track projects` }); return }
-    if (q.includes("on track")) { const ids = match(p => p.health === "on-track"); setAgentFilter({ matchIds: ids, response: `${ids.size} on-track projects` }); return }
-    // Business units
-    for (const bu of BUSINESS_UNITS_FULL) {
-      if (q.includes(bu.name.toLowerCase())) { const ids = match(p => p.unit === bu.name); setAgentFilter({ matchIds: ids, response: `${ids.size} ${bu.name} projects` }); return }
+    if (view === "clients") {
+      nodes = clientIds.map((ci, i) => {
+        const client = clientsFull[ci]
+        const budget = clientBudgets[ci] ?? 0
+        const pCount = projectsByClient[ci]?.length ?? 0
+        const r = 26 + ((budget / maxBudget) * 34)
+        const angle = (i / clientIds.length) * Math.PI * 2 - Math.PI / 2
+        const name = (client?.name ?? `Client ${ci}`)
+        const shortName = name.length > 11 ? name.slice(0, 10) + "…" : name
+        return { id: `client-${ci}`, type: "category" as const, label: shortName, sub: `${pCount}p · ${fmt(budget)}`, r, x: w / 2 + Math.cos(angle) * Math.min(w, h) * 0.06, y: h / 2 + Math.sin(angle) * Math.min(w, h) * 0.06 }
+      })
+    } else if (view === "projects" && selectedClientId !== null) {
+      const client = clientsFull[selectedClientId]
+      const clientProjects = projectsByClient[selectedClientId] ?? []
+      const filtered = healthFilter ? clientProjects.filter((p: any) => p.health === healthFilter) : clientProjects
+      const maxPBudget = Math.max(...filtered.map((p: any) => p.budget ?? 0), 1)
+      const centerNode: SGNode = { id: `client-${selectedClientId}`, type: "category" as const, label: (client?.name ?? "").length > 11 ? (client?.name ?? "").slice(0, 10) + "…" : (client?.name ?? ""), sub: fmt(clientBudgets[selectedClientId] ?? 0), r: 48, x: w / 2, y: h / 2, fx: w / 2, fy: h / 2 }
+      const projectNodes: SGNode[] = filtered.map((p: any, i: number) => {
+        const initials = ((p.name.split(" ")[0]?.[0] ?? "") + (p.name.split(" ")[1]?.[0] ?? "")).toUpperCase()
+        const r = 16 + ((p.budget / maxPBudget) * 24)
+        const angle = (i / Math.max(filtered.length, 1)) * Math.PI * 2
+        return { id: `project-${p.idx}`, type: "skill" as const, label: initials, sub: fmt(p.budget), r, x: w / 2 + Math.cos(angle) * Math.min(w, h) * 0.32, y: h / 2 + Math.sin(angle) * Math.min(w, h) * 0.32 }
+      })
+      nodes = [centerNode, ...projectNodes]
+      links = projectNodes.map(n => ({ source: `client-${selectedClientId}`, target: n.id }))
     }
-    // Clients
-    for (const [ci, client] of (clientsFull as any[]).entries()) {
-      if (q.includes(client.name.toLowerCase())) { const ids = match(p => p.clientId === ci); setAgentFilter({ matchIds: ids, response: `${ids.size} projects for ${client.name}` }); return }
-    }
-    // Owner/PM
-    for (const [pi, person] of (people as any[]).entries()) {
-      const first = person.name.split(" ")[0].toLowerCase()
-      if (q.includes(first)) { const ids = match(p => p.ownerId === pi); if (ids.size > 0) { setAgentFilter({ matchIds: ids, response: `${ids.size} projects owned by ${person.name.split(" ")[0]}` }); return } }
-    }
-    // Roles
-    for (const [ri, role] of (roles as any[]).entries()) {
-      if (q.includes(role.name.toLowerCase())) {
-        const buSet = new Set(BUSINESS_UNITS_FULL.filter(bu => bu.departments.some((d: any) => d.linkedRoles.some((lr: any) => lr.roleId === ri))).map(bu => bu.name))
-        const ids = match(p => buSet.has(p.unit)); setAgentFilter({ matchIds: ids, response: `${ids.size} projects using ${role.name}s` }); return
-      }
-    }
-    // Office
-    for (const kw of ["new york", "london", "sydney", "beaverton", "hilversum", "shanghai", "global"]) {
-      if (q.includes(kw)) { const ids = match(p => p.office.toLowerCase().includes(kw)); setAgentFilter({ matchIds: ids, response: `${ids.size} projects in ${kw}` }); return }
-    }
-    // Budget threshold: "over 200k" / "above 300k"
-    const bm = q.match(/(\d+)k/)
-    if (bm) {
-      const threshold = parseInt(bm[1]) * 1000
-      const over = q.includes("over") || q.includes("above") || q.includes("more")
-      const ids = match(p => over ? p.budget >= threshold : p.budget <= threshold)
-      setAgentFilter({ matchIds: ids, response: `${ids.size} projects ${over ? "over" : "under"} $${bm[1]}k` }); return
-    }
-    setAgentFilter({ matchIds: new Set(projects.map((_: any, i: number) => i)), response: `Showing all ${projects.length} projects` })
-  }
 
-  const hasSelection = selected !== null
-  const agentActive = agentFilter !== null
-  const activeCount = projects.filter((p: any) => p.stage === "active").length
-  const atRiskCount = projects.filter((p: any) => p.health === "at-risk").length
-  const totalBudget = projects.reduce((s: number, p: any) => s + (p.budget || 0), 0)
-  const fmt = (n: number) => n >= 1000000 ? `$${(n / 1000000).toFixed(1)}M` : `$${(n / 1000).toFixed(0)}K`
+    nodesRef.current = nodes
+    linksRef.current = links
+    setTransitionStart(Date.now())
 
-  const neighbourIds = useMemo(() => {
-    if (selected === null) return new Set<number>()
-    return new Set(edgeDefs.filter(e => e.source === selected || e.target === selected).map(e => e.source === selected ? e.target : e.source))
-  }, [selected, edgeDefs])
+    const isClients = view === "clients"
+    const sim = forceSimulation<SGNode>(nodes)
+      .force("link", forceLink<SGNode, SGLink>(links).id((d: any) => d.id)
+        .distance((d: any) => { const src = d.source as SGNode, tgt = d.target as SGNode; return src.r + tgt.r + (isClients ? 4 : 32) })
+        .strength(isClients ? 0.3 : 0.9))
+      .force("charge", forceManyBody().strength(isClients ? -80 : -380))
+      .force("center", forceCenter(w / 2, h / 2).strength(isClients ? 1.5 : 0.4))
+      .force("collide", forceCollide<SGNode>((d) => d.r + (isClients ? 1 : 14)))
 
-  const selProject = selected !== null ? (() => {
-    const p = projects[selected]
-    const bu = BUSINESS_UNITS_FULL.find(b => b.name === p.unit)
-    const buProject = bu?.projectsList?.find((bp: any) => bp.title === p.name)
-    const buRoleIds = new Set<number>(); bu?.departments.forEach((d: any) => d.linkedRoles.forEach((lr: any) => buRoleIds.add(lr.roleId)))
-    return {
-      name: p.name, code: p.code, stage: p.stage, health: p.health, unit: p.unit,
-      client: clientsFull[p.clientId]?.name ?? "—", owner: people[p.ownerId]?.name ?? "—",
-      budget: p.budget, office: p.office, teamSize: buProject?.team ?? "—",
-      roles: [...buRoleIds].slice(0, 4).map((id: number) => roles[id]?.name).filter(Boolean),
-      connections: neighbourIds.size,
+    simRef.current = sim
+    if (isClients) {
+      sim.stop().tick(500)
+      setTick(k => k + 1)
+      sim.alphaTarget(0.35).alphaDecay(0.0008).velocityDecay(0.3).restart()
+    } else {
+      sim.alpha(1).alphaTarget(0.01).alphaDecay(0.018).restart()
     }
-  })() : null
 
-  const PTag = ({ label }: { label: string }) => (
-    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: t.fgAlpha10, color: t.fg, fontFamily: "var(--font-sans), sans-serif", whiteSpace: "nowrap" as const }}>{label}</span>
-  )
+    function loop() { setTick(k => k + 1); rafRef.current = requestAnimationFrame(loop) }
+    rafRef.current = requestAnimationFrame(loop)
+    return () => { sim.stop(); if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null } }
+  }, [view, selectedClientId, healthFilter, dims.w, dims.h])
 
-  return (
-    <div style={{ flex: 1, display: "flex", overflow: "hidden", background: t.bg }}>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, overflow: "hidden", padding: "24px 0 24px 28px" }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: t.fg, margin: "0 0 4px", fontFamily: "var(--font-sans), sans-serif" }}>Project Graph</h2>
-        <p style={{ fontSize: 13, color: t.mutedFg, margin: "0 0 16px", fontFamily: "var(--font-sans), sans-serif" }}>Click nodes for details, drag to rearrange. Edges = shared team, client, or PM.</p>
-        <div ref={containerRef} style={{ flex: 1, position: "relative" as const, overflow: "hidden", minHeight: 0 }}>
-          {/* Toolbar */}
-          <div style={{ position: "absolute" as const, top: 12, left: 12, right: 12, display: "flex", alignItems: "center", gap: 8, zIndex: 10 }}>
-            {/* Stage legend */}
-            {(["active","planning","on-hold"] as const).map(s => (
-              <button key={s} onClick={() => { const ids = new Set<number>(projects.map((_: any, i: number) => i).filter((i: number) => projects[i].stage === s)); setAgentFilter({ matchIds: ids, response: `${ids.size} ${s} projects` }) }}
-                style={{ height: 24, padding: "0 10px", borderRadius: 100, border: `1px solid ${t.border}`, background: t.bg, color: t.mutedFg, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-sans), sans-serif" }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: STAGE_COLOR[s], display: "inline-block", flexShrink: 0 }} />
-                {s.charAt(0).toUpperCase() + s.slice(1).replace("-", " ")}
-              </button>
-            ))}
-            <div style={{ flex: 1 }} />
-            {[{ label: "+", action: () => setZoom(z => Math.min(2, +(z + 0.15).toFixed(2))) },
-              { label: "−", action: () => setZoom(z => Math.max(0.4, +(z - 0.15).toFixed(2))) },
-              { label: <RefreshCw size={13} strokeWidth={0.9} />, action: () => setZoom(1) }].map(({ label, action }, i) => (
-              <button key={i} onClick={action} style={{ width: 24, height: 24, borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.mutedFg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontFamily: "var(--font-sans), sans-serif" }}>{label}</button>
-            ))}
-          </div>
-          {/* SVG */}
-          <svg ref={svgRef} style={{ position: "absolute" as const, inset: 0, width: "100%", height: "100%", display: "block" }}
-            onMouseMove={onSvgMouseMove} onMouseUp={onSvgMouseUp} onMouseLeave={onSvgMouseUp}>
-            <g transform={`translate(${dims.w / 2 * (1 - zoom)},${dims.h / 2 * (1 - zoom)}) scale(${zoom})`}>
-              <rect x={-9999} y={-9999} width={99999} height={99999} fill="transparent" onClick={() => setSelected(null)} />
-              {d3LinksRef.current.map((e, i) => {
-                const a = e.source as PGNode, b = e.target as PGNode
-                if (a.x == null || b.x == null) return null
-                const agentVis = !agentActive || (agentFilter!.matchIds.has(a.id) && agentFilter!.matchIds.has(b.id))
-                const isConn = hasSelection && (a.id === selected || b.id === selected)
-                const op = !agentVis ? 0.03 : hasSelection ? (isConn ? 0.85 : 0.06) : (edgeDefs[i]?.strength >= 6 ? 0.55 : 0.25)
-                return <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-                  stroke={isConn ? t.fg : t.border} strokeDasharray={isConn ? undefined : "4 3"}
-                  strokeWidth={isConn ? 2 : 1} opacity={op} style={{ pointerEvents: "none" as const }} />
-              })}
-              {d3NodesRef.current.map(n => {
-                if (n.x == null) return null
-                const isSel = selected === n.id
-                const isNeighbour = neighbourIds.has(n.id)
-                const agentMatch = !agentActive || agentFilter!.matchIds.has(n.id)
-                const dimmed = !agentMatch || (agentMatch && hasSelection && !isSel && !isNeighbour)
-                const stageCol = STAGE_COLOR[n.stage] ?? t.fg
-                return (
-                  <g key={n.id} style={{ cursor: "pointer" }} opacity={dimmed ? 0.12 : 1}
-                    onMouseDown={ev => { ev.stopPropagation(); onNodeMouseDown(ev, n.id) }}
-                    onMouseUp={ev => { ev.stopPropagation(); onNodeMouseUp(n.id) }}
-                    onClick={ev => ev.stopPropagation()}>
-                    {/* Stage ring */}
-                    <circle cx={n.x} cy={n.y} r={25} fill="none" stroke={stageCol} strokeWidth={isSel ? 2.5 : 1.5} opacity={isSel ? 1 : 0.7} />
-                    <circle cx={n.x} cy={n.y} r={21} fill={t.fg} />
-                    <text x={n.x} y={n.y} textAnchor="middle" dominantBaseline="central"
-                      fill={t.bg} fontSize={10} fontWeight={600}
-                      style={{ userSelect: "none" as const, pointerEvents: "none" as const, fontFamily: "var(--font-sans), sans-serif" }}>
-                      {n.initials}
-                    </text>
-                    <text x={n.x} y={n.y + 34} textAnchor="middle" fill={t.fg} fontSize={10}
-                      style={{ userSelect: "none" as const, pointerEvents: "none" as const, fontFamily: "var(--font-sans), sans-serif" }}>
-                      {n.name.split(" ")[0]}
-                    </text>
-                  </g>
-                )
-              })}
-            </g>
-          </svg>
-          {/* Agent input */}
-          <div style={{ position: "absolute" as const, bottom: 16, left: 16, right: 16, zIndex: 10 }}>
-            {agentFilter && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 100, background: t.fg, color: t.bg, fontSize: 12, fontFamily: "var(--font-sans), sans-serif", fontWeight: 450 }}>
-                  <Layers size={11} strokeWidth={2} />{agentFilter.response}
-                  <button onClick={() => { setAgentFilter(null); setAgentInput("") }}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: t.bg, opacity: 0.6, padding: 0, display: "flex", alignItems: "center", marginLeft: 2 }}>
-                    <X size={12} strokeWidth={2} />
-                  </button>
-                </div>
-              </div>
-            )}
-            <form onSubmit={ev => { ev.preventDefault(); runQuery(agentInput); setAgentInput("") }}
-              style={{ display: "flex", alignItems: "center", gap: 8, background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: "8px 12px", boxShadow: "0 2px 12px rgba(0,0,0,0.12)" }}>
-              <input value={agentInput} onChange={e => setAgentInput(e.target.value)}
-                placeholder="Ask about projects… e.g. 'show at-risk' or 'Jordan projects' or 'over 300k'"
-                style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 13, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }} />
-              <button type="submit" disabled={!agentInput.trim()}
-                style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: agentInput.trim() ? t.fg : t.fgAlpha10, color: agentInput.trim() ? t.bg : t.mutedFg, cursor: agentInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>
-                <ArrowUp size={13} strokeWidth={2} />
-              </button>
-            </form>
-          </div>
-          {/* Footer */}
-          <div style={{ position: "absolute" as const, bottom: 88, right: 16, display: "flex", gap: 12 }}>
-            <span style={{ fontSize: 12, color: t.mutedFg, display: "flex", alignItems: "center", gap: 4, fontFamily: "var(--font-sans), sans-serif" }}>
-              <Layers size={12} strokeWidth={0.9} /> {agentActive ? `${agentFilter!.matchIds.size}/` : ""}{projects.length} Projects
-            </span>
-            <span style={{ fontSize: 12, color: t.mutedFg, display: "flex", alignItems: "center", gap: 4, fontFamily: "var(--font-sans), sans-serif" }}>
-              <Share2 size={12} strokeWidth={0.9} /> {edgeDefs.length} Links
-            </span>
-          </div>
-        </div>
-      </div>
-      {/* Right sidebar */}
-      <div style={{ width: 288, flexShrink: 0, overflowY: "auto" as const, padding: "24px 24px 24px 16px", display: "flex", flexDirection: "column" as const, gap: 12 }}>
-        {/* Graph Stats */}
-        <div style={{ border: `1px solid ${t.border}`, borderRadius: 10, padding: "16px 18px", background: t.card }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: t.fg, margin: "0 0 14px", fontFamily: "var(--font-sans), sans-serif" }}>Graph Stats</h3>
-          {([["Total Projects", projects.length], ["Active", activeCount], ["At Risk", atRiskCount], ["Total Budget", fmt(totalBudget)]] as [string, any][]).map(([label, val]) => (
-            <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${t.fgAlpha06}` }}>
+  const nodes = nodesRef.current
+  const links = linksRef.current
+
+  function renderSidebar() {
+    if (view === "clients") {
+      const totalBudget = clientIds.reduce((sum, ci) => sum + (clientBudgets[ci] ?? 0), 0)
+      const totalProjects = projects.length
+      return (
+        <>
+          <div style={{ ...s.caseTitle, marginBottom: 12 }}>Overview</div>
+          {([["Clients", clientIds.length], ["Projects", totalProjects], ["Total budget", fmt(totalBudget)]] as [string, any][]).map(([label, val]) => (
+            <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{label}</span>
               <span style={{ fontSize: 13, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{val}</span>
             </div>
           ))}
-        </div>
-        {/* Selected Project */}
-        <div style={{ border: `1px solid ${t.border}`, borderRadius: 10, padding: "16px 18px", background: t.card }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: t.fg, margin: "0 0 12px", fontFamily: "var(--font-sans), sans-serif" }}>Selected Project</h3>
-          {selProject ? (
-            <>
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: t.fg, fontFamily: "var(--font-sans), sans-serif", lineHeight: 1.3 }}>{selProject.name}</div>
-                <div style={{ fontSize: 12, color: t.mutedFg, marginTop: 3, fontFamily: "var(--font-sans), sans-serif" }}>{selProject.code} · {selProject.unit}</div>
-                <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" as const }}>
-                  <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: STAGE_COLOR[selProject.stage] + "22", color: STAGE_COLOR[selProject.stage], fontWeight: 600, fontFamily: "var(--font-sans), sans-serif", border: `1px solid ${STAGE_COLOR[selProject.stage]}44` }}>
-                    {selProject.stage.charAt(0).toUpperCase() + selProject.stage.slice(1).replace("-", " ")}
+          <div style={{ borderTop: `1px solid ${t.border}`, margin: "16px 0" }}/>
+          <div style={{ ...s.caseTitle, marginBottom: 12 }}>By client</div>
+          {clientIds.map(ci => {
+            const client = clientsFull[ci]
+            const budget = clientBudgets[ci] ?? 0
+            const pCount = projectsByClient[ci]?.length ?? 0
+            return (
+              <div key={ci} onClick={() => { setSelectedClientId(ci); setView("projects") }}
+                style={{ marginBottom: 8, cursor: "pointer", padding: "5px 8px", borderRadius: 6, transition: "background 0.15s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = t.fgAlpha10)}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                  <span style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{client?.name ?? `Client ${ci}`}</span>
+                  <span style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{fmt(budget)}</span>
+                </div>
+                <div style={{ height: 3, borderRadius: 2, background: t.border }}>
+                  <div style={{ height: 3, borderRadius: 2, background: t.fg, opacity: 0.45, width: totalBudget > 0 ? `${Math.round((budget / totalBudget) * 100)}%` : "0%" }}/>
+                </div>
+                <div style={{ fontSize: 11, color: t.mutedFg, marginTop: 3, fontFamily: "var(--font-sans), sans-serif" }}>{pCount} project{pCount !== 1 ? "s" : ""}</div>
+              </div>
+            )
+          })}
+        </>
+      )
+    }
+    if (view === "projects" && selectedClientId !== null) {
+      const client = clientsFull[selectedClientId]
+      const clientProjects = projectsByClient[selectedClientId] ?? []
+      const totalBudget = clientBudgets[selectedClientId] ?? 0
+      const filtered = healthFilter ? clientProjects.filter((p: any) => p.health === healthFilter) : clientProjects
+      return (
+        <>
+          <div style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 2, fontFamily: "var(--font-sans), sans-serif" }}>{client?.name}</div>
+          <div style={{ ...s.caseTitle, marginBottom: 12 }}>{client?.office} · {fmt(totalBudget)} total</div>
+          <div style={{ borderTop: `1px solid ${t.border}`, margin: "12px 0" }}/>
+          <div style={{ ...s.caseTitle, marginBottom: 10 }}>{filtered.length} project{filtered.length !== 1 ? "s" : ""}</div>
+          {filtered.map((p: any) => {
+            const healthCol = HEALTH_COLOR[p.health] ?? t.mutedFg
+            return (
+              <div key={p.idx} style={{ marginBottom: 8, padding: "8px 10px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.card }}>
+                <div style={{ fontSize: 12, color: t.fg, fontFamily: "var(--font-sans), sans-serif", marginBottom: 4, lineHeight: 1.35 }}>{p.name}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 11, color: healthCol, fontFamily: "var(--font-sans), sans-serif", display: "flex", alignItems: "center", gap: 4 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: healthCol, display: "inline-block" }}/>
+                    {p.health.replace("-", " ")}
                   </span>
-                  <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: HEALTH_COLOR[selProject.health] + "22", color: HEALTH_COLOR[selProject.health], fontWeight: 600, fontFamily: "var(--font-sans), sans-serif", border: `1px solid ${HEALTH_COLOR[selProject.health]}44` }}>
-                    {selProject.health.replace("-", " ")}
-                  </span>
+                  <span style={{ fontSize: 11, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{fmt(p.budget)}</span>
                 </div>
               </div>
-              {([["Client", selProject.client], ["Owner / PM", selProject.owner], ["Budget", fmt(selProject.budget)], ["Team size", selProject.teamSize], ["Office", selProject.office], ["Connections", selProject.connections]] as [string, any][]).map(([label, val]) => (
-                <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: `1px solid ${t.fgAlpha06}` }}>
-                  <span style={{ fontSize: 12, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>{label}</span>
-                  <span style={{ fontSize: 12, fontWeight: 450, color: t.fg, fontFamily: "var(--font-sans), sans-serif" }}>{val}</span>
-                </div>
-              ))}
-              {selProject.roles.length > 0 && (
-                <div style={{ marginTop: 12 }}>
-                  <div style={{ ...s.caseTitleCompact, marginBottom: 6 }}>Roles</div>
-                  <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4 }}>{selProject.roles.map((r: string) => <PTag key={r} label={r} />)}</div>
-                </div>
-              )}
-            </>
-          ) : (
-            <p style={{ fontSize: 12, color: t.mutedFg, margin: 0, fontFamily: "var(--font-sans), sans-serif" }}>Click a node to view details</p>
-          )}
+            )
+          })}
+        </>
+      )
+    }
+    return null
+  }
+
+  return (
+    <div style={{ display: "flex", flex: 1, flexDirection: "column", height: "100%", overflow: "hidden", background: t.bg }}>
+      <SectionHeader label="Project graph"/>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
+        <div ref={containerRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+          {/* Top bar */}
+          <div style={{ position: "absolute", top: 16, left: 16, zIndex: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
+            {view === "projects" && (
+              <button onClick={() => { setView("clients"); setSelectedClientId(null); setHealthFilter(null) }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.card, color: t.fg, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-sans), sans-serif" }}>
+                <ChevronLeft size={14} strokeWidth={0.9}/> All clients
+              </button>
+            )}
+            <RadiusTab active={healthFilter === null} onClick={() => setHealthFilter(null)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+              <Circle size={10} strokeWidth={0.9} style={{ fill: healthFilter === null ? t.fg : "none" }}/>View all
+            </RadiusTab>
+            {(["on-track", "at-risk", "off-track"] as const).map(h => (
+              <RadiusTab key={h} active={healthFilter === h} onClick={() => setHealthFilter(h)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                <Circle size={10} strokeWidth={0.9} style={{ fill: healthFilter === h ? t.fg : "none" }}/>{h.replace("-", " ")}
+              </RadiusTab>
+            ))}
+            <span style={{ fontSize: 13, color: t.mutedFg, fontFamily: "var(--font-sans), sans-serif" }}>
+              {view === "clients" && "Click a client to explore their projects"}
+              {view === "projects" && selectedClientId !== null && `Node size = budget · ring = health`}
+            </span>
+          </div>
+
+          <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+            <defs>
+              <style>{`
+                @keyframes pg-float-0 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(6px,-9px)} 66%{transform:translate(-5px,7px)} }
+                @keyframes pg-float-1 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(-8px,6px)} 66%{transform:translate(7px,-5px)} }
+                @keyframes pg-float-2 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(5px,8px)} 66%{transform:translate(-6px,-6px)} }
+                @keyframes pg-float-3 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(-7px,-5px)} 66%{transform:translate(8px,4px)} }
+                @keyframes pg-float-4 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(9px,4px)} 66%{transform:translate(-4px,-8px)} }
+                @keyframes pg-float-5 { 0%,100%{transform:translate(0px,0px)} 33%{transform:translate(-6px,9px)} 66%{transform:translate(5px,-4px)} }
+              `}</style>
+              <filter id="pgv-glow">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <rect x={-9999} y={-9999} width={99999} height={99999} fill="transparent"/>
+
+            {links.map((lk, i) => {
+              const src = lk.source as SGNode, tg = lk.target as SGNode
+              if (!src.x || !tg.x) return null
+              const isHov = hovered === tg.id || hovered === src.id
+              return <line key={i} x1={src.x} y1={src.y} x2={tg.x} y2={tg.y}
+                stroke={t.fg} strokeWidth={isHov ? 2 : 1} opacity={isHov ? 0.45 : 0.18}
+                style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}/>
+            })}
+
+            {nodes.map((n, ni) => {
+              const isHov = hovered === n.id
+              const isCenterNode = view === "projects" && n.id === `client-${selectedClientId}`
+              const fillOpacity = isCenterNode ? 0.18 : isHov ? 0.14 : 0.06
+              const strokeOpacity = isCenterNode ? 1 : isHov ? 0.9 : 0.5
+              const elapsed = (Date.now() - transitionStart) / 1000
+              const delay = isCenterNode ? 0 : ni * 0.04
+              const fadeIn = view === "clients" ? 1 : Math.min(1, Math.max(0, (elapsed - delay) / 0.3))
+
+              let healthRingColor: string | null = null
+              if (n.id.startsWith("project-")) {
+                const proj = projects[parseInt(n.id.replace("project-", ""))]
+                healthRingColor = HEALTH_COLOR[proj?.health] ?? null
+              }
+
+              let dimmed = false
+              if (healthFilter && n.id.startsWith("client-") && view === "clients") {
+                const ci = parseInt(n.id.replace("client-", ""))
+                dimmed = !(projectsByClient[ci] ?? []).some((p: any) => p.health === healthFilter)
+              }
+
+              return (
+                <g key={n.id} transform={`translate(${n.x ?? 0},${n.y ?? 0})`}
+                  style={{ cursor: "pointer", opacity: dimmed ? 0.12 : fadeIn }}
+                  onMouseEnter={() => { setHovered(n.id); setHoveredAt(Date.now()) }}
+                  onMouseLeave={() => setHovered(null)}
+                  onClick={() => {
+                    if (n.id.startsWith("client-") && view === "clients") {
+                      const ci = parseInt(n.id.replace("client-", ""))
+                      setSelectedClientId(ci); setView("projects")
+                    }
+                  }}>
+                  <g style={view === "clients" ? {
+                    animation: `pg-float-${ni % 6} ${4.5 + ni * 0.7}s ease-in-out infinite`,
+                    animationDelay: `${-ni * 0.9}s`,
+                  } : {}}>
+                    {isCenterNode && <circle cx={0} cy={0} r={n.r + 10} fill="none" stroke={t.fg} strokeWidth={0.5} opacity={0.2}/>}
+                    {healthRingColor && <circle cx={0} cy={0} r={n.r + 5} fill="none" stroke={healthRingColor} strokeWidth={1.5} opacity={0.75}/>}
+                    <circle cx={0} cy={0} r={n.r}
+                      fill={t.fg} fillOpacity={fillOpacity}
+                      stroke={t.fg} strokeOpacity={strokeOpacity} strokeWidth={0.9}
+                      filter={isCenterNode || isHov ? "url(#pgv-glow)" : undefined}
+                      style={{ transition: "fill-opacity 0.2s, stroke-opacity 0.2s" }}/>
+                    <text x={0} y={n.sub ? -4 : 5} textAnchor="middle" fill={t.fg} fillOpacity={isHov || isCenterNode ? 1 : 0.75} fontSize={n.r > 35 ? 13 : 11} fontWeight={600} fontFamily="var(--font-sans), sans-serif">{n.label}</text>
+                    {n.sub && <text x={0} y={12} textAnchor="middle" fill={t.fg} fillOpacity={0.4} fontSize={9} fontFamily="var(--font-sans), sans-serif">{n.sub}</text>}
+                  </g>
+                </g>
+              )
+            })}
+
+            {/* Client hover: show project name pills */}
+            {view === "clients" && hovered && (() => {
+              const hovNode = nodes.find(n => n.id === hovered)
+              if (!hovNode || !hovNode.id.startsWith("client-")) return null
+              const ci = parseInt(hovNode.id.replace("client-", ""))
+              const clientProjs = (projectsByClient[ci] ?? []).slice(0, 5)
+              const elapsed = (Date.now() - hoveredAt) / 1000
+              return clientProjs.map((p: any, i: number) => {
+                const angle = (i / clientProjs.length) * Math.PI * 2 - Math.PI / 2
+                const dist = hovNode.r + 58 + i * 3
+                const delay = i * 0.06
+                const progress = Math.min(1, Math.max(0, (elapsed - delay) / 0.25))
+                const eased = 1 - Math.pow(1 - progress, 3)
+                const cx2 = hovNode.x + Math.cos(angle) * dist * eased
+                const cy2 = hovNode.y + Math.sin(angle) * dist * eased
+                const shortName = p.name.split(" ").slice(0, 2).join(" ")
+                return (
+                  <g key={p.idx} opacity={eased} style={{ pointerEvents: "none" }}>
+                    <line x1={hovNode.x} y1={hovNode.y} x2={cx2} y2={cy2} stroke={t.fg} strokeWidth={0.5} opacity={0.2 * eased}/>
+                    <rect x={cx2 - 44} y={cy2 - 10} width={88} height={20} rx={10} fill={t.fg} fillOpacity={0.07} stroke={t.fg} strokeOpacity={0.25} strokeWidth={0.9}/>
+                    <text x={cx2} y={cy2 + 5} textAnchor="middle" fill={t.fg} fillOpacity={0.7 * eased} fontSize={10} fontFamily="var(--font-sans), sans-serif">{shortName}</text>
+                  </g>
+                )
+              })
+            })()}
+          </svg>
+        </div>
+
+        <div style={{ width: 260, borderLeft: `1px solid ${t.border}`, padding: 16, overflowY: "auto", flexShrink: 0 }}>
+          {renderSidebar()}
         </div>
       </div>
     </div>
   )
 }
 
-// ── Skills Graph ──
+// ── Company Graph ──
 const SKILLS_CATEGORIES = [
   { name: "Design", color: "#6366f1", skills: ["Brand Identity","Typography","Visual Design","Figma","Illustration","Art Direction","Motion Design","UI Design","UX Design","Prototyping","Icon Design","Design Systems","Print Design","Packaging"] },
   { name: "Engineering", color: "#10b981", skills: ["React","TypeScript","Next.js","Node.js","GraphQL","CSS/SCSS","Web Accessibility","Performance","APIs","Testing","DevOps","Mobile Dev","CMS Integration","Analytics Tracking"] },
@@ -7142,7 +7879,7 @@ const SKILLS_CATEGORIES = [
   { name: "Analytics", color: "#8b5cf6", skills: ["Data Visualisation","Reporting","Google Analytics","Tableau","SQL","Python","Media Mix Modelling","Attribution","Dashboard Building","Research & Insights","Forecasting","Tag Management","Data Strategy","Experimentation"] },
 ]
 
-// Map each role to a category and skills for the Skills Graph
+// Map each role to a category and skills for the Company Graph
 const ROLE_SKILLS_EXTENDED: Record<string, { category: string, skills: string[] }> = {
   "Designer":             { category: "Design",       skills: ["Visual Design","Figma","Brand Identity","Typography","Design Systems"] },
   "Senior Designer":      { category: "Design",       skills: ["Art Direction","Visual Design","Figma","Design Systems","Prototyping"] },
@@ -7167,10 +7904,10 @@ const EXPERIENCE_INDUSTRIES = [
   { name: "Retail",          clients: ["Amazon", "IKEA", "Uniqlo", "Sephora", "eBay", "Zalando"] },
 ]
 
-type SGNode = { id: string, type: "category" | "skill" | "person", label: string, sub: string, r: number, x: number, y: number, fx?: number | null, fy?: number | null }
-type SGLink = { source: string | SGNode, target: string | SGNode }
+type SGNode = { id: string, type: "category" | "skill" | "person", label: string, sub: string, r: number, x: number, y: number, fx?: number | null, fy?: number | null, color?: string }
+type SGLink = { source: string | SGNode, target: string | SGNode, color?: string }
 
-function SkillsGraphView({ people: allEmployees, contractors: allContractors, roles, modeOrder, setModeOrder, peopleOrder, setPeopleOrder }: any) {
+function CompanyGraphView({ people: allEmployees, contractors: allContractors, roles, modeOrder, setModeOrder, peopleOrder, setPeopleOrder }: any) {
   const [view, setView] = useState<"categories" | "skills" | "people" | "person-skills">("categories")
   const [selCat, setSelCat] = useState<string | null>(null)
   const [selSkill, setSelSkill] = useState<string | null>(null)
@@ -7308,14 +8045,18 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
       } else if (view === "skills" && selCat) {
         const indDef = EXPERIENCE_INDUSTRIES.find(i => i.name === selCat)!
         const centerNode: SGNode = { id: selCat, type: "category", label: selCat, sub: "", r: 44, x: w/2, y: h/2 }
+        const clientCounts = indDef.clients.map(client => people.filter((p: any) => getPersonClients(p).includes(client)).length)
+        const maxClientCount = Math.max(...clientCounts, 1)
         const clientNodes: SGNode[] = indDef.clients.map((client, i) => {
-          const count = people.filter((p: any) => getPersonClients(p).includes(client)).length
+          const count = clientCounts[i]
+          const ratio = count / maxClientCount
+          const color = count === 0 ? "#6b7280" : ratio >= 0.5 ? HEALTH_COLOR["on-track"] : HEALTH_COLOR["at-risk"]
           const angle = (i / indDef.clients.length) * Math.PI * 2
           const r0 = Math.min(w, h) * 0.3
-          return { id: client, type: "skill" as const, label: client, sub: count > 0 ? `${count}` : "—", r: count > 0 ? 22 + count * 3 : 18, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0 }
+          return { id: client, type: "skill" as const, label: client, sub: count > 0 ? `${count}` : "—", r: count > 0 ? 22 + count * 3 : 18, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0, color }
         })
         nodes = [centerNode, ...clientNodes]
-        links = clientNodes.map(c => ({ source: selCat, target: c.id }))
+        links = clientNodes.map(c => ({ source: selCat, target: c.id, color: c.color }))
       } else if (view === "people" && selSkill) {
         const matching = people.filter((p: any) => getPersonClients(p).includes(selSkill))
         const centerNode: SGNode = { id: selSkill, type: "skill", label: selSkill, sub: `${matching.length} people`, r: 36, x: w/2, y: h/2 }
@@ -7323,10 +8064,12 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
           const initials = p.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2)
           const angle = (i / Math.max(matching.length, 1)) * Math.PI * 2
           const r0 = Math.min(w, h) * 0.28
-          return { id: p.name, type: "person" as const, label: initials, sub: roles[p.roleId]?.name ?? "", r: 22, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0 }
+          const score = (p.deliveryTeamIds?.length ?? 0) * 2 + (p.groupIds?.length ?? 0)
+          const color = score >= 4 ? HEALTH_COLOR["on-track"] : score >= 2 ? HEALTH_COLOR["at-risk"] : "#6b7280"
+          return { id: p.name, type: "person" as const, label: initials, sub: roles[p.roleId]?.name ?? "", r: 22, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0, color }
         })
         nodes = [centerNode, ...personNodes]
-        links = personNodes.map(n => ({ source: selSkill, target: n.id }))
+        links = personNodes.map(n => ({ source: selSkill, target: n.id, color: n.color }))
       }
     } else if (view === "categories") {
       const peopleCounts = SKILLS_CATEGORIES.map(cat => people.filter((p: any) => getRoleData(p).category === cat.name).length)
@@ -7340,14 +8083,18 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
     } else if (view === "skills" && selCat) {
       const catDef = SKILLS_CATEGORIES.find(c => c.name === selCat)!
       const centerNode: SGNode = { id: selCat, type: "category", label: selCat, sub: "", r: 44, x: w/2, y: h/2 }
+      const skillCounts = catDef.skills.map(skill => people.filter((p: any) => getRoleData(p).skills.includes(skill)).length)
+      const maxSkillCount = Math.max(...skillCounts, 1)
       const skillNodes: SGNode[] = catDef.skills.map((skill, i) => {
-        const count = people.filter((p: any) => getRoleData(p).skills.includes(skill)).length
+        const count = skillCounts[i]
+        const ratio = count / maxSkillCount
+        const color = count === 0 ? "#6b7280" : ratio >= 0.5 ? HEALTH_COLOR["on-track"] : HEALTH_COLOR["at-risk"]
         const angle = (i / catDef.skills.length) * Math.PI * 2
         const r0 = Math.min(w, h) * 0.3
-        return { id: skill, type: "skill" as const, label: skill, sub: count > 0 ? `${count}` : "—", r: count > 0 ? 22 + count * 3 : 18, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0 }
+        return { id: skill, type: "skill" as const, label: skill, sub: count > 0 ? `${count}` : "—", r: count > 0 ? 22 + count * 3 : 18, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0, color }
       })
       nodes = [centerNode, ...skillNodes]
-      links = skillNodes.map(s => ({ source: selCat, target: s.id }))
+      links = skillNodes.map(s => ({ source: selCat, target: s.id, color: s.color }))
     } else if (view === "people" && selSkill) {
       const matching = people.filter((p: any) => getRoleData(p).skills.includes(selSkill))
       const centerNode: SGNode = { id: selSkill, type: "skill", label: selSkill, sub: `${matching.length} people`, r: 36, x: w/2, y: h/2 }
@@ -7355,10 +8102,12 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
         const initials = p.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2)
         const angle = (i / matching.length) * Math.PI * 2
         const r0 = Math.min(w, h) * 0.28
-        return { id: p.name, type: "person" as const, label: initials, sub: roles[p.roleId]?.name ?? "", r: 22, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0 }
+        const score = (p.deliveryTeamIds?.length ?? 0) * 2 + (p.groupIds?.length ?? 0)
+        const color = score >= 4 ? HEALTH_COLOR["on-track"] : score >= 2 ? HEALTH_COLOR["at-risk"] : "#6b7280"
+        return { id: p.name, type: "person" as const, label: initials, sub: roles[p.roleId]?.name ?? "", r: 22, x: w/2 + Math.cos(angle)*r0, y: h/2 + Math.sin(angle)*r0, color }
       })
       nodes = [centerNode, ...personNodes]
-      links = personNodes.map(n => ({ source: selSkill, target: n.id }))
+      links = personNodes.map(n => ({ source: selSkill, target: n.id, color: n.color }))
     } else if (view === "person-skills" && selPerson) {
       const roleData = getRoleData(selPerson)
       const initials = selPerson.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2)
@@ -7619,7 +8368,7 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
 
   return (
     <div style={{ display: "flex", flex: 1, flexDirection: "column", height: "100%", overflow: "hidden", background: t.bg }}>
-      <SectionHeader label="Skills graph"/>
+      <SectionHeader label="Company graph"/>
       <div style={{ display: "flex", alignItems: "center", padding: "0 24px 12px", gap: 4 }}>
         <OfficeFilter selected={selectedOffices} onChange={setSelectedOffices}/>
         <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>
@@ -7698,8 +8447,8 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
             const isHov = hovered === tg.id || hovered === s.id
             return (
               <line key={i} x1={s.x} y1={s.y} x2={tg.x} y2={tg.y}
-                stroke={t.fg} strokeWidth={isHov ? 2 : 1}
-                opacity={isHov ? 0.5 : 0.2}
+                stroke={lk.color ?? t.fg} strokeWidth={isHov ? 2 : 1}
+                opacity={isHov ? 0.6 : 0.3}
                 style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}/>
             )
           })}
@@ -7739,6 +8488,7 @@ function SkillsGraphView({ people: allEmployees, contractors: allContractors, ro
                 animationDelay: `${-ni * 0.9}s`,
               } : {}}>
                 {isCenterNode && <circle cx={0} cy={0} r={n.r + 8} fill="none" stroke={t.fg} strokeWidth={0.5} opacity={0.2}/>}
+                {!isCenterNode && n.color && <circle cx={0} cy={0} r={n.r + 3} fill="none" stroke={n.color} strokeWidth={1.5} opacity={0.85}/>}
                 <circle cx={0} cy={0} r={n.r}
                   fill={t.fg} fillOpacity={fillOpacity}
                   stroke={t.fg} strokeOpacity={strokeOpacity} strokeWidth={0.9}
@@ -8238,9 +8988,10 @@ export default function App() {
     if (activeItem === "Rate cards") return <RateCards roles={roles} clients={clientsFull} onClientsChange={setClientsFull} filterClient={rateCardFilter} onClearFilter={() => setRateCardFilter(null)} onNavigateToClients={(names: string[]) => { setClientsFilter(names); setActiveItem("Clients") }} projects={projects} onNavigateToProjects={(clientName: string, rateCardName: string) => { setProjectsClientFilter(null); setProjectsRateCardFilter({ clientName, rateCardName }); setActiveItem("Projects"); setBreadcrumb(["Data studio", "Projects"]) }} version={version}/>
     if (activeItem === "Brands") return <BusinessUnits roles={roles} onProjectsClick={(unitName: any) => { setFilteredBusinessUnit(unitName); setActiveItem("Projects"); }} onEmployeesClick={(unitName: any) => { setFilteredBusinessUnitForPeople(unitName); setActiveItem("People"); }}/>
     if (activeItem === "Activity log") return <ActivityLog/>
-    if (activeItem === "People graph") return <TalentGraphView people={people} roles={roles} departments={departments}/>
+    if (activeItem === "People graph") return <TalentGraphView people={people} roles={roles} departments={departments} projects={projects}/>
     if (activeItem === "Project graph") return <ProjectGraphView projects={projects} roles={roles} people={people} clientsFull={clientsFull}/>
-    if (activeItem === "Skills graph") return <SkillsGraphView people={people} roles={roles} modeOrder={skillsModeOrder} setModeOrder={setSkillsModeOrder} peopleOrder={skillsPeopleOrder} setPeopleOrder={setSkillsPeopleOrder}/>
+    if (activeItem === "Pipeline graph") return <PipelineGraphView people={people} roles={roles} projects={projects}/>
+    if (activeItem === "Company graph") return <CompanyGraphView people={people} roles={roles} modeOrder={skillsModeOrder} setModeOrder={setSkillsModeOrder} peopleOrder={skillsPeopleOrder} setPeopleOrder={setSkillsPeopleOrder}/>
     if (activeItem === "Float Agent") return <FloatAgentView projects={projects} clientsFull={clientsFull} people={people} onSaveDashboard={cards => { setSavedDashboardCards(cards); setActiveItem("Saved Dashboard"); setBreadcrumb(["Float Agent", "Saved Dashboard"]) }}/>
     if (activeItem === "Saved Dashboard") return <SavedDashboardView cards={savedDashboardCards} projects={projects} clientsFull={clientsFull} people={people}/>
     if (activeItem === "Settings") return <SettingsPage key={settingsOfficeTarget ?? "__org__"} t={t} s={s} locations={LOCATIONS_INIT} officeTarget={settingsOfficeTarget} onBack={() => { setActiveItem("Dashboard"); setBreadcrumb(["Global", "Dashboard"]); setSettingsOfficeTarget(null) }}/>
