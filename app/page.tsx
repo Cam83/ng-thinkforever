@@ -7,7 +7,7 @@ import {
   FolderOpen, Building, Building2, ChefHat, HelpCircle, Bell, Settings, Layers,
   Plus, RefreshCw, Settings2, Check, X, Circle, UserPlus, ArrowRightLeft,
   CalendarClock, Briefcase, DollarSign, ChevronLeft, ChevronRight, ListFilter, Sun, Moon, MoreVertical, Pyramid, PanelLeftClose, PanelLeftOpen, Bot, Sparkles, ArrowUp, Share2, GitFork, Star, Search, MapPin, Globe, Eye, EyeOff, Columns, Activity, GripVertical, Download,
-  LayoutGrid, Tags, Network, FolderSearch, LayersPlus, Link2, Pencil, Copy, Trash2, Maximize2
+  LayoutGrid, Tags, Network, FolderSearch, LayersPlus, Link2, Pencil, Copy, Trash2, Maximize2, ArrowRight
 } from "lucide-react"
 import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
 import { Combobox } from "@base-ui/react/combobox"
@@ -987,6 +987,7 @@ const officeItems = [
   { name: "Schedule", icon: <ScheduleIcon/> },
   { name: "Project plan", icon: <ProjectPlanIcon/> },
   { name: "Project tracker", icon: <FolderOpen size={16} strokeWidth={0.9}/> },
+  { name: "Project tracker 2.0", icon: <FolderOpen size={16} strokeWidth={0.9}/> },
   { name: "Log team", icon: <LogTeamIcon/> },
 ]
 const officeItemsMyTime = [
@@ -1120,7 +1121,7 @@ function SaveViewBtn({ active, onClick }: { active: boolean; onClick?: () => voi
   )
 }
 
-function SectionHeader({ count, label, onAdd, filterField, filterValue, onClearFilter, actions }: any) {
+function SectionHeader({ count, label, onAdd, filterField, filterValue, onClearFilter, actions, hideFilter }: any) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 12px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1132,7 +1133,7 @@ function SectionHeader({ count, label, onAdd, filterField, filterValue, onClearF
               <Tag label={Array.isArray(filterValue) ? filterValue.join(", ") : filterValue}/>
               <button onClick={onClearFilter} style={{ display:"flex", alignItems:"center", background:"none", border:"none", cursor:"pointer", padding:2, color:t.mutedFg }}><X size={12} strokeWidth={0.9}/></button>
             </div>
-          : <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
+          : !hideFilter && <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
         }
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -2178,7 +2179,7 @@ function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateTo
     <div style={{ display: "flex", flex: 1, overflow: "hidden", background: t.bg }}>
       {showModal && <AddRoleModal onAdd={(r: any) => onRolesChange([...roles, r])} onClose={() => setShowModal(false)}/>}
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
-        <SectionHeader count={roles.length} label="Roles" onAdd={() => setShowModal(true)}
+        <SectionHeader count={roles.length} label="Roles" onAdd={() => setShowModal(true)} hideFilter
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
         {version !== "single" && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 4px" }}>
@@ -2187,6 +2188,8 @@ function RolesAndRates({ roles, onRolesChange, people, departments, onNavigateTo
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
           <Tabs active={tab} onChange={setTab} tabs={[{ label: `${roles.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+          <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 2px" }}/>
+          <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
           <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={rolesColumns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
         </div>
         <DataTable
@@ -2253,16 +2256,32 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
     <div style={{ display: "flex", flex: 1, overflow: "hidden", background: t.bg }}>
       {showModal && <AddPersonModal roles={roles} departments={departments} onAdd={handleAdd} onClose={() => setShowModal(false)} type={view === "contractors" ? "contractor" : "employee"}/>}
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
-        <SectionHeader
-          count={display.length}
-          label={view === "employees" ? "Employees" : view === "contractors" ? "Contractors" : "People"}
-          filterField={filteredRole ? "Role" : undefined}
-          filterValue={filteredRole ?? undefined}
-          onClearFilter={filteredRole ? onRoleFilterClear : undefined}
-          onAdd={() => setShowModal(true)}
-          actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 4px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, flexShrink: 0 }}>People</h1>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              {(() => {
+                const LABELS: Record<string, string> = { all: "View all", employees: "Employees", contractors: "Contractors" }
+                return (
+                  <DraggableTabs order={viewOrder ?? ["employees", "all", "contractors"]} onReorder={setViewOrder}>
+                    {id => (
+                      <RadiusTab active={view === id} onClick={() => { setView(id); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                        <Circle size={10} strokeWidth={0.9} style={{ fill: view === id ? t.fg : "none" }}/>{LABELS[id]}
+                      </RadiusTab>
+                    )}
+                  </DraggableTabs>
+                )
+              })()}
+            </div>
+            <HoverBtn style={s.iconBtn}><LayersPlus size={13} strokeWidth={0.9}/></HoverBtn>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <HoverBtn style={s.iconBtn}><Settings2 size={13} strokeWidth={0.9}/></HoverBtn>
+            <button onClick={() => setShowModal(true)} style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}><Plus size={16} strokeWidth={0.9}/></button>
+          </div>
+        </div>
+        {(version !== "single" || !!filteredOffice || !!filteredBusinessUnit) && (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "0 24px 4px" }}>
             {version !== "single" && <OfficeFilter selected={selectedOffices} onChange={(val: any) => { setSelectedOffices(val); if (onOfficeFilterClear) onOfficeFilterClear() }}/>}
             {version !== "single" && filteredOffice && (
               <HoverBtn onClick={onOfficeFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "0 8px", fontSize: 12 }}>
@@ -2274,24 +2293,18 @@ function People({ roles, departments, onDepartmentsChange, deliveryTeams, groups
                 ✕ {filteredBusinessUnit}
               </HoverBtn>
             )}
-            {(version !== "single" || !!filteredBusinessUnit) && <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 10px" }}/>}
-            {(() => {
-              const LABELS: Record<string, string> = { all: "View all", employees: "Employees", contractors: "Contractors" }
-              return (
-                <DraggableTabs order={viewOrder ?? ["employees", "all", "contractors"]} onReorder={setViewOrder}>
-                  {id => (
-                    <RadiusTab active={view === id} onClick={() => { setView(id); setSelectedPerson(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-                      <Circle size={10} strokeWidth={0.9} style={{ fill: view === id ? t.fg : "none" }}/>{LABELS[id]}
-                    </RadiusTab>
-                  )}
-                </DraggableTabs>
-              )
-            })()}
           </div>
-        </div>
+        )}
 
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
           <Tabs active={tab} onChange={setTab} tabs={[{ label: `${filtered.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+          <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 2px" }}/>
+          <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
+          {filteredRole && (
+            <HoverBtn onClick={onRoleFilterClear} style={{ ...s.pillBtn(true), background: t.muted, color: t.fg, padding: "0 8px", fontSize: 12 }}>
+              ✕ {filteredRole}
+            </HoverBtn>
+          )}
           <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
             { accessorKey: "name", header: "Name" }, { accessorKey: "roleId", header: "Role" }, { accessorKey: "access", header: "Access" },
             { accessorKey: "departmentId", header: "Department" }, { accessorKey: "deliveryTeamIds", header: "Delivery team" },
@@ -3053,6 +3066,354 @@ function ProjectTracker({ projects, onProjectsChange, people, clients, savedView
   )
 }
 
+function RevRecNavCell({ pct, val, onNavigate }: { pct: number; val: number; onNavigate: () => void }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <span onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <span style={{ fontSize: 13, color: t.fg }}>{pct}% <span style={{ color: t.mutedFg }}>/</span> ${val.toLocaleString()}</span>
+      <HoverBtn onClick={(e: any) => { e.stopPropagation(); onNavigate() }} style={{ opacity: hovered ? 1 : 0, display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 4, border: "none", background: "transparent", color: t.fg, cursor: "pointer", transition: "opacity 0.1s", flexShrink: 0 }}>
+        <ArrowRight size={12} strokeWidth={0.9}/>
+      </HoverBtn>
+    </span>
+  )
+}
+
+function ProjectTracker2({ projects, onProjectsChange, people, clients, savedViews = [], setSavedViews, ptTabOrder, setPtTabOrder, onNavigateToRevRec }: any) {
+  const [showModal, setShowModal] = useState(false)
+  const [panel, setPanel] = useState<{ type: "notes" | "activity" | "analyse"; idx: number } | null>(null)
+  const [monthOffset, setMonthOffset] = useState(0)
+  const [tableView, setTableView] = useState(ptTabOrder?.[0] ?? "all")
+  const [selectedProjectIndices, setSelectedProjectIndices] = useState<number[]>([])
+  const [ptFilters, setPtFilters] = useState<any[]>(PT_DEFAULT_FILTERS)
+  const [ptFilterOpen, setPtFilterOpen] = useState(false)
+  const [ptFilterQuery, setPtFilterQuery] = useState("")
+  const [activePtViewId, setActivePtViewId] = useState<string | null>(null)
+  const [ptSaveModalOpen, setPtSaveModalOpen] = useState(false)
+  const [ptContextMenu, setPtContextMenu] = useState<{ x: number; y: number; viewId: string } | null>(null)
+  const [ptRenameViewId, setPtRenameViewId] = useState<string | null>(null)
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem("projectTracker2.hiddenCols.all") : null
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    } catch { return new Set() }
+  })
+  const toggleCol = (id: string) => setHiddenCols(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id)
+    try { localStorage.setItem("projectTracker2.hiddenCols.all", JSON.stringify([...n])) } catch {}
+    return n
+  })
+  const currentUser = people[1]?.name || "Amy Santiago"
+
+  const monthRange = useMemo(() => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + monthOffset
+    const start = new Date(year, month, 1)
+    const end = new Date(year, month + 1, 0)
+    const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    const label = monthOffset === 0 ? "This month" : monthOffset === -1 ? "Last month" : monthOffset === 1 ? "Next month" : start.toLocaleString("default", { month: "long", year: "numeric" })
+    return { start: fmt(start), end: fmt(end), label }
+  }, [monthOffset])
+
+  const ptSavedViews = savedViews.filter((v: SavedView) => v.page === "project-tracker-2")
+  const ptActiveView = ptSavedViews.find((v: SavedView) => v.id === activePtViewId)
+  const ptBaseFilters = ptActiveView ? ptActiveView.filters : PT_DEFAULT_FILTERS
+  const ptFiltersDirty = JSON.stringify(ptFilters) !== JSON.stringify(ptBaseFilters)
+
+  const columns = useMemo(() => [
+    { accessorKey: "name", header: "Project", size: 240,
+      cell: ({ row }: any) => (
+        <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center" }}>
+          <InlineEdit value={row.original.name} onChange={(v: any) => { const u=[...projects]; u[projects.indexOf(row.original)].name=v; onProjectsChange(u) }} style={{ background: "transparent", fontWeight: 450 }}/>
+        </span>
+      )},
+    { accessorKey: "clientId", header: "Client", size: 150,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{clients[row.original.clientId]?.name || "—"}</span> },
+    { id: "stage", header: "Stage", size: 150, accessorFn: () => "",
+      cell: ({ row }: any) => (
+        <span onClick={e => e.stopPropagation()}>
+          <StageDropdown value={row.original.stage || "estimating"} onChange={(v: any) => {
+            const u=[...projects]; const idx=projects.indexOf(row.original)
+            const entry = { ts: Date.now(), user: currentUser, from: u[idx].stage, to: v }
+            u[idx] = { ...u[idx], stage: v, stageHistory: [entry, ...(u[idx].stageHistory || [])] }
+            onProjectsChange(u)
+          }}/>
+        </span>
+      )},
+    { id: "health", header: "Health", size: 130, accessorFn: () => "",
+      cell: ({ row }: any) => (
+        <span onClick={e => e.stopPropagation()}>
+          <HealthDropdown value={row.original.health || "on-track"} onChange={(v: any) => {
+            const u=[...projects]; const idx=projects.indexOf(row.original)
+            const entry = { ts: Date.now(), user: currentUser, from: u[idx].health, to: v }
+            u[idx] = { ...u[idx], health: v, healthHistory: [entry, ...(u[idx].healthHistory || [])] }
+            onProjectsChange(u)
+          }}/>
+        </span>
+      )},
+    { id: "projectComplete", header: "Project completion (%)", size: 160, accessorFn: () => "",
+      cell: ({ row }: any) => (
+        <span onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <ProjectCompleteDropdown value={row.original.projectComplete ?? null} onChange={(v: any) => {
+            const u=[...projects]; const idx=projects.indexOf(row.original)
+            const now = Date.now()
+            const entry = { date: new Date(now).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), ts: now, user: currentUser, value: v }
+            u[idx] = { ...u[idx], projectComplete: v, completionHistory: [entry, ...(u[idx].completionHistory || [])] }
+            onProjectsChange(u)
+          }}/>
+          <ActivityHistoryBtn history={row.original.completionHistory || []}/>
+        </span>
+      )},
+    { id: "notes", header: "Notes", size: 220, enableResizing: false, accessorFn: () => "",
+      cell: ({ row }: any) => (
+        <span onClick={e => { e.stopPropagation(); setPanel({ type: "notes", idx: projects.indexOf(row.original) }) }} style={{ display: "flex", alignItems: "flex-start", paddingRight: 16 }}>
+          <NotesCell notes={row.original.notes} onClick={() => setPanel({ type: "notes", idx: projects.indexOf(row.original) })}/>
+        </span>
+      )},
+    { id: "analyse", header: "", size: 110, enableResizing: false, accessorFn: () => "",
+      cell: ({ row }: any) => {
+        const idx = projects.indexOf(row.original)
+        const active = panel?.type === "analyse" && panel.idx === idx
+        return (
+          <span onClick={e => e.stopPropagation()}>
+            <AnalyseBtn active={active} onClick={() => setPanel(active ? null : { type: "analyse", idx })}/>
+          </span>
+        )
+      }},
+    { accessorKey: "scheduledBillable", header: "Scheduled billable", size: 150, meta: { dividerLeft: true },
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.scheduledBillable != null ? `$${row.original.scheduledBillable.toLocaleString()}` : "—"}</span> },
+    { accessorKey: "margin", header: "Margin", size: 180,
+      cell: ({ row }: any) => {
+        const pct = row.original.margin
+        const val = Math.round((pct / 100) * (row.original.budget ?? 0))
+        return <span style={{ fontSize: 13, color: t.fg }}>{pct}% <span style={{ color: t.mutedFg }}>/</span> ${val.toLocaleString()}</span>
+      }},
+    { accessorKey: "budget", header: "Total budget", size: 120,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>${row.original.budget?.toLocaleString()}</span> },
+    { accessorKey: "revenueRecognisedPct", header: "Revenue recognised", size: 200,
+      cell: ({ row }: any) => {
+        const pct = row.original.revenueRecognisedPct
+        const val = Math.round((pct / 100) * (row.original.scheduledBillable ?? 0))
+        return <RevRecNavCell pct={pct} val={val} onNavigate={onNavigateToRevRec}/>
+      }},
+    { accessorKey: "startDate", header: "Start", size: 90,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.secondaryFg }}>{new Date(row.original.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span> },
+    { accessorKey: "endDate", header: "End", size: 90,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.secondaryFg }}>{new Date(row.original.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span> },
+    { id: "owner", header: "Owner", size: 44, enableResizing: false, accessorFn: () => "",
+      cell: ({ row }: any) => (
+        <div style={{ width: 26, height: 26, borderRadius: "50%", background: t.muted, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: t.fg }}>
+          {people[row.original.ownerId]?.name.charAt(0) || "?"}
+        </div>
+      )},
+  ], [projects, onProjectsChange, clients, people, panel])
+
+  const recStats = useMemo(() => {
+    const src = selectedProjectIndices.length > 0
+      ? selectedProjectIndices.map((i: number) => projects[i]).filter(Boolean)
+      : projects
+    const totalScheduledBillable = src.reduce((acc: number, p: any) => acc + (p.scheduledBillable ?? 0), 0)
+    const totalHoursScheduled = src.reduce((acc: number, p: any) => acc + (p.hoursScheduled ?? 0), 0)
+    const totalMarginVal = src.reduce((acc: number, p: any) => acc + Math.round(((p.margin ?? 0) / 100) * (p.budget ?? 0)), 0)
+    const avgMargin = src.length ? Math.round(src.reduce((acc: number, p: any) => acc + (p.margin ?? 0), 0) / src.length) : 0
+    const totalRevenueRecognised = src.reduce((acc: number, p: any) => acc + Math.round(((p.revenueRecognisedPct ?? 0) / 100) * (p.scheduledBillable ?? 0)), 0)
+    const pctRecognised = totalScheduledBillable ? Math.round((totalRevenueRecognised / totalScheduledBillable) * 100) : 0
+    return { totalScheduledBillable, totalHoursScheduled, totalMarginVal, avgMargin, totalRevenueRecognised, pctRecognised, count: src.length }
+  }, [projects, selectedProjectIndices])
+
+  return (
+    <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+    <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden", background: t.bg }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>{projects.length} Projects</h1>
+          <HoverBtn style={s.secIconBtn}>
+            <Layers size={13} strokeWidth={0.9}/>
+          </HoverBtn>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {(() => {
+              const LABELS: Record<string, string> = { all: "View all", recognised: "Revenue recognition" }
+              return (
+                <DraggableTabs order={ptTabOrder ?? ["all", "recognised"]} onReorder={setPtTabOrder}>
+                  {id => (
+                    <RadiusTab active={tableView === id && !activePtViewId} onClick={() => { setTableView(id); setActivePtViewId(null); setPtFilters(PT_DEFAULT_FILTERS) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                      <Circle size={10} strokeWidth={0.9} style={{ fill: tableView === id && !activePtViewId ? t.fg : "none" }}/>{LABELS[id]}
+                    </RadiusTab>
+                  )}
+                </DraggableTabs>
+              )
+            })()}
+            <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0, margin: "0 4px" }}/>
+            <DraggableTabs
+              order={ptSavedViews.map((v: any) => v.id)}
+              onReorder={newIds => setSavedViews((prev: any[]) => {
+                const byId = Object.fromEntries(prev.map((v: any) => [v.id, v]))
+                return newIds.map((id: string) => byId[id]).filter(Boolean).concat(prev.filter((v: any) => !newIds.includes(v.id)))
+              })}
+              onItemContextMenu={(id, e) => setPtContextMenu({ x: e.clientX, y: e.clientY, viewId: id })}
+            >
+              {id => { const v = ptSavedViews.find((x: any) => x.id === id)!; return (
+                <RadiusTab active={activePtViewId === v.id}
+                  onClick={() => { setActivePtViewId(v.id); setPtFilters([...(v.filters ?? [])]) }}
+                  activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                  <Circle size={10} strokeWidth={0.9} style={{ fill: activePtViewId === v.id ? t.fg : "none" }}/>{v.name}
+                </RadiusTab>
+              )}}
+            </DraggableTabs>
+            <SaveViewBtn active={ptFiltersDirty} onClick={() => setPtSaveModalOpen(true)}/>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <HoverBtn style={{ ...s.outlineBtn, gap: 4 }}><Download size={12} strokeWidth={0.9}/>Export / import</HoverBtn>
+          <button onClick={() => setShowModal(true)} style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}><Plus size={14} strokeWidth={0.9}/></button>
+        </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 24px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+          <HoverBtn onClick={() => setMonthOffset(o => o - 1)} style={s.secIconBtn}>
+            <ChevronLeft size={14} strokeWidth={0.9}/>
+          </HoverBtn>
+          <HoverBtn onClick={() => setMonthOffset(o => o + 1)} style={s.secIconBtn}>
+            <ChevronRight size={14} strokeWidth={0.9}/>
+          </HoverBtn>
+        </div>
+        <HoverBtn style={{ display: "flex", alignItems: "center", gap: 4, height: 24, padding: "0 6px", borderRadius: 6, border: "none", background: "transparent", color: t.fg, cursor: "pointer", fontSize: 14, flexShrink: 0, whiteSpace: "nowrap" as const }}>
+          <span style={{ color: t.captionMutedFg, fontWeight: 500 }}>{monthRange.label}</span>
+          {monthRange.start} – {monthRange.end}
+          <ChevronDown size={12} strokeWidth={0.9}/>
+        </HoverBtn>
+        <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }}/>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
+          {ptFilters.map((f: any) => (
+            <FilterChip key={f.id} category={f.category} operator={f.operator} value={f.value} onClear={() => setPtFilters(prev => prev.filter((pf: any) => pf.id !== f.id))}/>
+          ))}
+          <DropdownWrapper open={ptFilterOpen} setOpen={(v: boolean) => { setPtFilterOpen(v); if (!v) setPtFilterQuery("") }}
+            trigger={
+              <HoverBtn onClick={() => setPtFilterOpen(o => !o)} style={{ ...s.outlineBtn, padding: "0 6px", borderRadius: 6, gap: 4, flexShrink: 0 }}>
+                {ptFilters.length > 0 ? <Plus size={11} strokeWidth={0.9}/> : <ListFilter size={11} strokeWidth={0.9}/>}Filter
+              </HoverBtn>
+            }>
+            <div style={{ ...s.dropdown, width: 220, padding: 0, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: `1px solid ${t.border}` }}>
+                <Search size={13} strokeWidth={0.9} color={t.mutedFg} style={{ flexShrink: 0 }}/>
+                <input
+                  autoFocus
+                  value={ptFilterQuery}
+                  onChange={e => setPtFilterQuery(e.target.value)}
+                  placeholder="Search"
+                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: t.fg, fontFamily: "inherit" }}
+                />
+              </div>
+              <div style={{ padding: 4 }}>
+                {([1, 2] as const).map(g => {
+                  const items = PROJECT_FILTER_MENU.filter(o => o.group === g && o.label.toLowerCase().includes(ptFilterQuery.toLowerCase()))
+                  if (!items.length) return null
+                  return (
+                    <div key={g}>
+                      {g === 2 && <div style={{ height: 1, background: t.border, margin: "4px 0" }}/>}
+                      {items.map(o => (
+                        <button key={o.label}
+                          onClick={() => { setPtFilters(prev => { if (prev.some((f: any) => f.id === o.label.toLowerCase().replace(/ /g,"-"))) return prev; return [...prev, { id: o.label.toLowerCase().replace(/ /g,"-"), category: o.label, operator: "is any of", value: "Active, +1" }] }); setPtFilterOpen(false) }}
+                          style={{ ...s.dropdownItem(false), display: "flex", alignItems: "center", gap: 10, justifyContent: "flex-start" }}>
+                          <span style={{ color: t.mutedFg, display: "flex", flexShrink: 0 }}>{o.icon}</span>
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </DropdownWrapper>
+        </div>
+        <div style={{ flexShrink: 0 }}><ColVisibilityBtn columns={tableView === "recognised" ? columns.filter((c: any) => ["name","clientId","health","projectComplete","planAccuracy","budget","margin","revenueRecognisedPct","scheduledBillable","hoursScheduled","totalHoursAtCompletion"].includes(c.id ?? c.accessorKey)) : columns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
+      </div>
+      {ptSaveModalOpen && <SaveViewModal filters={ptFilters} onSave={(name: string) => { const id=`view-${Date.now()}`; setSavedViews((prev: SavedView[]) => [...prev, { id, name, filters: ptFilters, page: "project-tracker-2", tableView }]); setActivePtViewId(id); setPtSaveModalOpen(false) }} onClose={() => setPtSaveModalOpen(false)}/>}
+      {ptContextMenu && (() => { const cv = ptSavedViews.find(v => v.id === ptContextMenu.viewId); if (!cv) return null; return <ViewContextMenu x={ptContextMenu.x} y={ptContextMenu.y} view={cv} onClose={() => setPtContextMenu(null)} onRename={() => { setPtRenameViewId(cv.id); setPtContextMenu(null) }} onDuplicate={() => { const id=`view-${Date.now()}`; setSavedViews((prev: SavedView[]) => [...prev, { ...cv, id, name: `${cv.name} Copy` }]); setPtContextMenu(null) }} onDelete={() => { setSavedViews((prev: SavedView[]) => prev.filter(v => v.id !== cv.id)); if (activePtViewId === cv.id) setActivePtViewId(null); setPtContextMenu(null) }} onFavorite={() => { setSavedViews((prev: SavedView[]) => prev.map(v => v.id === cv.id ? { ...v, favorited: !v.favorited } : v)); setPtContextMenu(null) }}/> })()}
+      {ptRenameViewId && (() => { const cv = ptSavedViews.find(v => v.id === ptRenameViewId); if (!cv) return null; return <SaveViewModal filters={cv.filters} initialName={cv.name} onSave={(name: string) => { setSavedViews((prev: SavedView[]) => prev.map(v => v.id === ptRenameViewId ? { ...v, name } : v)); setPtRenameViewId(null) }} onClose={() => setPtRenameViewId(null)}/> })()}
+      {tableView === "recognised" && (
+        <div style={{ display: "flex", gap: 12, padding: "4px 24px 16px" }}>
+          {[
+            {
+              label: "Revenue recognised",
+              value: `$${recStats.totalRevenueRecognised.toLocaleString()}`,
+              badge: `${recStats.pctRecognised}%`,
+              desc: `of $${recStats.totalScheduledBillable.toLocaleString()} scheduled billable`,
+            },
+            {
+              label: "Scheduled billable",
+              value: `$${recStats.totalScheduledBillable.toLocaleString()}`,
+              badge: `${recStats.count} project${recStats.count !== 1 ? "s" : ""}`,
+              desc: selectedProjectIndices.length > 0 ? `${selectedProjectIndices.length} of ${projects.length} selected` : "Total billable across all projects",
+            },
+            {
+              label: "Hours scheduled",
+              value: `${recStats.totalHoursScheduled.toLocaleString()}h`,
+              badge: recStats.count ? `avg ${Math.round(recStats.totalHoursScheduled / recStats.count)}h` : "—",
+              desc: selectedProjectIndices.length > 0 ? `${selectedProjectIndices.length} of ${projects.length} selected` : "Total hours across all projects",
+            },
+            {
+              label: "Margin",
+              value: `${recStats.avgMargin}%`,
+              badge: `$${recStats.totalMarginVal.toLocaleString()}`,
+              desc: selectedProjectIndices.length > 0 ? `${selectedProjectIndices.length} of ${projects.length} selected` : "Avg margin · total margin value",
+            },
+          ].map((card, i) => (
+            <div key={i} style={{ flex: 1, padding: "16px 20px", borderRadius: 10, border: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", gap: 6 }}>
+              <p style={{ fontSize: 11, color: t.mutedFg, fontWeight: 450 }}>{card.label}</p>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <span style={{ fontSize: 20, fontWeight: 450, color: t.fg, lineHeight: 1 }}>{card.value}</span>
+                <span style={{ fontSize: 12, color: t.secondaryFg }}>{card.badge}</span>
+              </div>
+              <p style={{ fontSize: 11, color: t.mutedFg }}>{card.desc}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      <DataTable
+        columns={tableView === "recognised"
+          ? columns.filter((c: any) => ["name","clientId","health","projectComplete","planAccuracy","budget","margin","revenueRecognisedPct","scheduledBillable","hoursScheduled","totalHoursAtCompletion"].includes(c.id ?? c.accessorKey))
+          : columns}
+        data={projects}
+        hiddenCols={hiddenCols}
+        onSelectionChange={setSelectedProjectIndices}
+        onRowClick={(_p: any, i: number) => setPanel(prev => prev?.type === "activity" && prev.idx === i ? null : { type: "activity", idx: i })}/>
+      {showModal && <AddProjectModal people={people} clients={clients} onAdd={(p: any) => onProjectsChange([...projects, p])} onClose={() => setShowModal(false)}/>}
+    </div>
+    {panel?.type === "notes" && projects[panel.idx] && (
+      <NotesPanel
+        project={projects[panel.idx]}
+        currentUser={currentUser}
+        onClose={() => setPanel(null)}
+        onUpdate={(updated: any) => {
+          const u = [...projects]
+          u[panel.idx] = { ...u[panel.idx], notes: updated }
+          onProjectsChange(u)
+        }}
+      />
+    )}
+    {panel?.type === "activity" && projects[panel.idx] && (
+      <ProjectActivityPanel
+        project={projects[panel.idx]}
+        currentUser={currentUser}
+        onClose={() => setPanel(null)}
+        onUpdate={(updated: any) => {
+          const u = [...projects]
+          u[panel.idx] = { ...u[panel.idx], notes: updated }
+          onProjectsChange(u)
+        }}
+      />
+    )}
+    {panel?.type === "analyse" && projects[panel.idx] && (
+      <SmartAnalysePanel
+        project={projects[panel.idx]}
+        onClose={() => setPanel(null)}
+      />
+    )}
+    </div>
+  )
+}
+
 function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, clients, filteredBusinessUnit, onFilterClear, filteredClient, onClientFilterClear, filteredRateCard, onRateCardFilterClear, version }: any) {
   const [tab, setTab] = useState("active")
   const [selectedIdx, setSelectedIdx] = useState<number|null>(null)
@@ -3096,7 +3457,7 @@ function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, cli
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden", background: t.bg }}>
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
-        <SectionHeader count={filtered.length} label="Projects" onAdd={() => {}} filterField={filteredOwner ? "Owner" : filteredRateCard ? "Rate card" : filteredClient ? "Client" : undefined} filterValue={filteredOwner ?? (filteredRateCard?.rateCardName) ?? filteredClient} onClearFilter={filteredOwner ? () => setFilteredOwner(null) : filteredRateCard ? onRateCardFilterClear : onClientFilterClear}
+        <SectionHeader count={filtered.length} label="Projects" onAdd={() => {}} filterField={filteredOwner ? "Owner" : filteredRateCard ? "Rate card" : filteredClient ? "Client" : undefined} filterValue={filteredOwner ?? (filteredRateCard?.rateCardName) ?? filteredClient} onClearFilter={filteredOwner ? () => setFilteredOwner(null) : filteredRateCard ? onRateCardFilterClear : onClientFilterClear} hideFilter
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
         {(version !== "single" || !!filteredBusinessUnit) && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 4px" }}>
@@ -3112,6 +3473,8 @@ function ProjectsDataHub({ visibleItems, projects, onProjectsChange, people, cli
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
           <Tabs active={tab} onChange={setTab} tabs={[{ label: `${filtered.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+          <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 2px" }}/>
+          <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
           <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={projColumns} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
         </div>
         <DataTable
@@ -3582,7 +3945,7 @@ function Clients({ roles, people, clients, onClientsChange, projects, onNavigate
   return (
     <div style={{ display:"flex", flex:1, overflow:"hidden", background:t.bg }}>
       <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden" }}>
-        <SectionHeader count={displayClients.length} label="Clients" onAdd={() => {}} filterField={filterClients ? "Client" : undefined} filterValue={filterClients} onClearFilter={onClearClientsFilter}
+        <SectionHeader count={displayClients.length} label="Clients" onAdd={() => {}} filterField={filterClients ? "Client" : undefined} filterValue={filterClients} onClearFilter={onClearClientsFilter} hideFilter
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
         {version !== "single" && (
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 4px" }}>
@@ -3591,6 +3954,8 @@ function Clients({ roles, people, clients, onClientsChange, projects, onNavigate
         )}
         <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
           <Tabs active={tab} onChange={setTab} tabs={[{label:`${clients.length} Active`,value:"active"},{label:"0 Archived",value:"archived"},{label:"All",value:"all"}]}/>
+          <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 2px" }}/>
+          <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
           <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
             {accessorKey:"name",header:"Client"},{id:"contact",header:"Client contact"},{id:"owner",header:"Client owner"},
             {id:"crm",header:"CRM"},{id:"rateCards",header:"Rate cards"},{id:"projects",header:"Projects"},
@@ -3654,7 +4019,7 @@ function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilte
   return (
     <div style={{ display:"flex", flex:1, overflow:"hidden", background:t.bg }}>
       <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden" }}>
-        <SectionHeader count={displayClients.length} label="Rate cards" onAdd={() => {}} filterField={filterClient ? "Client" : undefined} filterValue={filterClient} onClearFilter={onClearFilter}
+        <SectionHeader count={displayClients.length} label="Rate cards" onAdd={() => {}} filterField={filterClient ? "Client" : undefined} filterValue={filterClient} onClearFilter={onClearFilter} hideFilter
           actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
         {version !== "single" && (
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 4px" }}>
@@ -3663,6 +4028,8 @@ function RateCards({ roles, clients, onClientsChange, filterClient, onClearFilte
         )}
         <div style={{ display:"flex", alignItems:"center", gap:4, padding:"12px 24px 8px" }}>
           <Tabs active={tab} onChange={setTab} tabs={[{label:`${displayClients.length} Active`,value:"active"},{label:"0 Archived",value:"archived"},{label:"All",value:"all"}]}/>
+          <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 2px" }}/>
+          <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
           <div style={{ marginLeft: "auto" }}><ColVisibilityBtn columns={[
             {accessorKey:"rateCardName",header:"Rate card"},{id:"client",header:"Clients"},{id:"projects",header:"Projects"},
           ]} hiddenCols={hiddenCols} onToggle={toggleCol}/></div>
@@ -3776,10 +4143,18 @@ function BusinessUnits({ roles, onProjectsClick, onEmployeesClick }: any) {
 }
 
 function ActivityLog() {
-  const [sourceFilter, setSourceFilter] = useState("all")
-  const [filterOpen, setFilterOpen] = useState(false)
-  const filtered = sourceFilter==="all" ? ACTIVITY_LOG_DATA : ACTIVITY_LOG_DATA.filter(e => e.source===sourceFilter)
   const sourceLabel: Record<string, string> = { all:"All sources", people:"People", roles:"Roles", departments:"Departments" }
+  const [monthOffset, setMonthOffset] = useState(0)
+  const monthRange = useMemo(() => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + monthOffset
+    const start = new Date(year, month, 1)
+    const end = new Date(year, month + 1, 0)
+    const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    const label = monthOffset === 0 ? "This month" : monthOffset === -1 ? "Last month" : monthOffset === 1 ? "Next month" : start.toLocaleString("default", { month: "long", year: "numeric" })
+    return { start: fmt(start), end: fmt(end), label }
+  }, [monthOffset])
   function typeIcon(type: any) {
     if (type==="person_assigned"||type==="added") return <UserPlus size={13} strokeWidth={0.9}/>
     if (type==="role_change"||type==="renamed") return <ArrowRightLeft size={13} strokeWidth={0.9}/>
@@ -3789,26 +4164,21 @@ function ActivityLog() {
   }
   return (
     <div style={{ display:"flex", flex:1, flexDirection:"column", overflow:"hidden", background:t.bg }}>
-      <SectionHeader count={filtered.length} label="Events" onAdd={() => {}}/>
+      <SectionHeader label="Activity log" onAdd={() => {}} hideFilter/>
       <div style={{ display:"flex", alignItems:"center", gap:8, padding:"0 24px 12px" }}>
-        <DropdownWrapper open={filterOpen} setOpen={setFilterOpen}
-          trigger={
-            <HoverBtn onClick={() => setFilterOpen(!filterOpen)} style={s.pillBtn(sourceFilter!=="all")}>
-              {sourceLabel[sourceFilter]}<ChevronDown size={12} strokeWidth={0.9} style={{ transform:filterOpen?"rotate(180deg)":"none", transition:"transform 0.2s" }}/>
-            </HoverBtn>
-          }>
-          <div style={s.dropdown}>
-            <button onClick={() => { setSourceFilter("all"); setFilterOpen(false) }} style={s.dropdownItem(sourceFilter==="all")}>
-              All sources {sourceFilter==="all" && <Check size={12} strokeWidth={0.9}/>}
-            </button>
-            <div style={{ height:1, background:t.border, margin:"4px 0" }}/>
-            {["people","roles","departments"].map(s2 => (
-              <button key={s2} onClick={() => { setSourceFilter(s2); setFilterOpen(false) }} style={s.dropdownItem(sourceFilter===s2)}>
-                {sourceLabel[s2]} {sourceFilter===s2 && <Check size={12} strokeWidth={0.9}/>}
-              </button>
-            ))}
-          </div>
-        </DropdownWrapper>
+        <div style={{ display:"flex", alignItems:"center", gap:2, flexShrink:0 }}>
+          <HoverBtn onClick={() => setMonthOffset(o => o - 1)} style={s.secIconBtn}><ChevronLeft size={14} strokeWidth={0.9}/></HoverBtn>
+          <HoverBtn onClick={() => setMonthOffset(o => o + 1)} style={s.secIconBtn}><ChevronRight size={14} strokeWidth={0.9}/></HoverBtn>
+        </div>
+        <HoverBtn style={{ display:"flex", alignItems:"center", gap:4, height:24, padding:"0 6px", borderRadius:6, border:"none", background:"transparent", color:t.fg, cursor:"pointer", fontSize:14, flexShrink:0, whiteSpace:"nowrap" as const }}>
+          <span style={{ color:t.captionMutedFg, fontWeight:500 }}>{monthRange.label}</span>
+          {monthRange.start} – {monthRange.end}
+          <ChevronDown size={12} strokeWidth={0.9}/>
+        </HoverBtn>
+        <div style={{ width:1, height:16, background:t.border, flexShrink:0 }}/>
+        <HoverBtn style={{ ...s.outlineBtn, padding:"0 6px", borderRadius:6, gap:4, flexShrink:0 }}>
+          <ListFilter size={11} strokeWidth={0.9}/>Filter
+        </HoverBtn>
       </div>
       <DataTable
         columns={[
@@ -3818,7 +4188,7 @@ function ActivityLog() {
           { accessorKey: "description", header: "Action", size: 240, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.fg }}>{row.original.description}</span> },
           { accessorKey: "details", header: "Details", size: 180, enableResizing: false, cell: ({ row }: any) => <span style={{ fontSize:13, color:t.mutedFg }}>{row.original.details||"—"}</span> },
         ]}
-        data={filtered}
+        data={ACTIVITY_LOG_DATA}
       />
     </div>
   )
@@ -5213,7 +5583,7 @@ function FilterChip({ category, operator, value, onClear }: any) {
   )
 }
 
-function ReportHeader({ dateOffset, setDateOffset, reportEntity, setReportEntity, peopleCount, projectsCount, tabOrder, setTabOrder }: { dateOffset: number; setDateOffset: (fn: (o: number) => number) => void; reportEntity: "people" | "projects"; setReportEntity: (v: "people" | "projects") => void; peopleCount: number; projectsCount: number; tabOrder?: string[]; setTabOrder?: (next: string[]) => void }) {
+function ReportHeader({ dateOffset, setDateOffset, reportEntity, setReportEntity, peopleCount, projectsCount, tabOrder, setTabOrder }: { dateOffset: number; setDateOffset: (fn: (o: number) => number) => void; reportEntity: "people" | "projects" | "revenue-recognition"; setReportEntity: (v: "people" | "projects" | "revenue-recognition") => void; peopleCount: number; projectsCount: number; tabOrder?: string[]; setTabOrder?: (next: string[]) => void }) {
   const now = new Date()
   const base = new Date(now.getFullYear(), now.getMonth() + dateOffset, 1)
   const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate()
@@ -5226,9 +5596,9 @@ function ReportHeader({ dateOffset, setDateOffset, reportEntity, setReportEntity
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, lineHeight: "28px", margin: 0 }}>Report</h1>
           {(() => {
-            const LABELS: Record<string, string> = { people: `${peopleCount} People`, projects: `${projectsCount} Projects` }
+            const LABELS: Record<string, string> = { people: `${peopleCount} People`, projects: `${projectsCount} Projects`, "revenue-recognition": "Revenue recognition" }
             return (
-              <DraggableTabs order={tabOrder ?? ["people", "projects"]} onReorder={setTabOrder ?? (() => {})}>
+              <DraggableTabs order={tabOrder ?? ["people", "projects", "revenue-recognition"]} onReorder={setTabOrder ?? (() => {})}>
                 {id => (
                   <RadiusTab active={reportEntity === id} onClick={() => setReportEntity(id as any)} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
                     <Circle size={10} strokeWidth={0.9} style={{ fill: reportEntity === id ? t.fg : "none" }}/>{LABELS[id]}
@@ -5282,12 +5652,12 @@ function ReportHeader({ dateOffset, setDateOffset, reportEntity, setReportEntity
 
 const REPORT_PHASE_POOL = ["Build", "Context Building", "Discovery", "Outcomes / Decision", "Product Requirements", "Technical Design", "Design", "Development", "Testing", "Deployment", "Handoff", "Planning", "Research", "Prototype", "Review"]
 
-function ReportView({ breadcrumb, people, roles, departments, projects, tabOrder, setTabOrder }: any) {
+function ReportView({ breadcrumb, people, roles, departments, projects, tabOrder, setTabOrder, reportEntity, setReportEntity }: any) {
   const [dateOffset, setDateOffset] = useState(0)
   const [subTab, setSubTab] = useState("people")
-  const [reportEntity, setReportEntity] = useState<"people" | "projects">((tabOrder?.[0] as any) ?? "people")
   const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set())
   const [projTab, setProjTab] = useState("projects")
+  const [revRecTab, setRevRecTab] = useState("projects")
 
   const reportRows = useMemo(() => people.map((person: any) => {
     const dept = departments[person.departmentId]?.name ?? "No Department"
@@ -5450,6 +5820,53 @@ function ReportView({ breadcrumb, people, roles, departments, projects, tabOrder
     },
   ], [expandedProjects, people])
 
+  const revRecStats = useMemo(() => {
+    const src = projects || []
+    const totalScheduledBillable = src.reduce((acc: number, p: any) => acc + (p.scheduledBillable ?? 0), 0)
+    const totalHoursScheduled = src.reduce((acc: number, p: any) => acc + (p.hoursScheduled ?? 0), 0)
+    const totalMarginVal = src.reduce((acc: number, p: any) => acc + Math.round(((p.margin ?? 0) / 100) * (p.budget ?? 0)), 0)
+    const avgMargin = src.length ? Math.round(src.reduce((acc: number, p: any) => acc + (p.margin ?? 0), 0) / src.length) : 0
+    const totalRevenueRecognised = src.reduce((acc: number, p: any) => acc + Math.round(((p.revenueRecognisedPct ?? 0) / 100) * (p.scheduledBillable ?? 0)), 0)
+    const pctRecognised = totalScheduledBillable ? Math.round((totalRevenueRecognised / totalScheduledBillable) * 100) : 0
+    return { totalScheduledBillable, totalHoursScheduled, totalMarginVal, avgMargin, totalRevenueRecognised, pctRecognised, count: src.length }
+  }, [projects])
+
+  const revRecColumns = useMemo(() => [
+    { id: "name", header: "Project", size: 240,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg, fontWeight: 450 }}>{row.original.name}</span> },
+    { id: "client", header: "Client", size: 150,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{CLIENTS_FULL[row.original.clientId]?.name ?? "—"}</span> },
+    { id: "health", header: "Health", size: 130,
+      cell: ({ row }: any) => {
+        const h = HEALTH_OPTIONS.find((o: any) => o.value === (row.original.health || "on-track")) || HEALTH_OPTIONS[0]
+        return <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 24, padding: "0 8px", borderRadius: 12, background: h.color + "18", border: `1px solid ${h.color}40`, fontSize: 11, fontWeight: 450, color: h.color }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: h.color, flexShrink: 0 }}/>{h.label}
+        </span>
+      }},
+    { id: "projectComplete", header: "Project completion (%)", size: 160,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.projectComplete != null ? `${row.original.projectComplete}%` : "—"}</span> },
+    { id: "planAccuracy", header: "Plan accuracy", size: 130, meta: { dividerLeft: true },
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.planAccuracy != null ? `${row.original.planAccuracy}%` : "—"}</span> },
+    { id: "budget", header: "Total budget", size: 120,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>${row.original.budget?.toLocaleString()}</span> },
+    { id: "margin", header: "Margin", size: 180,
+      cell: ({ row }: any) => {
+        const pct = row.original.margin; const val = Math.round((pct / 100) * (row.original.budget ?? 0))
+        return <span style={{ fontSize: 13, color: t.fg }}>{pct}% <span style={{ color: t.mutedFg }}>/</span> ${val.toLocaleString()}</span>
+      }},
+    { id: "revenueRecognisedPct", header: "Revenue recognised", size: 200,
+      cell: ({ row }: any) => {
+        const pct = row.original.revenueRecognisedPct; const val = Math.round((pct / 100) * (row.original.scheduledBillable ?? 0))
+        return <span style={{ fontSize: 13, color: t.fg }}>{pct}% <span style={{ color: t.mutedFg }}>/</span> ${val.toLocaleString()}</span>
+      }},
+    { id: "scheduledBillable", header: "Scheduled billable", size: 150,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.scheduledBillable != null ? `$${row.original.scheduledBillable.toLocaleString()}` : "—"}</span> },
+    { id: "hoursScheduled", header: "Hours scheduled", size: 140,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.hoursScheduled != null ? `${row.original.hoursScheduled.toLocaleString()}h` : "—"}</span> },
+    { id: "totalHoursAtCompletion", header: "Total hours at completion", size: 210,
+      cell: ({ row }: any) => <span style={{ fontSize: 13, color: t.fg }}>{row.original.totalHoursAtCompletion != null ? row.original.totalHoursAtCompletion.toLocaleString() : "—"}</span> },
+  ], [projects])
+
   const SUBTABS = [
     { id: "people",       label: "People",       count: people.length },
     { id: "roles",        label: "Roles",        count: roles.length },
@@ -5470,11 +5887,38 @@ function ReportView({ breadcrumb, people, roles, departments, projects, tabOrder
             { value: "clients",  label: `Clients ${new Set(projectReportData.map((p: any) => p.clientId)).size}` },
             { value: "expenses", label: "Expenses" },
           ]}/>
+        ) : reportEntity === "revenue-recognition" ? (
+          <Tabs active={revRecTab} onChange={setRevRecTab} tabs={[
+            { value: "projects", label: `Projects ${(projects || []).length}` },
+            { value: "clients",  label: `Clients ${new Set((projects || []).map((p: any) => p.clientId)).size}` },
+            { value: "expenses", label: "Expenses" },
+          ]}/>
         ) : (
           <Tabs active={subTab} onChange={setSubTab} tabs={SUBTABS.map(tab => ({ value: tab.id, label: tab.count != null ? `${tab.count} ${tab.label}` : tab.label }))}/>
         )}
       </div>
-      {reportEntity === "projects" ? (
+      {reportEntity === "revenue-recognition" ? (
+        <>
+          <div style={{ display: "flex", gap: 12, padding: "4px 24px 16px" }}>
+            {[
+              { label: "Revenue recognised", value: `$${revRecStats.totalRevenueRecognised.toLocaleString()}`, badge: `${revRecStats.pctRecognised}%`, desc: `of $${revRecStats.totalScheduledBillable.toLocaleString()} scheduled billable` },
+              { label: "Scheduled billable", value: `$${revRecStats.totalScheduledBillable.toLocaleString()}`, badge: `${revRecStats.count} project${revRecStats.count !== 1 ? "s" : ""}`, desc: "Total billable across all projects" },
+              { label: "Hours scheduled", value: `${revRecStats.totalHoursScheduled.toLocaleString()}h`, badge: revRecStats.count ? `avg ${Math.round(revRecStats.totalHoursScheduled / revRecStats.count)}h` : "—", desc: "Total hours across all projects" },
+              { label: "Margin", value: `${revRecStats.avgMargin}%`, badge: `$${revRecStats.totalMarginVal.toLocaleString()}`, desc: "Avg margin · total margin value" },
+            ].map((card, i) => (
+              <div key={i} style={{ flex: 1, padding: "16px 20px", borderRadius: 10, border: `1px solid ${t.border}`, background: t.bg, display: "flex", flexDirection: "column", gap: 6 }}>
+                <p style={{ fontSize: 11, color: t.mutedFg, fontWeight: 450 }}>{card.label}</p>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <span style={{ fontSize: 20, fontWeight: 450, color: t.fg, lineHeight: 1 }}>{card.value}</span>
+                  <span style={{ fontSize: 12, color: t.secondaryFg }}>{card.badge}</span>
+                </div>
+                <p style={{ fontSize: 11, color: t.mutedFg }}>{card.desc}</p>
+              </div>
+            ))}
+          </div>
+          <DataTable key="report-revRec" columns={revRecColumns} data={revRecTab === "projects" ? (projects || []) : []} paddingX={24}/>
+        </>
+      ) : reportEntity === "projects" ? (
         <DataTable
           key="report-projects"
           columns={projectColumns}
@@ -8658,39 +9102,46 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
       {teamSettingsOpen && <TeamSettingsModal type="delivery-teams" mode={deliveryTeamMode} onSave={(m: any) => setDeliveryTeamMode(m)} onClose={() => setTeamSettingsOpen(false)}/>}
       {groupSettingsOpen && <TeamSettingsModal type="groups" mode={groupMode} onSave={(m: any) => setGroupMode(m)} onClose={() => setGroupSettingsOpen(false)}/>}
       <div style={{ display: "flex", flex: 1, flexDirection: "column", overflow: "hidden" }}>
-        <SectionHeader count={tabCount} label={tabLabel} onAdd={(tab !== "offices") ? () => setShowModal(true) : undefined} actions={<HoverBtn style={s.outlineBtn}><RefreshCw size={11} strokeWidth={0.9}/>Import/Export</HoverBtn>}/>
-        <div style={{ display: "flex", alignItems: "center", padding: "0 24px 4px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {(() => {
-              const LABELS: Record<string, string> = { offices: "Offices", departments: "Departments", tags: "Tags" }
-              return (
-                <DraggableTabs order={groupOrder ?? ["offices", "departments", "tags"]} onReorder={setGroupOrder ?? (() => {})}>
-                  {id => (
-                    <RadiusTab active={tab === id} onClick={() => { setTab(id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-                      <Circle size={10} strokeWidth={0.9} style={{ fill: tab === id ? t.fg : "none" }}/>{LABELS[id]}
-                    </RadiusTab>
-                  )}
-                </DraggableTabs>
-              )
-            })()}
-            <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 6px" }}/>
-            {(() => {
-              const LABELS: Record<string, string> = { "delivery-teams": "Delivery teams", groups: "Groups" }
-              return (
-                <DraggableTabs order={teamOrder ?? ["delivery-teams", "groups"]} onReorder={setTeamOrder ?? (() => {})}>
-                  {id => (
-                    <RadiusTab active={tab === id} onClick={() => { setTab(id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-                      <Circle size={10} strokeWidth={0.9} style={{ fill: tab === id ? t.fg : "none" }}/>{LABELS[id]}
-                    </RadiusTab>
-                  )}
-                </DraggableTabs>
-              )
-            })()}
-            {customGroupTypes.map(cg => (
-              <RadiusTab key={cg.id} active={tab === cg.id} onClick={() => { setTab(cg.id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
-                <Circle size={10} strokeWidth={0.9} style={{ fill: tab === cg.id ? t.fg : "none" }}/>{cg.name}
-              </RadiusTab>
-            ))}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <h1 style={{ fontSize: 18, fontWeight: 400, fontFamily: "var(--font-lexend), sans-serif", color: t.fg, flexShrink: 0 }}>Company</h1>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              {(() => {
+                const LABELS: Record<string, string> = { offices: "Offices", departments: "Departments", tags: "Tags" }
+                return (
+                  <DraggableTabs order={groupOrder ?? ["offices", "departments", "tags"]} onReorder={setGroupOrder ?? (() => {})}>
+                    {id => (
+                      <RadiusTab active={tab === id} onClick={() => { setTab(id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                        <Circle size={10} strokeWidth={0.9} style={{ fill: tab === id ? t.fg : "none" }}/>{LABELS[id]}
+                      </RadiusTab>
+                    )}
+                  </DraggableTabs>
+                )
+              })()}
+              <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 2px" }}/>
+              {(() => {
+                const LABELS: Record<string, string> = { "delivery-teams": "Delivery teams", groups: "Groups" }
+                return (
+                  <DraggableTabs order={teamOrder ?? ["delivery-teams", "groups"]} onReorder={setTeamOrder ?? (() => {})}>
+                    {id => (
+                      <RadiusTab active={tab === id} onClick={() => { setTab(id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                        <Circle size={10} strokeWidth={0.9} style={{ fill: tab === id ? t.fg : "none" }}/>{LABELS[id]}
+                      </RadiusTab>
+                    )}
+                  </DraggableTabs>
+                )
+              })()}
+              {customGroupTypes.map(cg => (
+                <RadiusTab key={cg.id} active={tab === cg.id} onClick={() => { setTab(cg.id); setSelectedIdx(null) }} activeColor={t.fgAlpha30} activeBg={t.accent} mutedColor={t.secondaryFg} bg={t.bg} borderColor={t.border} gradientBorder={t === lightTheme}>
+                  <Circle size={10} strokeWidth={0.9} style={{ fill: tab === cg.id ? t.fg : "none" }}/>{cg.name}
+                </RadiusTab>
+              ))}
+            </div>
+            <HoverBtn style={s.iconBtn}><LayersPlus size={13} strokeWidth={0.9}/></HoverBtn>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <HoverBtn style={s.iconBtn}><Settings2 size={13} strokeWidth={0.9}/></HoverBtn>
+            <button onClick={(tab !== "offices") ? () => setShowModal(true) : undefined} style={{ ...s.primaryBtn, background: t.sectionAddBtnBg, color: t.sectionAddBtnFg }}><Plus size={16} strokeWidth={0.9}/></button>
           </div>
         </div>
 
@@ -8698,6 +9149,8 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
               <Tabs active="active" onChange={() => {}} tabs={[{ label: `${offices.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+              <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 2px" }}/>
+              <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
             </div>
             <DataTable
               columns={[
@@ -8717,6 +9170,8 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
               <Tabs active="active" onChange={() => {}} tabs={[{ label: `${departments.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+              <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 2px" }}/>
+              <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
             </div>
             <DataTable
               columns={[
@@ -8733,6 +9188,8 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
               <Tabs active={tagsSubTab} onChange={(v: any) => setTagsSubTab(v)} tabs={[{ label: `${tagGroups.reduce((a,g)=>a+g.tags.length,0)} People tags`, value: "people" }, { label: "6 Project tags", value: "project" }]}/>
+              <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 2px" }}/>
+              <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px 24px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -8797,6 +9254,8 @@ function OrgStructurePage({ people, contractors, departments, onDepartmentsChang
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 24px 8px" }}>
               <Tabs active="active" onChange={() => {}} tabs={[{ label: `${activeCustomType.items.length} Active`, value: "active" }, { label: "0 Archived", value: "archived" }, { label: "All", value: "all" }]}/>
+              <div style={{ width: 1, height: 16, background: t.fgAlpha30, margin: "0 2px" }}/>
+              <HoverBtn style={s.outlineBtn}><ListFilter size={11} strokeWidth={0.9}/>Filter</HoverBtn>
             </div>
             <DataTable
               columns={[
@@ -8941,6 +9400,7 @@ export default function App() {
   const [people, setPeople] = useState(INITIAL_PEOPLE)
   const [contractors, setContractors] = useState(INITIAL_CONTRACTORS)
   const [projects, setProjects] = useState(() => [...INITIAL_PROJECTS, ...getBusinessUnitProjects()])
+  const [projects2, setProjects2] = useState(() => [...INITIAL_PROJECTS, ...getBusinessUnitProjects()])
   const [clients] = useState(INITIAL_CLIENTS_DATA)
   const [clientsFull, setClientsFull] = useState(() => CLIENTS_FULL)
   const [rateCardFilter, setRateCardFilter] = useState<string|null>(null)
@@ -8963,9 +9423,11 @@ export default function App() {
   const [savedViews, setSavedViews] = useState<SavedView[]>([])
   const [dashboardTabOrder, setDashboardTabOrder] = useState<string[]>(["people", "finance"])
   const [ptTabOrder, setPtTabOrder] = useState<string[]>(["all", "recognised"])
+  const [ptTabOrder2, setPtTabOrder2] = useState<string[]>(["all"])
   const [peopleViewOrder, setPeopleViewOrder] = useState<string[]>(["employees", "all", "contractors"])
   const [myWorkTabOrder, setMyWorkTabOrder] = useState<string[]>(["my-work", "my-team"])
-  const [reportTabOrder, setReportTabOrder] = useState<string[]>(["people", "projects"])
+  const [reportTabOrder, setReportTabOrder] = useState<string[]>(["people", "projects", "revenue-recognition"])
+  const [reportEntity, setReportEntity] = useState<"people" | "projects" | "revenue-recognition">("people")
   const [skillsModeOrder, setSkillsModeOrder] = useState<string[]>(["skills", "experience"])
   const [skillsPeopleOrder, setSkillsPeopleOrder] = useState<string[]>(["employees", "contractors"])
   const [orgGroupOrder, setOrgGroupOrder] = useState<string[]>(["offices", "departments", "tags"])
@@ -8983,6 +9445,7 @@ export default function App() {
     if (activeItem === "Roles") return <RolesAndRates roles={roles} onRolesChange={setRoles} people={people} departments={departments} onNavigateToPeopleByRole={(role: string) => { setFilteredRoleForPeople(role); setFilteredBusinessUnitForPeople(null); setActiveItem("People"); setBreadcrumb(["People"]) }} version={version}/>
     if (activeItem === "People") return <People roles={roles} departments={departments} onDepartmentsChange={setDepartments} deliveryTeams={deliveryTeams} groups={groups} people={people} onPeopleChange={setPeople} contractors={contractors} onContractorsChange={setContractors} deptPeopleCounts={deptPeopleCounts} filteredBusinessUnit={filteredBusinessUnitForPeople} onFilterClear={() => setFilteredBusinessUnitForPeople(null)} filteredRole={filteredRoleForPeople} onRoleFilterClear={() => setFilteredRoleForPeople(null)} filteredOffice={filteredOfficeForPeople} onOfficeFilterClear={() => setFilteredOfficeForPeople(null)} initialView={initialPeopleView} onInitialViewConsumed={() => setInitialPeopleView(null)} version={version} viewOrder={peopleViewOrder} setViewOrder={setPeopleViewOrder}/>
     if (activeItem === "Project tracker") return <ProjectTracker projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull} savedViews={savedViews} setSavedViews={setSavedViews} ptTabOrder={ptTabOrder} setPtTabOrder={setPtTabOrder}/>
+    if (activeItem === "Project tracker 2.0") return <ProjectTracker2 projects={projects2} onProjectsChange={setProjects2} people={people} clients={clientsFull} savedViews={savedViews} setSavedViews={setSavedViews} ptTabOrder={ptTabOrder2} setPtTabOrder={setPtTabOrder2} onNavigateToRevRec={() => { setReportEntity("revenue-recognition"); setActiveItem("Report"); setBreadcrumb(["Report"]) }}/>
     if (activeItem === "Projects") return <ProjectsDataHub visibleItems={visibleDataHubItems} projects={projects} onProjectsChange={setProjects} people={people} clients={clientsFull} filteredBusinessUnit={filteredBusinessUnit} onFilterClear={() => setFilteredBusinessUnit(null)} filteredClient={projectsClientFilter} onClientFilterClear={() => setProjectsClientFilter(null)} filteredRateCard={projectsRateCardFilter} onRateCardFilterClear={() => setProjectsRateCardFilter(null)} version={version}/>
     if (activeItem === "Clients") return <Clients roles={roles} people={people} clients={clientsFull} onClientsChange={setClientsFull} projects={projects} onNavigateToRateCards={(name: string) => { setRateCardFilter(name); setActiveItem("Rate cards") }} filterClients={clientsFilter} onClearClientsFilter={() => setClientsFilter(null)} onNavigateToProjects={(name: string) => { setProjectsClientFilter(name); setActiveItem("Projects") }} version={version}/>
     if (activeItem === "Rate cards") return <RateCards roles={roles} clients={clientsFull} onClientsChange={setClientsFull} filterClient={rateCardFilter} onClearFilter={() => setRateCardFilter(null)} onNavigateToClients={(names: string[]) => { setClientsFilter(names); setActiveItem("Clients") }} projects={projects} onNavigateToProjects={(clientName: string, rateCardName: string) => { setProjectsClientFilter(null); setProjectsRateCardFilter({ clientName, rateCardName }); setActiveItem("Projects"); setBreadcrumb(["Data studio", "Projects"]) }} version={version}/>
@@ -8997,7 +9460,7 @@ export default function App() {
     if (activeItem === "Settings") return <SettingsPage key={settingsOfficeTarget ?? "__org__"} t={t} s={s} locations={LOCATIONS_INIT} officeTarget={settingsOfficeTarget} onBack={() => { setActiveItem("Dashboard"); setBreadcrumb(["Global", "Dashboard"]); setSettingsOfficeTarget(null) }}/>
     if (activeItem === "My work") return <MyWorkView tabOrder={myWorkTabOrder} setTabOrder={setMyWorkTabOrder}/>
     if (activeItem === "Dashboard") return <DashboardView breadcrumb={breadcrumb} savedViews={savedViews} setSavedViews={setSavedViews} tabOrder={dashboardTabOrder} setTabOrder={setDashboardTabOrder}/>
-    if (activeItem === "Report") return <ReportView breadcrumb={breadcrumb} people={people} roles={roles} departments={departments} projects={projects} tabOrder={reportTabOrder} setTabOrder={setReportTabOrder}/>
+    if (activeItem === "Report") return <ReportView breadcrumb={breadcrumb} people={people} roles={roles} departments={departments} projects={projects} tabOrder={reportTabOrder} setTabOrder={setReportTabOrder} reportEntity={reportEntity} setReportEntity={setReportEntity}/>
     if (activeItem === "Schedule") return <ScheduleView breadcrumb={breadcrumb}/>
     if (activeItem === "Project plan") return <ProjectPlanView breadcrumb={breadcrumb}/>
     if (activeItem === "My time") return <MyTimeView breadcrumb={breadcrumb}/>
