@@ -1507,7 +1507,7 @@ function NotificationsPanel({ onClose, floating, navHoverOpen }: { onClose: () =
 }
 
 // ── Sidebar ──
-function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBreadcrumbChange, themeMode, onThemeChange, visibleDataHubItems, onVisibleDataHubItemsChange, collapsed, onToggleCollapsed, notificationsOpen, onNotificationsToggle, onHoverChange, onSettingsOffice, hasSavedDashboard, onSavedDashboardClick, showFloatAgent, onFloatAgentToggle, showMyWork, onMyWorkToggle, showTalentGraph, onTalentGraphToggle, savedViews = [], dashboardTab, onDashboardTabChange }: any) {
+function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBreadcrumbChange, themeMode, onThemeChange, visibleDataHubItems, onVisibleDataHubItemsChange, collapsed, onToggleCollapsed, notificationsOpen, onNotificationsToggle, onHoverChange, onSettingsOffice, hasSavedDashboard, onSavedDashboardClick, showFloatAgent, onFloatAgentToggle, showMyWork, onMyWorkToggle, showTalentGraph, onTalentGraphToggle, showProjectTracker2, onProjectTracker2Toggle, savedViews = [], dashboardTab, onDashboardTabChange }: any) {
   const [locs, setLocs] = useState(LOCATIONS_INIT)
   const [dataHubExp, setDataHubExp] = useState(true)
   const [graphExp, setGraphExp] = useState(true)
@@ -1683,7 +1683,7 @@ function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBre
         )}
 
         {version === "single" ? (
-          getOrderedItems("__single__", officeItems).map((item: any) => (
+          getOrderedItems("__single__", officeItems.filter((i: any) => i.name !== "Project tracker 2.0" || showProjectTracker2)).map((item: any) => (
             <div key={item.name}
               draggable={showFullNav}
               onDragStart={() => { dragSrc.current = { ctx: "__single__", name: item.name }; setDraggingKey(`__single__::${item.name}`) }}
@@ -1695,7 +1695,7 @@ function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBre
               style={{ borderTop: dragOverKey === `__single__::${item.name}` ? `2px solid ${t.accent}` : "2px solid transparent", opacity: draggingKey === `__single__::${item.name}` ? 0.35 : 1 }}>
               {item.name === "Dashboard" ? (
                 <>
-                  <HoverBtn onClick={() => { setActive("Dashboard", null); setDashboardExp(e => !e) }}
+                  <HoverBtn onClick={() => { setActive("Dashboard", null); setDashboardExp(activeItem === "Dashboard" ? (e => !e) : () => true) }}
                     style={{ ...navItemStyle(activeItem === "Dashboard"), justifyContent: showFullNav ? "flex-start" : "center" }}>
                     {item.icon}{showFullNav && <>Dashboard<ChevronDown size={12} strokeWidth={0.9} style={{ marginLeft: "auto", transform: dashboardExp ? "none" : "rotate(-180deg)", transition: "transform 0.2s", flexShrink: 0 }}/></>}
                   </HoverBtn>
@@ -1764,7 +1764,7 @@ function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBre
               {showFullNav && loc.items && (
                 <Collapsible expanded={loc.expanded}>
                   <div style={{ marginTop: 2 }}>
-                    {getOrderedItems(loc.name, loc.items).map((item: any) => (
+                    {getOrderedItems(loc.name, loc.items.filter((i: any) => i.name !== "Project tracker 2.0" || showProjectTracker2)).map((item: any) => (
                       <div key={item.name}
                         draggable
                         onDragStart={() => { dragSrc.current = { ctx: loc.name, name: item.name }; setDraggingKey(`${loc.name}::${item.name}`) }}
@@ -1776,7 +1776,7 @@ function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBre
                         style={{ borderTop: dragOverKey === `${loc.name}::${item.name}` ? `2px solid ${t.accent}` : "2px solid transparent", opacity: draggingKey === `${loc.name}::${item.name}` ? 0.35 : 1 }}>
                         {item.name === "Dashboard" ? (
                           <>
-                            <HoverBtn onClick={() => { setActive("Dashboard", [loc.name, "Dashboard"]); setDashboardExp(e => !e) }}
+                            <HoverBtn onClick={() => { setActive("Dashboard", [loc.name, "Dashboard"]); setDashboardExp(activeItem === "Dashboard" && breadcrumb?.[0] === loc.name ? (e => !e) : () => true) }}
                               style={{ ...navItemStyle(activeItem === "Dashboard" && breadcrumb?.[0] === loc.name), paddingTop: 6, paddingBottom: 6, paddingRight: 8, paddingLeft: 32 }}>
                               {item.icon}Dashboard
                               <ChevronDown size={12} strokeWidth={0.9} style={{ marginLeft: "auto", transform: dashboardExp ? "none" : "rotate(-180deg)", transition: "transform 0.2s", flexShrink: 0 }}/>
@@ -1900,9 +1900,13 @@ function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBre
                   <input type="checkbox" checked={showFloatAgent} onChange={e => onFloatAgentToggle?.(e.target.checked)} style={{ cursor: "pointer", accentColor: t.mutedFg }}/>
                   Float Agent
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", borderRadius: 4, fontSize: 13, color: t.fg, borderBottom: `1px solid ${t.border}`, marginBottom: 4 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", borderRadius: 4, fontSize: 13, color: t.fg }}>
                   <input type="checkbox" checked={showTalentGraph} onChange={e => onTalentGraphToggle?.(e.target.checked)} style={{ cursor: "pointer", accentColor: t.mutedFg }}/>
                   Talent graph
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", borderRadius: 4, fontSize: 13, color: t.fg, borderBottom: `1px solid ${t.border}`, marginBottom: 4 }}>
+                  <input type="checkbox" checked={showProjectTracker2} onChange={e => onProjectTracker2Toggle?.(e.target.checked)} style={{ cursor: "pointer", accentColor: t.mutedFg }}/>
+                  Project tracker 2.0
                 </label>
                 {dataHubItems.map(item => (
                   <label key={item.name} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", borderRadius: 4, fontSize: 13, color: t.fg }}>
@@ -9460,6 +9464,7 @@ export default function App() {
   const [showFloatAgent, setShowFloatAgent] = useState(false)
   const [showMyWork, setShowMyWork] = useState(false)
   const [showTalentGraph, setShowTalentGraph] = useState(false)
+  const [showProjectTracker2, setShowProjectTracker2] = useState(false)
   const [savedViews, setSavedViews] = useState<SavedView[]>([])
   const [dashboardTab, setDashboardTab] = useState<"people"|"finance">("people")
   const [ptTabOrder, setPtTabOrder] = useState<string[]>(["all", "recognised"])
@@ -9511,7 +9516,7 @@ export default function App() {
   return (
     <div style={{ display:"flex", height:"100vh", overflow:"hidden", background:t.bg, color:t.fg, fontFamily:"var(--font-sans), -apple-system, sans-serif" }}>
       {activeItem !== "Settings" && <>
-        <SidebarNav version={version} activeItem={activeItem} breadcrumb={breadcrumb} onActiveItemChange={setActiveItem} onBreadcrumbChange={setBreadcrumb} themeMode={themeMode} onThemeChange={setThemeMode} visibleDataHubItems={visibleDataHubItems} onVisibleDataHubItemsChange={setVisibleDataHubItems} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed(c => !c)} notificationsOpen={notificationsOpen} onNotificationsToggle={() => setNotificationsOpen(o => !o)} onHoverChange={setNavHoverOpen} onSettingsOffice={(name: string | null) => { setSettingsOfficeTarget(name); setActiveItem("Settings"); setBreadcrumb(["Settings"]) }} hasSavedDashboard={savedDashboardCards.length > 0} onSavedDashboardClick={() => { setActiveItem("Saved Dashboard"); setBreadcrumb(["Float Agent", "Saved Dashboard"]) }} showFloatAgent={showFloatAgent} onFloatAgentToggle={setShowFloatAgent} showMyWork={showMyWork} onMyWorkToggle={setShowMyWork} showTalentGraph={showTalentGraph} onTalentGraphToggle={setShowTalentGraph} savedViews={savedViews} dashboardTab={dashboardTab} onDashboardTabChange={setDashboardTab}/>
+        <SidebarNav version={version} activeItem={activeItem} breadcrumb={breadcrumb} onActiveItemChange={setActiveItem} onBreadcrumbChange={setBreadcrumb} themeMode={themeMode} onThemeChange={setThemeMode} visibleDataHubItems={visibleDataHubItems} onVisibleDataHubItemsChange={setVisibleDataHubItems} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed(c => !c)} notificationsOpen={notificationsOpen} onNotificationsToggle={() => setNotificationsOpen(o => !o)} onHoverChange={setNavHoverOpen} onSettingsOffice={(name: string | null) => { setSettingsOfficeTarget(name); setActiveItem("Settings"); setBreadcrumb(["Settings"]) }} hasSavedDashboard={savedDashboardCards.length > 0} onSavedDashboardClick={() => { setActiveItem("Saved Dashboard"); setBreadcrumb(["Float Agent", "Saved Dashboard"]) }} showFloatAgent={showFloatAgent} onFloatAgentToggle={setShowFloatAgent} showMyWork={showMyWork} onMyWorkToggle={setShowMyWork} showTalentGraph={showTalentGraph} onTalentGraphToggle={setShowTalentGraph} showProjectTracker2={showProjectTracker2} onProjectTracker2Toggle={setShowProjectTracker2} savedViews={savedViews} dashboardTab={dashboardTab} onDashboardTabChange={setDashboardTab}/>
         {notificationsOpen && <NotificationsPanel floating={sidebarCollapsed} navHoverOpen={navHoverOpen} onClose={() => setNotificationsOpen(false)}/>}
       </>}
       <main style={{ ...s.main, position:"relative" as const, paddingLeft: activeItem !== "Settings" && sidebarCollapsed ? 36 : 0, transition: "padding-left 0.2s ease" }}>
