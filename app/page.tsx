@@ -9390,7 +9390,7 @@ function VersionsToggle({ version, onChange }: any) {
 }
 
 export default function App() {
-  const [version, setVersion] = useState("single")
+  const [version, setVersion] = useState("multi")
   const [activeItem, setActiveItem] = useState("Dashboard")
   const [breadcrumb, setBreadcrumb] = useState(["Global", "Dashboard"])
   const [roles, setRoles] = useState(INITIAL_ROLES)
@@ -9407,7 +9407,7 @@ export default function App() {
   const [clientsFilter, setClientsFilter] = useState<string[]|null>(null)
   const [projectsClientFilter, setProjectsClientFilter] = useState<string|null>(null)
   const [projectsRateCardFilter, setProjectsRateCardFilter] = useState<{clientName: string, rateCardName: string}|null>(null)
-  const [themeMode, setThemeMode] = useState<"light" | "dark" | "black" | "float-dark">("light")
+  const [themeMode, setThemeMode] = useState<"light" | "dark" | "black" | "float-dark">("dark")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [navHoverOpen, setNavHoverOpen] = useState(false)
