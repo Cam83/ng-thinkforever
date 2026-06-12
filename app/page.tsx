@@ -477,6 +477,16 @@ function NGLogo() {
   )
 }
 
+function FutureDeluxeLogo() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 67 106" height="20" style={{ display: "block", flexShrink: 0, width: "auto" }} fill="currentColor">
+      <rect y="95.1582" width="67" height="10"/>
+      <path d="M17.0005 11.153L65.5 75.6582L51.5005 76.153L2.50043 11.1535L17.0005 11.153Z"/>
+      <path d="M50 11.153L1.50049 75.6582L15.5 76.153L64.5001 11.1535L50 11.153Z"/>
+    </svg>
+  )
+}
+
 function ScheduleIcon() {
   return <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="3.958" y="8.958" width="12.083" height="2.083" rx="0.833" stroke="currentColor" strokeWidth="1"/><rect x="3.958" y="13.958" width="4.583" height="2.083" rx="0.833" stroke="currentColor" strokeWidth="1"/><rect x="9.792" y="3.958" width="6.25" height="2.083" rx="0.833" stroke="currentColor" strokeWidth="1"/></svg>
 }
@@ -1633,7 +1643,7 @@ function SidebarNav({ version, activeItem, breadcrumb, onActiveItemChange, onBre
           <DropdownWrapper open={orgOpen} setOpen={setOrgOpen}
             trigger={
               <HoverBtn onClick={() => setOrgOpen(!orgOpen)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 6px", borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", color: t.fg }}>
-                <NGLogo />
+                {version === "single" ? <FutureDeluxeLogo /> : <NGLogo />}
                 <ChevronDown size={12} strokeWidth={0.9} color={t.secondaryFg} style={{ transform: orgOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}/>
               </HoverBtn>
             }>
@@ -9420,7 +9430,7 @@ function VersionsToggle({ version, onChange }: any) {
           </HoverBtn>
         }>
         <div style={{ ...s.dropdown, bottom:"100%", top:"auto", marginBottom:8, width:200 }}>
-          {[["multi","Multi office"],["single","Single office"]].map(([v,l]) => (
+          {[["multi","Think Forever"],["single","Future Deluxe"]].map(([v,l]) => (
             <button key={v} onClick={() => { onChange(v); setOpen(false) }} style={s.dropdownItem(version===v)}>
               {l} {version===v && <Check size={12} strokeWidth={0.9}/>}
             </button>
